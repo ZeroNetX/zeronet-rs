@@ -1,0 +1,6 @@
+[submodule "zeronet_cryptography"]
+	path = zeronet_cryptography
+	url = https://github.com/decentnetwork/zeronet_cryptography.git
+[submodule "zeronet_protocol"]
+	path = zeronet_protocol
+	url = https://github.com/decentnetwork/zeronet_protocol.git
