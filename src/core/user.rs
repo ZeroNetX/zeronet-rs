@@ -19,6 +19,12 @@ pub struct User {
     pub settings: HashMap<String, serde_json::Value>,
 }
 
+impl Default for User {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl User {
     /// Creates a new user with a new seed and address pair
     pub fn new() -> User {
@@ -116,6 +122,7 @@ impl User {
     }
 
     fn set_site_settings(&mut self, address: &str, settings: serde_json::Value) -> SiteData {
+        #[allow(clippy::let_and_return)]
         let site_data = self.get_site_data(address, true).set_settings(settings);
         // #[cfg(not(test))]
         // self.save();
@@ -162,12 +169,14 @@ impl User {
             Some(auth_pair.get_auth_privkey().to_string())
         } else {
             let site_data = self.get_site_data(address, create);
-
-            if let Some(auth_pair) = site_data.get_auth_pair() {
-                Some(auth_pair.get_auth_privkey().to_string())
-            } else {
-                None
-            }
+            // if let Some(auth_pair) = site_data.get_auth_pair() {
+            //     Some(auth_pair.get_auth_privkey().to_string())
+            // } else {
+            //     None
+            // }
+            site_data
+                .get_auth_pair()
+                .map(|pair| pair.get_auth_privkey().to_string())
         }
     }
 
@@ -205,8 +214,8 @@ impl User {
 
         if cert.is_some() && (cert != Some(&cert_node)) {
             false
-        } else if cert == Some(&cert_node) {
-            false
+        // } else if cert == Some(&cert_node) {
+        //     false
         } else {
             self.certs.insert(domain.to_string(), cert_node);
             // #[cfg(not(test))]
@@ -224,8 +233,8 @@ impl User {
     fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
         let mut site_data = self.get_site_data(address, true);
 
-        if provider.is_some() {
-            site_data.add_cert_provider(provider.unwrap().to_string());
+        if let Some(provider) = provider {
+            site_data.add_cert_provider(provider.to_string());
         } else if site_data.get_cert_provider().is_none() {
             site_data.delete_cert_provider();
         }

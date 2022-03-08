@@ -1,4 +1,6 @@
 // tracker subfolder and IpPort implementation
+#![allow(unknown_lints)]
+#![allow(clippy::all)]
 #![allow(dead_code)]
 
 pub mod bencode;
