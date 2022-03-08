@@ -5,6 +5,7 @@ use chrono::{DateTime, Duration, Utc};
 use log::*;
 use zeronet_protocol::{PeerAddr as PeerAddress, ZeroConnection};
 
+#[derive(Clone)]
 pub struct Peer {
     address: PeerAddress,
     connection: Option<ZeroConnection>,
@@ -17,6 +18,60 @@ pub struct Peer {
     download_time: Duration,
     bad_files: usize,
     errors: usize,
+}
+
+impl Peer {
+    pub fn address(&self) -> &PeerAddress {
+        &self.address
+    }
+
+    pub fn connection(&self) -> Option<&ZeroConnection> {
+        self.connection.as_ref()
+    }
+
+    pub fn connection_mut(&mut self) -> Option<&mut ZeroConnection> {
+        self.connection.as_mut()
+    }
+
+    pub fn set_connection(&mut self, connection: ZeroConnection) {
+        self.connection = Some(connection);
+    }
+
+    pub fn reputation(&self) -> isize {
+        self.reputation
+    }
+
+    pub fn set_reputation(&mut self, reputation: isize) {
+        self.reputation = reputation;
+    }
+
+    pub fn time_found(&self) -> DateTime<Utc> {
+        self.time_found
+    }
+
+    pub fn set_time_found(&mut self, time_found: DateTime<Utc>) {
+        self.time_found = time_found;
+    }
+
+    pub fn time_added(&self) -> DateTime<Utc> {
+        self.time_added
+    }
+
+    pub fn set_time_added(&mut self, time_added: DateTime<Utc>) {
+        self.time_added = time_added;
+    }
+
+    pub fn time_response(&self) -> DateTime<Utc> {
+        self.time_response
+    }
+
+    pub fn set_time_response(&mut self, time_response: DateTime<Utc>) {
+        self.time_response = time_response;
+    }
+
+    pub fn last_content_json_update(&self) -> DateTime<Utc> {
+        self.last_content_json_update
+    }
 }
 
 impl Debug for Peer {

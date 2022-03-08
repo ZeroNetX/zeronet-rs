@@ -9,12 +9,16 @@ use std::{
 
 pub struct Site {
     pub address: Addr,
-    peers: HashMap<String, Peer>,
+    pub peers: HashMap<String, Peer>,
     pub settings: SiteSettings,
-    data_path: PathBuf,
+    pub data_path: PathBuf,
 }
 
+#[async_trait::async_trait]
 pub trait SiteIO {
+    fn site_path(&self) -> PathBuf;
+    async fn exists(&self) -> Result<bool, Error>;
+    async fn init_download(self) -> Result<bool, Error>;
     fn load_settings(address: &str) -> Result<SiteSettings, Error>;
     fn save_settings(&self) -> Result<(), Error>;
 }

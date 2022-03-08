@@ -9,11 +9,8 @@ pub trait Discovery {
     async fn discover(&self) -> Result<Vec<Peer>, Error>;
 }
 
-// impl From<IpPort> for PeerAddr {
-//     fn from(ip_port: IpPort) -> PeerAddr {
-//         PeerAddr {
-//             ip: ip_port.ip,
-//             port: ip_port.port,
-//         }
-//     }
-// }
+impl From<IpPort> for PeerAddr {
+    fn from(ip_port: IpPort) -> PeerAddr {
+        PeerAddr::parse(ip_port.to_string()).unwrap()
+    }
+}

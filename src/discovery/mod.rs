@@ -1,5 +1,5 @@
 pub mod tracker;
-use zeronet_protocol::PeerAddr;
+use zeronet_protocol::{address::ParseError, PeerAddr};
 
 use crate::{
     core::{discovery::Discovery, error::Error, peer::Peer, site::Site},
@@ -24,7 +24,7 @@ impl Discovery for Site {
                     None
                 }
             })
-            .collect::<Result<Vec<PeerAddr>, zeronet_protocol::address::ParseError>>()?
+            .collect::<Result<Vec<PeerAddr>, ParseError>>()?
             .into_iter()
             .map(|a| Peer::new(a))
             .collect();
