@@ -33,12 +33,12 @@ impl User {
     }
 
     fn get_site_keypair_from_seed(&self, seed: &str, index: Option<u32>) -> (String, String, u32) {
-        let index = if index.is_some() {
-            index.unwrap()
+        let index = if let Some(index) = index {
+            index
         } else {
             thread_rng().gen_range(0..29639936)
         };
-        let privkey = zeronet_cryptography::hd_privkey(&seed, index);
+        let privkey = zeronet_cryptography::hd_privkey(seed, index);
         let wif_privkey = zeronet_cryptography::privkey_to_wif(privkey);
         let address = zeronet_cryptography::privkey_to_pubkey(&wif_privkey).unwrap();
 
@@ -187,7 +187,7 @@ impl User {
                 }
                 return None;
             }
-            return None;
+            None
         });
 
         if auth_pair.is_none() {
@@ -204,14 +204,14 @@ impl User {
         let cert = self.certs.get(domain);
 
         if cert.is_some() && (cert != Some(&cert_node)) {
-            return false;
+            false
         } else if cert == Some(&cert_node) {
-            return false;
+            false
         } else {
             self.certs.insert(domain.to_string(), cert_node);
             // #[cfg(not(test))]
             // self.save();
-            return true;
+            true
         }
     }
 

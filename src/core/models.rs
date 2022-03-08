@@ -103,7 +103,7 @@ impl SiteData {
     }
 
     pub fn get_index(&self) -> Option<u32> {
-        self.index.clone()
+        self.index
     }
 
     pub fn get_cert_provider(&self) -> Option<String> {

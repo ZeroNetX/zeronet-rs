@@ -25,33 +25,25 @@ pub enum Error {
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Error {
-        match error {
-            _ => Error::FileNotFound,
-        }
+        Error::FileNotFound
     }
 }
 
 impl From<serde_json::Error> for Error {
     fn from(error: serde_json::Error) -> Error {
-        match error {
-            _ => Error::Deserialization(error),
-        }
+        Error::Deserialization(error)
     }
 }
 
 impl From<rmp_serde::encode::Error> for Error {
     fn from(error: rmp_serde::encode::Error) -> Error {
-        match error {
-            _ => Error::MsgPackEncoding,
-        }
+        Error::MsgPackEncoding
     }
 }
 
 impl From<rmp_serde::decode::Error> for Error {
     fn from(error: rmp_serde::decode::Error) -> Error {
-        match error {
-            _ => Error::MsgPackDecoding(error),
-        }
+        Error::MsgPackDecoding(error)
     }
 }
 

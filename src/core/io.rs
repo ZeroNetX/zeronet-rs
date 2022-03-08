@@ -10,7 +10,7 @@ pub trait SiteIO {
     fn content_path(&self) -> PathBuf;
     // async fn content(self) -> Result<Content, Error>;
     // async fn content_exists(&self) -> Result<bool, Error>;
-    async fn init_download(self) -> Result<bool, Error>;
+    async fn init_download(&mut self) -> Result<bool, Error>;
     async fn load_settings(address: &str) -> Result<SiteSettings, Error>;
     async fn save_settings(&self) -> Result<(), Error>;
 }

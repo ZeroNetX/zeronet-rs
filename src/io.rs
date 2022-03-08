@@ -1,18 +1,21 @@
 use std::{
     collections::HashMap,
-    fs::{self, OpenOptions},
-    io::{BufReader, Read, Write},
+    fs::OpenOptions,
+    io::{Read, Write},
     path::PathBuf,
     time::SystemTime,
 };
 
+use futures::future::join_all;
+use serde_bytes::ByteBuf;
 use tokio::{
-    fs::File,
+    fs::{self, File},
     io::{AsyncReadExt, AsyncWriteExt},
 };
+use zerucontent::Content;
 
 use crate::{
-    core::{error::*, io::*, models::*, site::*, user::*},
+    core::{error::*, io::*, models::*, peer::*, site::*, user::*},
     environment::{self, ENV},
     utils::atomic_write,
 };
@@ -21,20 +24,56 @@ use serde_json::json;
 use zeronet_protocol::templates;
 
 impl Site {
-    async fn download_file(&self, inner_path: String) -> Result<bool, Error> {
+    async fn download_file(
+        &self,
+        inner_path: String,
+        _peer: Option<Peer>,
+    ) -> Result<ByteBuf, Error> {
+        let path = &self.site_path().join(&inner_path);
+        if path.exists() {
+            let mut file = File::open(path).await?;
+            let mut buf = ByteBuf::new();
+            file.read_to_end(&mut buf).await?;
+            return Ok(buf);
+        }
         let req = json!(templates::GetFile {
             site: self.address(),
             inner_path: inner_path.clone(),
             location: 0,
             file_size: 0,
         });
+        //TODO!: Download from multiple peers
         let mut peer = self.peers.values().next().unwrap().clone();
         let message = peer.connection_mut().unwrap().request("getFile", req).await;
         let body: templates::GetFileResponse = message.unwrap().body().unwrap();
-
-        let mut file = File::create(&self.site_path().join(inner_path)).await?;
+        let parent = path.parent().unwrap();
+        if !parent.exists() {
+            fs::create_dir_all(parent).await?;
+        }
+        let mut file = File::create(path).await?;
         file.write_all(&body.body).await?;
-        Ok(true)
+        Ok(body.body)
+    }
+
+    async fn download_site_files(&self) -> Result<(), Error> {
+        let files = self.content().unwrap().files;
+        let mut tasks = Vec::new();
+        for (inner_path, _file) in files {
+            let task = self.download_file(inner_path, None);
+            tasks.push(task);
+        }
+        let includes = self.content().unwrap().includes;
+        for (inner_path, _file) in includes {
+            let task = self.download_file(inner_path, None);
+            tasks.push(task);
+        }
+        let mut res = join_all(tasks).await;
+        let errs = res.drain_filter(|res| res.is_ok()).collect::<Vec<_>>();
+        for err in errs {
+            error!("{:?}", err);
+        }
+
+        Ok(())
     }
 }
 
@@ -48,19 +87,29 @@ impl SiteIO for Site {
         self.site_path().join("content.json")
     }
 
-    async fn init_download(self) -> Result<bool, Error> {
+    async fn init_download(&mut self) -> Result<bool, Error> {
         if !&self.site_path().exists() {
-            fs::create_dir_all(&self.site_path())?;
+            fs::create_dir_all(self.site_path()).await?;
         }
         let content_exists = self.content_path().exists();
-        if !content_exists {
-            Self::download_file(&self, "content.json".into()).await?;
-            let res = Self::verify_content(&self).await;
-            return Ok(res);
+        let verified = if !content_exists {
+            let buf = Self::download_file(self, "content.json".into(), None).await?;
+            let content = Content::from_buf(buf).unwrap();
+            self.modify_content(content);
+            let res = Self::verify_content(self).await;
+            res
         } else {
-            let res = Self::verify_content(&self).await;
-            return Ok(res);
+            let buf = fs::read(self.content_path()).await?;
+            let buf = ByteBuf::from(buf);
+            let content = Content::from_buf(buf).unwrap();
+            self.modify_content(content);
+            let res = Self::verify_content(self).await;
+            res
+        };
+        if verified {
+            let _ = self.download_site_files().await;
         }
+        Ok(verified)
     }
 
     async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
@@ -69,7 +118,7 @@ impl SiteIO for Site {
         if !sites_file_path.exists() {
             let mut file = File::create(&sites_file_path).await?;
             let mut settings = SiteSettings::default();
-            if address == &ENV.homepage {
+            if address == ENV.homepage {
                 settings.permissions.push("ADMIN".to_string());
             }
             let site_file = SiteFile::default().from_site_settings(&settings);
@@ -107,8 +156,7 @@ impl SiteIO for Site {
                     print!("{}", e);
                 }
                 let site_file: SiteFile = res.unwrap();
-                let site_settings = site_file.site_settings();
-                site_settings
+                site_file.site_settings()
             };
 
             Ok(settings)
@@ -166,12 +214,12 @@ impl UserIO for User {
         let file_path = ENV.data_path.join("users.json");
         let save_user = || -> Result<bool, Error> {
             let file = File::open(&file_path)?;
-
+            use std::io::BufReader;
             let reader = BufReader::new(file);
 
             let mut users: HashMap<String, serde_json::Value> = serde_json::from_reader(reader)?;
 
-            if users.contains_key(&self.master_address) == false {
+            if !users.contains_key(&self.master_address) {
                 users.insert(self.master_address.clone(), json!({})); // Create if not exist
             }
 
@@ -182,7 +230,7 @@ impl UserIO for User {
             user["settings"] = json!(self.settings);
 
             let users_file_content_new = serde_json::to_string_pretty(&json!(users))?;
-            let users_file_bytes = fs::read(&file_path)?;
+            let users_file_bytes = std::fs::read(&file_path)?;
 
             let result = atomic_write(
                 &file_path,
@@ -195,7 +243,7 @@ impl UserIO for User {
 
         if let Err(err_msg) = save_user() {
             error!("Couldn't save user: {:?}", err_msg);
-            return Err(err_msg);
+            Err(err_msg)
         } else {
             debug!(
                 "Saved in {}s",

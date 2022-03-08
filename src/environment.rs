@@ -16,19 +16,11 @@ lazy_static! {
 }
 
 const TRACKERS: &[&str] = &[
-    "zero://192.168.1.105:1544",
-    "zero://38.39.233.117:15441",
-    "zero://125.123.63.229:26552",
-    "zero://149.248.37.249:13601",
-    "zero://211.125.90.79:11110",
-    "zero:/45.77.23.92:15555",
-    "zero://45.76.157.51:19355",
-    "zero://96.21.169.17:28969",
-    "zero://51.38.34.170:15656",
-    "zero://boot3rdez4rzn36x.onion:15441",
-    "http://tracker01.loveapp.com:6789/announce",
-    "http://open.acgnxtracker.com:80/announce",
-    "http://open.trackerlist.xyz:80/announce",
+    "udp://abufinzio.monocul.us:6969/announce",
+    "udp://tracker.0x.tf:6969/announce",
+    "udp://tracker.zerobytes.xyz:1337/announce",
+    "udp://vibe.sleepyinternetfun.xyz:1738/announce",
+    "udp://www.torrent.eu.org:451/announce",
 ];
 
 #[derive(Debug, Clone)]
@@ -207,7 +199,7 @@ pub fn get_env() -> Result<Environment, Error> {
     let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
     let env = Environment {
         version: VERSION.clone(),
-        rev: REV.clone(),
+        rev: *REV,
         data_path,
         broadcast_port,
         ui_ip: String::from(ui_ip),

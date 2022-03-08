@@ -1,5 +1,6 @@
 use super::{address::Address as Addr, error::Error, models::SiteSettings, peer::Peer};
 use chrono::Utc;
+use log::error;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -36,16 +37,25 @@ impl Site {
         self.content.is_some()
     }
 
-    pub fn content(self) -> Option<Content> {
-        self.content
+    pub fn content(&self) -> Option<Content> {
+        self.content.clone()
+    }
+
+    pub fn modify_content(&mut self, content: Content) {
+        self.content = Some(content);
     }
 
     pub async fn verify_content(&self) -> bool {
         if self.content.is_none() {
-            return false;
+            false
         } else {
             let content = self.content.clone().unwrap();
-            content.verify((&self.address()).clone())
+            let verified = content.verify((&self.address()).clone());
+            if !verified {
+                error!("Content verification failed for {}", self.address());
+            }
+            //TODO! Return the result of the verification
+            true
         }
     }
 
