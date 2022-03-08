@@ -6,25 +6,17 @@ use std::{
     path::PathBuf,
     str::FromStr,
 };
+use zerucontent::Content;
 
 pub struct Site {
-    pub address: Addr,
+    address: Addr,
     pub peers: HashMap<String, Peer>,
     pub settings: SiteSettings,
     pub data_path: PathBuf,
-}
-
-#[async_trait::async_trait]
-pub trait SiteIO {
-    fn site_path(&self) -> PathBuf;
-    async fn exists(&self) -> Result<bool, Error>;
-    async fn init_download(self) -> Result<bool, Error>;
-    fn load_settings(address: &str) -> Result<SiteSettings, Error>;
-    fn save_settings(&self) -> Result<(), Error>;
+    content: Option<Content>,
 }
 
 impl Site {
-    /// Create a new site with def settings
     pub fn new(address: &str, data_path: PathBuf) -> Result<Self, Error> {
         let mut settings = SiteSettings::default();
         Ok(Self {
@@ -32,7 +24,29 @@ impl Site {
             peers: HashMap::new(),
             data_path,
             settings,
+            content: None,
         })
+    }
+
+    pub fn address(&self) -> String {
+        self.address.address.clone()
+    }
+
+    fn content_exists(&self) -> bool {
+        self.content.is_some()
+    }
+
+    pub fn content(self) -> Option<Content> {
+        self.content
+    }
+
+    pub async fn verify_content(&self) -> bool {
+        if self.content.is_none() {
+            return false;
+        } else {
+            let content = self.content.clone().unwrap();
+            content.verify((&self.address()).clone())
+        }
     }
 
     // pub async fn download_content(&self, inner_path: String) -> bool {

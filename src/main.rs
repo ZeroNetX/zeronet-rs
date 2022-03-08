@@ -5,19 +5,11 @@ pub mod environment;
 pub mod io;
 pub mod utils;
 
-// use core::
-
 use environment::ENV;
 use serde_json::json;
 use zeronet_protocol::{templates, PeerAddr};
 
-use crate::core::{
-    discovery::Discovery,
-    error::Error,
-    peer::Peer,
-    site::{Site, SiteIO},
-    user::{User, UserIO},
-};
+use crate::core::{error::Error, io::*, peer::Peer, site::Site, user::User};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -30,7 +22,7 @@ async fn main() -> Result<(), Error> {
     // site.discover().await?;
     let mut connections = vec![];
     let mut peer = Peer::new(PeerAddr::IPV4([127, 0, 0, 1], 11917));
-    peer.connect();
+    let _ = peer.connect();
     connections.push(peer);
     // vec![];
     // for mut peer in peers {

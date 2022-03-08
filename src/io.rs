@@ -1,13 +1,18 @@
 use std::{
     collections::HashMap,
-    fs::{self, File, OpenOptions},
+    fs::{self, OpenOptions},
     io::{BufReader, Read, Write},
     path::PathBuf,
     time::SystemTime,
 };
 
+use tokio::{
+    fs::File,
+    io::{AsyncReadExt, AsyncWriteExt},
+};
+
 use crate::{
-    core::{error::*, models::*, site::*, user::*},
+    core::{error::*, io::*, models::*, site::*, user::*},
     environment::{self, ENV},
     utils::atomic_write,
 };
@@ -15,52 +20,54 @@ use log::*;
 use serde_json::json;
 use zeronet_protocol::templates;
 
+impl Site {
+    async fn download_file(&self, inner_path: String) -> Result<bool, Error> {
+        let req = json!(templates::GetFile {
+            site: self.address(),
+            inner_path: inner_path.clone(),
+            location: 0,
+            file_size: 0,
+        });
+        let mut peer = self.peers.values().next().unwrap().clone();
+        let message = peer.connection_mut().unwrap().request("getFile", req).await;
+        let body: templates::GetFileResponse = message.unwrap().body().unwrap();
+
+        let mut file = File::create(&self.site_path().join(inner_path)).await?;
+        file.write_all(&body.body).await?;
+        Ok(true)
+    }
+}
+
 #[async_trait::async_trait]
 impl SiteIO for Site {
     fn site_path(&self) -> PathBuf {
-        self.data_path.join(self.address.to_string())
+        self.data_path.join(self.address())
     }
 
-    async fn exists(&self) -> Result<bool, Error> {
-        if self.site_path().exists() {
-            let path = self.site_path().join("content.json");
-            if path.exists() {
-                Ok(true)
-            } else {
-                Ok(false)
-            }
-        } else {
-            Ok(false)
-        }
+    fn content_path(&self) -> PathBuf {
+        self.site_path().join("content.json")
     }
 
     async fn init_download(self) -> Result<bool, Error> {
-        let site_exists = self.exists().await?;
-        if !site_exists {
-            let req = json!(templates::GetFile {
-                site: self.address.to_string(),
-                inner_path: "content.json".to_string(),
-                location: 0,
-                file_size: 0,
-            });
-            let mut peer = self.peers.values().next().unwrap().clone();
-            let message = peer.connection_mut().unwrap().request("getFile", req).await;
-            println!("{:?}", message);
-            let body: templates::GetFileResponse = message.unwrap().body().unwrap();
-            if !&self.site_path().exists() {
-                fs::create_dir_all(&self.site_path())?;
-            }
-            let mut file = File::create(&self.site_path().join("content.json"))?;
-            file.write_all(&body.body)?;
+        if !&self.site_path().exists() {
+            fs::create_dir_all(&self.site_path())?;
         }
-        Ok(true)
+        let content_exists = self.content_path().exists();
+        if !content_exists {
+            Self::download_file(&self, "content.json".into()).await?;
+            let res = Self::verify_content(&self).await;
+            return Ok(res);
+        } else {
+            let res = Self::verify_content(&self).await;
+            return Ok(res);
+        }
     }
 
-    fn load_settings(address: &str) -> Result<SiteSettings, Error> {
+    async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
         let env = environment::get_env().unwrap();
         let sites_file_path = env.data_path.join("sites.json");
         if !sites_file_path.exists() {
-            let mut file = File::create(&sites_file_path)?;
+            let mut file = File::create(&sites_file_path).await?;
             let mut settings = SiteSettings::default();
             if address == &ENV.homepage {
                 settings.permissions.push("ADMIN".to_string());
@@ -72,7 +79,7 @@ impl SiteIO for Site {
                 }
             };
             let content = format!("{:#}", s);
-            file.write_all(content.as_bytes())?;
+            file.write_all(content.as_bytes()).await?;
             Ok(settings)
         } else {
             let mut sites_file = OpenOptions::new().read(true).open(&sites_file_path)?;
@@ -108,20 +115,20 @@ impl SiteIO for Site {
         }
     }
 
-    fn save_settings(&self) -> Result<(), Error> {
+    async fn save_settings(&self) -> Result<(), Error> {
         let env = environment::get_env().unwrap();
         let sites_file_path = env.data_path.join("sites.json");
 
-        let mut sites_file = File::open(sites_file_path)?;
+        let mut sites_file = File::open(sites_file_path).await?;
 
         let site_settings = self.settings.clone();
         let content: String = serde_json::to_string(&site_settings)?;
 
         let mut full_content = String::new();
-        sites_file.read_to_string(&mut full_content)?;
+        sites_file.read_to_string(&mut full_content).await?;
         let _settings: serde_json::Value = serde_json::from_str(&content)?;
 
-        write!(sites_file, "{}", content)?;
+        write!(sites_file.into_std().await, "{}", content)?;
         Ok(())
     }
 }
@@ -130,6 +137,7 @@ impl UserIO for User {
     type IOType = User;
 
     fn load() -> Result<Self::IOType, Error> {
+        use std::fs::File;
         let start_time = SystemTime::now();
         let file_path = ENV.data_path.join("users.json");
         if !file_path.exists() {
@@ -153,6 +161,7 @@ impl UserIO for User {
     }
 
     fn save(&self) -> Result<bool, Error> {
+        use std::fs::File;
         let start_time = SystemTime::now();
         let file_path = ENV.data_path.join("users.json");
         let save_user = || -> Result<bool, Error> {

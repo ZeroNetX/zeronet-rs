@@ -1,5 +1,7 @@
-use super::error::Error;
-use super::models::{AuthPair, Cert, SiteData};
+use super::{
+    error::Error,
+    models::{AuthPair, Cert, SiteData},
+};
 use log::*;
 use num_bigint::BigUint;
 use rand::{thread_rng, Rng};
@@ -15,12 +17,6 @@ pub struct User {
     pub sites: HashMap<String, SiteData>,
     pub certs: HashMap<String, Cert>,
     pub settings: HashMap<String, serde_json::Value>,
-}
-
-pub trait UserIO {
-    type IOType;
-    fn load() -> Result<Self::IOType, Error>;
-    fn save(&self) -> Result<bool, Error>;
 }
 
 impl User {
@@ -80,8 +76,8 @@ impl User {
             .with_index(address_id);
         self.sites.insert(address.to_string(), site_data);
 
-        #[cfg(not(test))]
-        self.save();
+        // #[cfg(not(test))]
+        // self.save();
 
         debug!(
             "Added new site: {} in {}s",
@@ -112,8 +108,8 @@ impl User {
 
     fn delete_site_data(&mut self, address: &str) {
         if self.sites.remove(address).is_some() {
-            #[cfg(not(test))]
-            self.save();
+            // #[cfg(not(test))]
+            // self.save();
 
             debug!("Deleted site: {}", address);
         }
@@ -121,8 +117,8 @@ impl User {
 
     fn set_site_settings(&mut self, address: &str, settings: serde_json::Value) -> SiteData {
         let site_data = self.get_site_data(address, true).set_settings(settings);
-        #[cfg(not(test))]
-        self.save();
+        // #[cfg(not(test))]
+        // self.save();
         site_data
     }
 
@@ -146,8 +142,8 @@ impl User {
         self.sites
             .insert(site_address.to_string(), site_data.clone());
 
-        #[cfg(not(test))]
-        self.save();
+        // #[cfg(not(test))]
+        // self.save();
         site_data
     }
     /// Get BIP32 address from site address
@@ -213,8 +209,8 @@ impl User {
             return false;
         } else {
             self.certs.insert(domain.to_string(), cert_node);
-            #[cfg(not(test))]
-            self.save();
+            // #[cfg(not(test))]
+            // self.save();
             return true;
         }
     }
@@ -235,7 +231,7 @@ impl User {
         }
 
         // #[cfg(not(test))]
-        self.save();
+        // self.save();
 
         site_data
     }
