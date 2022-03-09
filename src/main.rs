@@ -78,14 +78,34 @@ async fn main() -> Result<(), Error> {
     if !exists {
         download_site(&mut site).await?;
     } else {
+        add_peers_to_site(&mut site).await?;
         site.load_content().await?;
-        site.check_site_integrity().await?;
+        let mut peers_cons = vec![];
+        let peers = site.fetch_peers().await?;
+        println!("Found Peers : {:?}", peers);
+        for peer in peers {
+            let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
+            let res = peer.connect();
+            if let Ok(_) = res {
+                peers_cons.push(peer);
+            }
+        }
+        for mut con in peers_cons {
+            let res = Protocol::new(con.connection_mut().unwrap())
+                .handshake()
+                .await?;
+            println!("Ping Result : {:?} from Peer : {:?}", res, con.address());
+        }
+        // let modified = site.content().unwrap().modified;
+        // println!("{:?}", modified);
+        // site.fetch_changes(1421043090).await?;
+        // site.check_site_integrity().await?;
     }
 
     Ok(())
 }
 
-async fn download_site(site: &mut Site) -> Result<(), Error> {
+async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
     let peers = load_peers().await;
     let peers = peers
         .iter()
@@ -93,17 +113,24 @@ async fn download_site(site: &mut Site) -> Result<(), Error> {
         .collect::<Vec<_>>();
     for mut peer in peers {
         peer.connect()?;
-        let res = Protocol::new(peer.connection_mut().unwrap()).ping().await;
+        let res = Protocol::new(peer.connection_mut().unwrap())
+            .handshake()
+            .await;
         if let Err(e) = res {
             println!("Error : {:?}", e);
             let peer = peer.clone().address().to_string();
             println!("{}", peer);
         } else {
             let response = res?;
-            println!("Ping Result : {:?}", response);
-            // site.peers.insert(response.peer_id.clone(), peer);
+            // println!("Ping Result : {:?}", response);
+            site.peers.insert(response.peer_id.clone(), peer);
         }
     }
+    Ok(())
+}
+
+async fn download_site(site: &mut Site) -> Result<(), Error> {
+    add_peers_to_site(site).await?;
     println!("Downloading Site");
     site.init_download().await?;
     Ok(())

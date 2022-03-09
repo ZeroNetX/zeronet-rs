@@ -18,59 +18,120 @@ use zerucontent::Content;
 
 use crate::{
     core::{error::*, io::*, models::*, peer::*, site::*, user::*},
+    discovery::tracker::IpPort,
     environment::{self, ENV},
+    net::Protocol,
     utils::atomic_write,
 };
 use log::*;
 use serde_json::json;
-use zeronet_protocol::templates;
 
 impl Site {
-    async fn download_file(
-        &self,
-        inner_path: String,
-        _peer: Option<Peer>,
-    ) -> Result<ByteBuf, Error> {
+    async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error> {
         let path = &self.site_path().join(&inner_path);
         if path.exists() {
             let mut file = File::open(path).await?;
-            let mut buf = ByteBuf::new();
+            let mut buf = Vec::new();
             file.read_to_end(&mut buf).await?;
-            return Ok(buf);
+            let content: Content = serde_json::from_slice(&buf)?;
+            return Ok(content);
         }
-        let req = json!(templates::GetFile {
-            site: self.address(),
-            inner_path: inner_path.clone(),
-            location: 0,
-            file_size: 0,
-        });
-        //TODO!: Download from multiple peers
-        let mut peer = self.peers.values().next().unwrap().clone();
-        let message = peer.connection_mut().unwrap().request("getFile", req).await;
-        let body: templates::GetFileResponse = message.unwrap().body().unwrap();
+        Err(Error::Err("Content File Not Found".into()))
+    }
+
+    async fn download_file_from_peer(
+        &self,
+        inner_path: String,
+        peer: &mut Peer,
+    ) -> Result<bool, Error> {
+        let path = &self.site_path().join(&inner_path);
+        let message = Protocol::new(peer.connection_mut().unwrap())
+            .get_file(self.address(), inner_path)
+            .await?;
         let parent = path.parent().unwrap();
         if !parent.exists() {
             fs::create_dir_all(parent).await?;
         }
         let mut file = File::create(path).await?;
-        file.write_all(&body.body).await?;
-        Ok(body.body)
+        file.write_all(&message.body).await?;
+        Ok(true)
+    }
+
+    async fn download_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
+        let path = &self.site_path().join(&inner_path);
+        if path.exists() {
+            let mut file = File::open(path).await?;
+            let mut buf = Vec::new();
+            file.read_to_end(&mut buf).await?;
+            return Ok(true);
+        }
+        //TODO!: Download from multiple peers
+        let mut peer = self.peers.values().next().unwrap().clone();
+        Self::download_file_from_peer(self, inner_path, &mut peer).await
     }
 
     async fn download_site_files(&self) -> Result<(), Error> {
         let files = self.content().unwrap().files;
         let mut tasks = Vec::new();
+        let mut inner_paths = Vec::new();
         for (inner_path, _file) in files {
+            inner_paths.push(inner_path.clone());
             let task = self.download_file(inner_path, None);
             tasks.push(task);
         }
         let includes = self.content().unwrap().includes;
         for (inner_path, _file) in includes {
+            inner_paths.push(inner_path.clone());
+            let task = self.download_file(inner_path, None);
+            tasks.push(task);
+        }
+        //TODO!: Other client may not have an up-to-date site files
+        let user_files = self.fetch_changes(1421043090).await?;
+        //TODO!: Check for storage Permission
+        let mut user_data_files = Vec::new();
+        for (inner_path, _file) in user_files {
+            if inner_paths.contains(&inner_path) {
+                continue;
+            }
+            user_data_files.push(inner_path.clone());
             let task = self.download_file(inner_path, None);
             tasks.push(task);
         }
         let mut res = join_all(tasks).await;
-        let errs = res.drain_filter(|res| res.is_ok()).collect::<Vec<_>>();
+        let errs = res.drain_filter(|res| !res.is_ok()).collect::<Vec<_>>();
+        for err in errs {
+            error!("{:?}", err);
+        }
+
+        let user_data = user_data_files
+            .iter()
+            .map(|path| {
+                let content = self.load_content_from_path(path.clone());
+                content
+            })
+            .collect::<Vec<_>>();
+        let mut content_res = join_all(user_data).await;
+        let errs = content_res
+            .drain_filter(|res| !res.is_ok())
+            .collect::<Vec<_>>();
+        for err in errs {
+            error!("{:?}", err.err());
+        }
+        let mut files = vec![];
+        content_res.iter_mut().for_each(|content| {
+            let content = content.as_ref().unwrap();
+            let path = Path::new(&content.inner_path);
+            if let Some(parent) = path.parent() {
+                let files_inner = content.files.clone();
+                for (path, _file) in files_inner {
+                    files.push(
+                        self.download_file(parent.join(path).to_str().unwrap().to_owned(), None),
+                    );
+                }
+            }
+        });
+        let mut res = join_all(files).await;
+        let errs = res.drain_filter(|res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
             error!("{:?}", err);
         }
@@ -117,6 +178,40 @@ impl Site {
             return Err(Error::Err("Site integrity check failed".into()));
         }
         Ok(())
+    }
+
+    pub async fn fetch_changes(&self, since: usize) -> Result<HashMap<String, usize>, Error> {
+        //TODO!: Download from multiple peers
+        let mut peer = self.peers.values().next().unwrap().clone();
+        let message = Protocol::new(peer.connection_mut().unwrap())
+            .list_modified(self.address(), since)
+            .await?;
+        let changes = message.modified_files;
+        Ok(changes)
+    }
+
+    pub async fn get_peers(&self) -> Result<Vec<Peer>, Error> {
+        let mut peers = Vec::new();
+        for peer in self.peers.values() {
+            peers.push(peer.clone());
+        }
+        Ok(peers)
+    }
+
+    pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
+        let addr = (&self.address()).clone();
+        let mut peer = self.peers.values().next().unwrap().clone();
+        let res = Protocol::new((peer.connection_mut()).unwrap())
+            .pex(addr.clone())
+            .await?
+            .peers
+            .iter()
+            .map(|bytes| {
+                let pair = IpPort::from_bytes(&bytes.to_vec());
+                pair.first().unwrap().to_string()
+            })
+            .collect::<Vec<_>>();
+        Ok(res)
     }
 }
 

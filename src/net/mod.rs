@@ -2,11 +2,7 @@ pub mod builders;
 
 use serde::Serialize;
 use serde_json::json;
-use zeronet_protocol::{
-    message::Response,
-    templates::{GetFileResponse, Handshake, PingResponse, StreamFileResponse},
-    ZeroConnection,
-};
+use zeronet_protocol::{message::Response, templates::*, ZeroConnection};
 
 use crate::core::error::Error;
 
@@ -56,6 +52,7 @@ impl<'a> Protocol<'a> {
         site: String,
         inner_path: String,
     ) -> Result<GetFileResponse, Error> {
+        //TODO!: Remove default values from builder, file_size and location
         let builder = build_get_file(site, inner_path, 0, 0);
         let res = self.invoke_with_builder(builder).await?;
         let body: GetFileResponse = res.body()?;
@@ -68,9 +65,30 @@ impl<'a> Protocol<'a> {
         site: String,
         inner_path: String,
     ) -> Result<StreamFileResponse, Error> {
+        //TODO!: Remove default values from builder, size
         let builder = build_stream_file(site, inner_path, 0);
         let res = self.invoke_with_builder(builder).await?;
         let body: StreamFileResponse = res.body()?;
+        Ok(body)
+    }
+
+    ///#listModified
+    pub async fn list_modified(
+        &mut self,
+        site: String,
+        since: usize,
+    ) -> Result<ListModifiedResponse, Error> {
+        let builder = build_list_modified(site, since);
+        let res = self.invoke_with_builder(builder).await?;
+        let body: ListModifiedResponse = res.body()?;
+        Ok(body)
+    }
+
+    ///#pex
+    pub async fn pex(&mut self, site: String) -> Result<PexResponse, Error> {
+        let builder = build_pex(site, 10);
+        let res = self.invoke_with_builder(builder).await?;
+        let body: PexResponse = res.body()?;
         Ok(body)
     }
 }

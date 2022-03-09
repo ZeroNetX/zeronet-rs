@@ -24,7 +24,7 @@ pub struct IpPort {
 
 impl IpPort {
     // takes in byte string of ip:port pairs and parses them
-    fn from_bytes(bytes: &[u8]) -> Vec<Self> {
+    pub fn from_bytes(bytes: &[u8]) -> Vec<Self> {
         let mut peers: Vec<IpPort> = vec![];
         if bytes.len() % 6 != 0 {
             return peers;
