@@ -1340,6 +1340,7 @@ name = "zeronet"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "base64",
  "bincode",
  "bitcoin 0.27.1",
  "chrono",

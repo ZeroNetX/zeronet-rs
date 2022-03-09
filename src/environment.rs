@@ -2,7 +2,7 @@ use clap::{Arg, Command};
 use lazy_static::lazy_static;
 use std::{env::current_dir, fs, path::PathBuf, str::FromStr};
 
-use crate::core::error::Error;
+use crate::{core::error::Error, utils::gen_peer_id};
 
 lazy_static! {
     pub static ref ENV: Environment = {
@@ -11,8 +11,8 @@ lazy_static! {
         };
         panic!("Could not get environment variables");
     };
-    pub static ref VERSION: String = String::from("0.0.1");
-    pub static ref REV: usize = 4560;
+    pub static ref VERSION: String = String::from("0.8.0");
+    pub static ref REV: usize = 4800;
 }
 
 const TRACKERS: &[&str] = &[
@@ -27,6 +27,7 @@ const TRACKERS: &[&str] = &[
 pub struct Environment {
     pub version: String,
     pub rev: usize,
+    pub peer_id: String,
     pub data_path: PathBuf,
     pub broadcast_port: usize,
     pub ui_ip: String,
@@ -40,7 +41,7 @@ pub struct Environment {
 pub fn get_env() -> Result<Environment, Error> {
     let current_dir = current_dir()?;
     let def_data_path = current_dir.join("data").to_str().unwrap().to_string();
-    let matches = Command::new("zerunet")
+    let matches = Command::new("zeronet")
         .version((*VERSION).as_str())
         .author("PramUkesh <pramukesh@zeroid.bit>")
         .about("ZeroNet implementation written in Rust.")
@@ -200,6 +201,7 @@ pub fn get_env() -> Result<Environment, Error> {
     let env = Environment {
         version: VERSION.clone(),
         rev: *REV,
+        peer_id: gen_peer_id(),
         data_path,
         broadcast_port,
         ui_ip: String::from(ui_ip),

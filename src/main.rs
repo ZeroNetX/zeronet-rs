@@ -5,13 +5,16 @@ pub mod core;
 pub mod discovery;
 pub mod environment;
 pub mod io;
+pub mod net;
 pub mod utils;
 
-use crate::core::{discovery::Discovery, peer::Peer};
+use crate::{
+    core::{discovery::Discovery, peer::Peer},
+    net::Protocol,
+};
 
 use environment::ENV;
-use serde_json::json;
-use zeronet_protocol::{templates, PeerAddr};
+use zeronet_protocol::PeerAddr;
 
 use crate::core::{error::Error, io::*, site::Site, user::User};
 
@@ -78,28 +81,19 @@ async fn main() -> Result<(), Error> {
         .collect::<Vec<_>>();
     for mut peer in peers {
         peer.connect()?;
-        let request = zeronet_protocol::templates::Handshake::new();
-        let body = json!(request);
-        // println!("{}", body);
-
-        let res = peer
-            .connection_mut()
-            .unwrap()
-            .request("handshake", body)
-            .await;
-        // println!("{:?}", res);
+        let res = Protocol::new(peer.connection_mut().unwrap()).ping().await;
         if let Err(e) = res {
             println!("Error : {:?}", e);
             let peer = peer.clone().address().to_string();
             println!("{}", peer);
         } else {
-            let response: templates::Handshake = res.unwrap().body()?;
-            println!("{:?}", response);
-            site.peers.insert(response.peer_id.clone(), peer);
+            let response = res?;
+            println!("Ping Result : {:?}", response);
+            // site.peers.insert(response.peer_id.clone(), peer);
         }
     }
-    println!("Downloading Site");
-    site.init_download().await?;
+    // println!("Downloading Site");
+    // site.init_download().await?;
     Ok(())
 }
 

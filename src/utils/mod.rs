@@ -30,3 +30,9 @@ pub fn atomic_write(
     }
     Ok(true)
 }
+
+pub fn gen_peer_id() -> String {
+    let vec: Vec<u8> = (0..12).map(|_| rand::random::<u8>()).collect();
+    let peer_id = format!("-UT3530-{}", base64::encode(&vec));
+    peer_id
+}
