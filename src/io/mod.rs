@@ -2,12 +2,14 @@ use std::{
     collections::HashMap,
     fs::OpenOptions,
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::SystemTime,
 };
 
 use futures::future::join_all;
 use serde_bytes::ByteBuf;
+use sha1::Digest;
+use sha2::Sha512;
 use tokio::{
     fs::{self, File},
     io::{AsyncReadExt, AsyncWriteExt},
@@ -75,6 +77,47 @@ impl Site {
 
         Ok(())
     }
+
+    pub async fn load_content(&mut self) -> Result<bool, Error> {
+        let buf = fs::read(self.content_path()).await?;
+        let buf = ByteBuf::from(buf);
+        let content = Content::from_buf(buf).unwrap();
+        self.modify_content(content);
+        let res = Self::verify_content(self).await;
+        Ok(res)
+    }
+
+    async fn check_file_integrity(path: impl AsRef<Path>, hash_str: String) -> Result<(), Error> {
+        let mut file = File::open(path).await?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf).await?;
+        let digest = Sha512::digest(buf);
+        let hash = format!("{:x}", digest)[..64].to_string();
+        if hash_str != hash {
+            return Err(Error::Err("File integrity check failed".into()));
+        }
+        Ok(())
+    }
+
+    pub async fn check_site_integrity(&self) -> Result<(), Error> {
+        let content = self.content().unwrap();
+        let files = content.files;
+        let mut tasks = Vec::new();
+        for (inner_path, file) in files {
+            let hash = file.sha512.clone();
+            let task = Self::check_file_integrity(self.site_path().join(inner_path), hash);
+            tasks.push(task);
+        }
+        let mut res = join_all(tasks).await;
+        let errs = res.drain_filter(|res| res.is_err()).collect::<Vec<_>>();
+        for err in &errs {
+            error!("{:?}", err);
+        }
+        if errs.len() > 0 {
+            return Err(Error::Err("Site integrity check failed".into()));
+        }
+        Ok(())
+    }
 }
 
 #[async_trait::async_trait]
@@ -92,20 +135,10 @@ impl SiteIO for Site {
             fs::create_dir_all(self.site_path()).await?;
         }
         let content_exists = self.content_path().exists();
-        let verified = if !content_exists {
-            let buf = Self::download_file(self, "content.json".into(), None).await?;
-            let content = Content::from_buf(buf).unwrap();
-            self.modify_content(content);
-            let res = Self::verify_content(self).await;
-            res
-        } else {
-            let buf = fs::read(self.content_path()).await?;
-            let buf = ByteBuf::from(buf);
-            let content = Content::from_buf(buf).unwrap();
-            self.modify_content(content);
-            let res = Self::verify_content(self).await;
-            res
-        };
+        if !content_exists {
+            Self::download_file(self, "content.json".into(), None).await?;
+        }
+        let verified = Self::load_content(&mut self).await?;
         if verified {
             let _ = self.download_site_files().await;
         }

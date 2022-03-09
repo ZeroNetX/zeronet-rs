@@ -74,6 +74,18 @@ async fn main() -> Result<(), Error> {
     let site = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
     println!("Loading Site : {site}");
     let mut site = Site::new(site, (*ENV).data_path.clone())?;
+    let exists = site.content_path().exists();
+    if !exists {
+        download_site(&mut site).await?;
+    } else {
+        site.load_content().await?;
+        site.check_site_integrity().await?;
+    }
+
+    Ok(())
+}
+
+async fn download_site(site: &mut Site) -> Result<(), Error> {
     let peers = load_peers().await;
     let peers = peers
         .iter()
@@ -92,8 +104,8 @@ async fn main() -> Result<(), Error> {
             // site.peers.insert(response.peer_id.clone(), peer);
         }
     }
-    // println!("Downloading Site");
-    // site.init_download().await?;
+    println!("Downloading Site");
+    site.init_download().await?;
     Ok(())
 }
 
