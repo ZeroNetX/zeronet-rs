@@ -55,7 +55,14 @@ pub struct Environment {
 fn get_matches() -> ArgMatches {
     let sub_commands = (&*SUB_CMDS)
         .iter()
-        .map(|cmd| Command::new(cmd))
+        .map(|cmd| {
+            Command::new(cmd).arg(
+                Arg::new("site")
+                    .short('s')
+                    .default_value("15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk")
+                    .required(false),
+            )
+        })
         .collect::<Vec<_>>();
 
     Command::new("zeronet")

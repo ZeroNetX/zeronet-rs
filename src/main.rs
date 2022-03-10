@@ -25,8 +25,8 @@ async fn main() -> Result<(), Error> {
     let _user = User::load()?;
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
-        let site = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
-        let mut site = Site::new(site, (*ENV).data_path.clone())?;
+        let site = _args.values_of("site").unwrap().into_iter().next().unwrap();
+        let mut site = Site::new(&site, (*ENV).data_path.clone())?;
         match cmd {
             "siteDownload" => download_site(&mut site).await?,
             "siteFindPeers" => find_peers(&mut site).await?,
