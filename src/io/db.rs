@@ -305,7 +305,6 @@ impl DbManager {
                     continue;
                 }
             }
-
             let mut import_cols = vec![];
             let use_import_cols = import_col.is_some();
             if let Some(cols) = import_col {
@@ -313,15 +312,17 @@ impl DbManager {
                     import_cols.push(col);
                 }
             }
+            let mut replacement_cols = vec![];
             let mut replacements = vec![];
             if let Some(replaces) = replaces {
                 for (col_name, replacements_map) in replaces {
                     for (key, value) in replacements_map {
-                        replacements.push((col_name.clone(), key.clone(), value.clone()));
+                        replacement_cols.push(col_name.clone());
+                        replacements.push((key.clone(), value.clone()));
                     }
                 }
             }
-            //[{"topics":"value"}]
+            //TODO: Simplify below code
             if let Value::Array(object) = value {
                 for value in object {
                     let mut column_keys = vec![];
@@ -331,10 +332,22 @@ impl DbManager {
                             if use_import_cols && !import_cols.contains(key) {
                                 continue;
                             }
-                            column_keys.push((&*key).to_string());
+                            let key = (&*key).to_string();
+                            let mut need_replacement = false;
+                            let mut replacement_idx = 255;
+                            if replacement_cols.contains(&key) {
+                                need_replacement = true;
+                                replacement_idx =
+                                    replacement_cols.iter().position(|x| x == &key).unwrap();
+                            }
+                            column_keys.push(key);
                             if let Value::String(value) = value {
                                 //TODO!: Do we need to escape the "(" and ")" ?
-                                let value = value.replace('\'', "''");
+                                let mut value = value.replace('\'', "''");
+                                if need_replacement {
+                                    let rep_vec = replacements.get(replacement_idx).unwrap();
+                                    value = value.replace(&rep_vec.0, &rep_vec.1);
+                                }
                                 values.push(format!("'{}'", value));
                             } else if let Value::Number(value) = value {
                                 values.push(format!("{}", value));
@@ -360,50 +373,105 @@ impl DbManager {
                     // let mut values = format!("VALUES (");
                     if let Some(key_column_name) = &key_col {
                         if let Some(column_name) = &value_col {
-                            // continue;
                             let key_col = key_column_name.clone();
-                            let value_str = key.clone();
+                            let mut value_str = key.clone();
+                            let mut need_replacement = false;
+                            let mut replacement_idx = 255;
+                            if replacement_cols.contains(&key_col) {
+                                need_replacement = true;
+                                replacement_idx =
+                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
+                            }
                             column_keys.push(key_col);
+                            if need_replacement {
+                                let rep_vec = replacements.get(replacement_idx).unwrap();
+                                value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
+                            }
                             values.push(format!("'{}'", value_str));
                             let key_col = column_name.clone();
+                            let mut need_replacement = false;
+                            let mut replacement_idx = 255;
+                            if replacement_cols.contains(&key_col) {
+                                need_replacement = true;
+                                replacement_idx =
+                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
+                            }
                             column_keys.push(key_col);
                             if let Value::String(value) = value {
                                 //TODO!: Do we need to escape the "(" and ")" ?
-                                let value = value.replace('\'', "''");
+                                let mut value = value.replace('\'', "''");
+                                if need_replacement {
+                                    let rep_vec = replacements.get(replacement_idx).unwrap();
+                                    value = value.replace(&rep_vec.0, &rep_vec.1);
+                                }
                                 values.push(format!("'{}'", value));
                             } else if let Value::Number(value) = value {
                                 values.push(format!("{}", value));
                             }
                         } else {
                             let key_col = key_column_name.clone();
-                            let value_str = key.clone();
+                            let mut value_str = key.clone();
+                            let mut need_replacement = false;
+                            let mut replacement_idx = 255;
+                            if replacement_cols.contains(&key_col) {
+                                need_replacement = true;
+                                replacement_idx =
+                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
+                            }
                             column_keys.push(key_col);
+                            if need_replacement {
+                                let rep_vec = replacements.get(replacement_idx).unwrap();
+                                value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
+                            }
                             values.push(format!("'{}'", value_str));
                             if let Value::Object(value) = value {
-                                for (key, value) in value {
-                                    if use_import_cols && !import_cols.contains(key) {
+                                for (key_col, value) in value {
+                                    if use_import_cols && !import_cols.contains(key_col) {
                                         continue;
                                     }
-                                    column_keys.push((*key).to_string());
+                                    let mut need_replacement = false;
+                                    let mut replacement_idx = 255;
+                                    if replacement_cols.contains(key_col) {
+                                        need_replacement = true;
+                                        replacement_idx = replacement_cols
+                                            .iter()
+                                            .position(|x| x == key_col)
+                                            .unwrap();
+                                    }
+                                    column_keys.push(key_col.to_string());
                                     if let Value::String(value) = value {
                                         //TODO!: Do we need to escape the "(" and ")" ?
-                                        let value = value.replace('\'', "''");
+                                        let mut value = value.replace('\'', "''");
+                                        if need_replacement {
+                                            let rep_vec =
+                                                replacements.get(replacement_idx).unwrap();
+                                            value = value.replace(&rep_vec.0, &rep_vec.1);
+                                        }
                                         values.push(format!("'{}'", value));
                                     } else if let Value::Number(value) = value {
-                                        // stmt.push(&format!("{}", key));
                                         values.push(format!("{}", value));
                                     }
                                 }
                             }
                         }
                     } else {
-                        column_keys.push((*key).to_string());
+                        let mut need_replacement = false;
+                        let mut replacement_idx = 255;
+                        if replacement_cols.contains(key) {
+                            need_replacement = true;
+                            replacement_idx =
+                                replacement_cols.iter().position(|x| x == key).unwrap();
+                        }
+                        column_keys.push(key.to_string());
                         if let Value::String(value) = value {
                             //TODO!: Do we need to escape the "(" and ")" ?
-                            let value = value.replace('\'', "''");
+                            let mut value = value.replace('\'', "''");
+                            if need_replacement {
+                                let rep_vec = replacements.get(replacement_idx).unwrap();
+                                value = value.replace(&rep_vec.0, &rep_vec.1);
+                            }
                             values.push(format!("'{}'", value));
                         } else if let Value::Number(value) = value {
-                            // stmt.push(&format!("{}", key));
                             values.push(format!("{}", value));
                         }
                     }
@@ -422,7 +490,7 @@ impl DbManager {
                     // println!("{:?}", _res);
                 }
             } else {
-                unreachable!();
+                unreachable!("Please File a Bug Request");
             }
         }
     }
