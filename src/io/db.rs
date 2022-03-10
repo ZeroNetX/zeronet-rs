@@ -1,8 +1,6 @@
 use crate::environment::ENV;
 use async_recursion::async_recursion;
 use log::debug;
-// use diesel::sql_types::Integer;
-// use diesel::{prelude::*, sql_query, QueryableByName};
 use regex::Regex;
 use rusqlite::{params, Connection};
 use serde_json::Value;
@@ -15,9 +13,14 @@ use tokio::fs;
 use super::schema::{DBSchema, Table, ToTable};
 
 pub struct DbManager {
-    // site_name -> Db
     db: HashMap<String, Connection>,
     pub schema: HashMap<String, DBSchema>,
+}
+
+impl Default for DbManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DbManager {
@@ -52,7 +55,7 @@ impl DbManager {
             let mut schema: DBSchema = serde_json::from_str(&schema_str).unwrap();
             let version = schema.version;
             let mut table_names = vec![];
-            for (table_name, _) in &schema.tables {
+            for table_name in schema.tables.keys() {
                 table_names.push(table_name.clone());
             }
             // println!("{:?}", table_names);
@@ -87,7 +90,7 @@ impl DbManager {
     }
 
     pub fn def_keyvalue_table() -> Table {
-        let table = Table {
+        Table {
             cols: vec![
                 (
                     "keyvalue_id".to_string(),
@@ -99,68 +102,55 @@ impl DbManager {
             ],
             indexes: vec!["CREATE UNIQUE INDEX key_id ON keyvalue(json_id, key)".to_string()],
             schema_changed: 1,
-        };
-        table
+        }
     }
 
     pub fn def_json_table(version: usize) -> Table {
-        let table = match version {
-            1 => {
-                let table = Table {
-                    cols: vec![
-                        (
-                            "json_id".to_string(),
-                            "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
-                        ),
-                        ("path".to_string(), "VARCHAR(255)".to_string()),
-                    ],
-                    indexes: vec!["CREATE UNIQUE INDEX path ON json(path)".to_string()],
-                    schema_changed: 1,
-                };
-                table
-            }
-            2 => {
-                let table = Table {
-                    cols: vec![
-                        (
-                            "json_id".to_string(),
-                            "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
-                        ),
-                        ("directory".to_string(), "VARCHAR(255)".to_string()),
-                        ("file_name".to_string(), "VARCHAR(255)".to_string()),
-                    ],
-                    indexes: vec![
-                        "CREATE UNIQUE INDEX path ON json(directory, file_name)".to_string()
-                    ],
-                    schema_changed: 1,
-                };
-                table
-            }
-            3 => {
-                let table = Table {
-                    cols: vec![
-                        (
-                            "json_id".to_string(),
-                            "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
-                        ),
-                        ("site".to_string(), "VARCHAR(255)".to_string()),
-                        ("directory".to_string(), "VARCHAR(255)".to_string()),
-                        ("file_name".to_string(), "VARCHAR(255)".to_string()),
-                    ],
-                    indexes: vec![
-                        "CREATE UNIQUE INDEX path ON json(directory, site, file_name)".to_string(),
-                    ],
-                    schema_changed: 1,
-                };
-                table
-            }
+        match version {
+            1 => Table {
+                cols: vec![
+                    (
+                        "json_id".to_string(),
+                        "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
+                    ),
+                    ("path".to_string(), "VARCHAR(255)".to_string()),
+                ],
+                indexes: vec!["CREATE UNIQUE INDEX path ON json(path)".to_string()],
+                schema_changed: 1,
+            },
+            2 => Table {
+                cols: vec![
+                    (
+                        "json_id".to_string(),
+                        "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
+                    ),
+                    ("directory".to_string(), "VARCHAR(255)".to_string()),
+                    ("file_name".to_string(), "VARCHAR(255)".to_string()),
+                ],
+                indexes: vec!["CREATE UNIQUE INDEX path ON json(directory, file_name)".to_string()],
+                schema_changed: 1,
+            },
+            3 => Table {
+                cols: vec![
+                    (
+                        "json_id".to_string(),
+                        "INTEGER PRIMARY KEY AUTOINCREMENT".to_string(),
+                    ),
+                    ("site".to_string(), "VARCHAR(255)".to_string()),
+                    ("directory".to_string(), "VARCHAR(255)".to_string()),
+                    ("file_name".to_string(), "VARCHAR(255)".to_string()),
+                ],
+                indexes: vec![
+                    "CREATE UNIQUE INDEX path ON json(directory, site, file_name)".to_string(),
+                ],
+                schema_changed: 1,
+            },
             _ => unreachable!(),
-        };
-        table
+        }
     }
 
     pub fn get_db(&mut self, site_name: &str) -> Option<&mut Connection> {
-        self.db.get_mut(site_name).map(|db| db)
+        self.db.get_mut(site_name)
     }
 }
 
@@ -176,8 +166,8 @@ impl DbManager {
         let paths = Self::load_entries(db_dir, None).await;
         // println!("{:?}", paths);
         let mut regexes = vec![];
-        for (regex_str, _map) in &maps {
-            let regex = Regex::new(&regex_str).unwrap();
+        for regex_str in maps.keys() {
+            let regex = Regex::new(regex_str).unwrap();
             regexes.push((regex_str, regex));
         }
         let mut handlers = vec![];
@@ -218,19 +208,19 @@ impl DbManager {
         has_custom_table: bool,
         path_str: &str,
         site: &str,
-        to_json_table: &Vec<String>,
+        to_json_table: &[String],
         json_content: &HashMap<String, Value>,
         _conn: &mut Connection,
     ) -> i64 {
         // println!("{:?}", json_content);
         let (mut json_statement, mut values, select_statement) = match version {
             1 => (
-                format!("path"),
+                "path".to_string(),
                 format!("'{}'", path_str),
                 format!("path = '{}'", path_str),
             ),
             2 => {
-                let mut v = path_str.split("/").collect::<Vec<&str>>();
+                let mut v = path_str.split('/').collect::<Vec<&str>>();
                 let (directory, file_name) = if v.len() == 2 {
                     (v[0].to_owned(), v[1].to_owned())
                 } else {
@@ -240,7 +230,7 @@ impl DbManager {
                     (directory, file_name)
                 };
                 (
-                    format!("directory, file_name"),
+                    "directory, file_name".to_string(),
                     format!("'{}', '{}'", directory, file_name),
                     format!(
                         "directory = '{}' AND file_name = '{}'",
@@ -249,7 +239,7 @@ impl DbManager {
                 )
             }
             3 => {
-                let mut v = path_str.split("/").collect::<Vec<&str>>();
+                let mut v = path_str.split('/').collect::<Vec<&str>>();
                 let (directory, file_name) = if v.len() == 2 {
                     (v[0].to_owned(), v[1].to_owned())
                 } else {
@@ -259,7 +249,7 @@ impl DbManager {
                     (directory, file_name)
                 };
                 (
-                    format!("site, directory, file_name"),
+                    "site, directory, file_name".to_string(),
                     format!("'{}', '{}', '{}'", site, directory, file_name),
                     format!(
                         "site = '{}' AND directory = '{}' AND file_name = '{}'",
@@ -275,7 +265,7 @@ impl DbManager {
                 json_statement.push_str(&key);
                 let value = json_content.get(&*table).unwrap();
                 if let Value::String(value) = value {
-                    let value = value.replace("'", "''");
+                    let value = value.replace('\'', "''");
                     values.push_str(&format!(", '{}'", value));
                 } else if let Value::Number(value) = value {
                     values.push_str(&format!(", {}", value));
@@ -284,13 +274,7 @@ impl DbManager {
         }
         let json_statement = format!("INSERT INTO json ({}) VALUES ({})", json_statement, values);
         let select_statement = format!("SELECT json_id FROM json WHERE ({})", select_statement);
-        let _insert;
-        let result = _conn.execute(&json_statement, params![]);
-        if let Ok(_) = result {
-            _insert = true;
-        } else {
-            _insert = false;
-        }
+        let _result = _conn.execute(&json_statement, params![]);
         let mut stmt = (&*_conn).prepare(&select_statement).unwrap();
         let mut rows = stmt.query([]).unwrap();
         let a = rows.next().unwrap();
@@ -298,7 +282,7 @@ impl DbManager {
     }
 
     fn handle_to_table_map(
-        to_table: &Vec<ToTable>,
+        to_table: &[ToTable],
         json_id: i64,
         content: &HashMap<String, Value>,
         _conn: &Connection,
@@ -317,7 +301,7 @@ impl DbManager {
                 }
             }
             if let Value::Object(a) = value {
-                if a.len() == 0 {
+                if a.is_empty() {
                     continue;
                 }
             }
@@ -344,13 +328,13 @@ impl DbManager {
                     let mut values = vec![];
                     if let Value::Object(obj) = value {
                         for (key, value) in obj {
-                            if use_import_cols && !import_cols.contains(&key) {
+                            if use_import_cols && !import_cols.contains(key) {
                                 continue;
                             }
                             column_keys.push((&*key).to_string());
                             if let Value::String(value) = value {
                                 //TODO!: Do we need to escape the "(" and ")" ?
-                                let value = value.replace("'", "''");
+                                let value = value.replace('\'', "''");
                                 values.push(format!("'{}'", value));
                             } else if let Value::Number(value) = value {
                                 values.push(format!("{}", value));
@@ -368,83 +352,81 @@ impl DbManager {
                     //TODO!: Handle Result
                     let _res = _conn.execute(&stmt, []);
                 }
-            } else {
-                if let Value::Object(obj) = value {
-                    for (key, value) in obj {
-                        let mut column_keys = vec![];
-                        let mut values = vec![];
-                        // let mut stmt = format!("INSERT INTO {} (", table);
-                        // let mut values = format!("VALUES (");
-                        if let Some(key_column_name) = &key_col {
-                            if let Some(column_name) = &value_col {
-                                // continue;
-                                let key_col = key_column_name.clone();
-                                let value_str = key.clone();
-                                column_keys.push(key_col);
-                                values.push(format!("'{}'", value_str));
-                                let key_col = column_name.clone();
-                                column_keys.push(key_col);
-                                if let Value::String(value) = value {
-                                    //TODO!: Do we need to escape the "(" and ")" ?
-                                    let value = value.replace("'", "''");
-                                    values.push(format!("'{}'", value));
-                                } else if let Value::Number(value) = value {
-                                    values.push(format!("{}", value));
-                                }
-                            } else {
-                                let key_col = key_column_name.clone();
-                                let value_str = key.clone();
-                                column_keys.push(key_col);
-                                values.push(format!("'{}'", value_str));
-                                if let Value::Object(value) = value {
-                                    for (key, value) in value {
-                                        if use_import_cols && !import_cols.contains(&key) {
-                                            continue;
-                                        }
-                                        column_keys.push((*key).to_string());
-                                        if let Value::String(value) = value {
-                                            //TODO!: Do we need to escape the "(" and ")" ?
-                                            let value = value.replace("'", "''");
-                                            values.push(format!("'{}'", value));
-                                        } else if let Value::Number(value) = value {
-                                            // stmt.push(&format!("{}", key));
-                                            values.push(format!("{}", value));
-                                        }
+            } else if let Value::Object(obj) = value {
+                for (key, value) in obj {
+                    let mut column_keys = vec![];
+                    let mut values = vec![];
+                    // let mut stmt = format!("INSERT INTO {} (", table);
+                    // let mut values = format!("VALUES (");
+                    if let Some(key_column_name) = &key_col {
+                        if let Some(column_name) = &value_col {
+                            // continue;
+                            let key_col = key_column_name.clone();
+                            let value_str = key.clone();
+                            column_keys.push(key_col);
+                            values.push(format!("'{}'", value_str));
+                            let key_col = column_name.clone();
+                            column_keys.push(key_col);
+                            if let Value::String(value) = value {
+                                //TODO!: Do we need to escape the "(" and ")" ?
+                                let value = value.replace('\'', "''");
+                                values.push(format!("'{}'", value));
+                            } else if let Value::Number(value) = value {
+                                values.push(format!("{}", value));
+                            }
+                        } else {
+                            let key_col = key_column_name.clone();
+                            let value_str = key.clone();
+                            column_keys.push(key_col);
+                            values.push(format!("'{}'", value_str));
+                            if let Value::Object(value) = value {
+                                for (key, value) in value {
+                                    if use_import_cols && !import_cols.contains(key) {
+                                        continue;
+                                    }
+                                    column_keys.push((*key).to_string());
+                                    if let Value::String(value) = value {
+                                        //TODO!: Do we need to escape the "(" and ")" ?
+                                        let value = value.replace('\'', "''");
+                                        values.push(format!("'{}'", value));
+                                    } else if let Value::Number(value) = value {
+                                        // stmt.push(&format!("{}", key));
+                                        values.push(format!("{}", value));
                                     }
                                 }
                             }
-                        } else {
-                            column_keys.push((*key).to_string());
-                            if let Value::String(value) = value {
-                                //TODO!: Do we need to escape the "(" and ")" ?
-                                let value = value.replace("'", "''");
-                                values.push(format!("'{}'", value));
-                            } else if let Value::Number(value) = value {
-                                // stmt.push(&format!("{}", key));
-                                values.push(format!("{}", value));
-                            }
                         }
-
-                        column_keys.push("json_id".to_string());
-                        values.push(format!("{}", json_id));
-
-                        let stmt = format!(
-                            "INSERT INTO {} ({}) VALUES ({})",
-                            table,
-                            column_keys.join(", "),
-                            values.join(", ")
-                        );
-                        //TODO!: Handle Result
-                        let _res = _conn.execute(&stmt, []);
-                        // println!("{:?}", _res);
+                    } else {
+                        column_keys.push((*key).to_string());
+                        if let Value::String(value) = value {
+                            //TODO!: Do we need to escape the "(" and ")" ?
+                            let value = value.replace('\'', "''");
+                            values.push(format!("'{}'", value));
+                        } else if let Value::Number(value) = value {
+                            // stmt.push(&format!("{}", key));
+                            values.push(format!("{}", value));
+                        }
                     }
+
+                    column_keys.push("json_id".to_string());
+                    values.push(format!("{}", json_id));
+
+                    let stmt = format!(
+                        "INSERT INTO {} ({}) VALUES ({})",
+                        table,
+                        column_keys.join(", "),
+                        values.join(", ")
+                    );
+                    //TODO!: Handle Result
+                    let _res = _conn.execute(&stmt, []);
+                    // println!("{:?}", _res);
                 }
             }
         }
     }
 
     fn load_key_value_table(
-        keyvalue: &Vec<String>,
+        keyvalue: &[String],
         json_id: i64,
         content: &HashMap<String, Value>,
         _conn: &Connection,
@@ -485,7 +467,7 @@ impl DbManager {
                 // let path =
                 let path = &path[db_dir.to_str().unwrap().len() + 1..];
                 // println!("Loading file: {}", path);
-                let path = path.replace("\\", "/");
+                let path = path.replace('\\', "/");
                 paths.push(path);
             } else if path.is_dir() {
                 let sub_paths = Self::load_entries(db_dir, Some(&path)).await;

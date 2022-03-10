@@ -108,10 +108,7 @@ impl Site {
 
         let user_data = user_data_files
             .iter()
-            .map(|path| {
-                let content = self.load_content_from_path(path.clone());
-                content
-            })
+            .map(|path| self.load_content_from_path(path.clone()))
             .collect::<Vec<_>>();
         let mut content_res = join_all(user_data).await;
         let errs = content_res
@@ -177,7 +174,7 @@ impl Site {
         for err in &errs {
             error!("{:?}", err);
         }
-        if errs.len() > 0 {
+        if !errs.is_empty() {
             return Err(Error::Err("Site integrity check failed".into()));
         }
         Ok(())
@@ -210,7 +207,7 @@ impl Site {
             .peers
             .iter()
             .map(|bytes| {
-                let pair = IpPort::from_bytes(&bytes.to_vec());
+                let pair = IpPort::from_bytes(bytes.as_ref());
                 pair.first().unwrap().to_string()
             })
             .collect::<Vec<_>>();
@@ -236,7 +233,7 @@ impl SiteIO for Site {
         if !content_exists {
             Self::download_file(self, "content.json".into(), None).await?;
         }
-        let verified = Self::load_content(&mut self).await?;
+        let verified = Self::load_content(self).await?;
         if verified {
             let _ = self.download_site_files().await;
         }
