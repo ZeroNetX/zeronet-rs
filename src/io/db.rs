@@ -7,7 +7,6 @@ use serde_json::Value;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    thread,
 };
 use tokio::fs;
 
@@ -361,6 +360,8 @@ impl DbManager {
                                 values.push(format!("{}", value));
                             }
                         }
+                    } else {
+                        unimplemented!("Please file a bug report");
                     }
                     column_keys.push("json_id".to_owned());
                     values.push(format!("{}", json_id));
@@ -460,6 +461,38 @@ impl DbManager {
                                         values.push(format!("{}", value));
                                     }
                                 }
+                            } else if let Value::Array(value) = value {
+                                for value in value {
+                                    if let Value::Object(value) = value {
+                                        for (key_col, value) in value {
+                                            if use_import_cols && !import_cols.contains(key_col) {
+                                                continue;
+                                            }
+                                            let mut need_replacement = false;
+                                            let mut replacement_idx = 255;
+                                            if replacement_cols.contains(key_col) {
+                                                need_replacement = true;
+                                                replacement_idx = replacement_cols
+                                                    .iter()
+                                                    .position(|x| x == key_col)
+                                                    .unwrap();
+                                            }
+                                            column_keys.push(key_col.to_string());
+                                            if let Value::String(value) = value {
+                                                //TODO!: Do we need to escape the "(" and ")" ?
+                                                let mut value = value.replace('\'', "''");
+                                                if need_replacement {
+                                                    let rep_vec =
+                                                        replacements.get(replacement_idx).unwrap();
+                                                    value = value.replace(&rep_vec.0, &rep_vec.1);
+                                                }
+                                                values.push(format!("'{}'", value));
+                                            } else if let Value::Number(value) = value {
+                                                values.push(format!("{}", value));
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -483,10 +516,8 @@ impl DbManager {
                             values.push(format!("{}", value));
                         }
                     }
-
                     column_keys.push("json_id".to_string());
                     values.push(format!("{}", json_id));
-
                     let stmt = format!(
                         "INSERT INTO {} ({}) VALUES ({})",
                         table,
