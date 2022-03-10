@@ -342,7 +342,7 @@ impl DbManager {
                         }
                     }
                     column_keys.push("json_id".to_owned());
-                    values.push(format!(", {}", json_id));
+                    values.push(format!("{}", json_id));
                     let stmt = format!(
                         "INSERT INTO {} ({}) VALUES ({})",
                         table,
@@ -421,6 +421,8 @@ impl DbManager {
                     let _res = _conn.execute(&stmt, []);
                     // println!("{:?}", _res);
                 }
+            } else {
+                unreachable!();
             }
         }
     }
