@@ -1,12 +1,26 @@
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 use lazy_static::lazy_static;
 use std::{env::current_dir, fs, path::PathBuf, str::FromStr};
 
 use crate::{core::error::Error, utils::gen_peer_id};
 
 lazy_static! {
+    pub static ref CURRENT_DIR: PathBuf = current_dir().unwrap();
+    pub static ref DEF_DATA_DIR: String = CURRENT_DIR.join("data").to_str().unwrap().to_string();
+    pub static ref MATCHES: ArgMatches = get_matches();
+    pub static ref SUB_CMDS: Vec<String> =
+        vec![
+            "siteDownload".into(),
+            "siteFindPeers".into(),
+            // "siteNeedFile".into(),
+            "siteVerify".into(),
+            "sitePeerExchange".into(),
+            "siteFetchChanges".into(),
+            "dbRebuild".into(),
+            // "dbQuery".into()
+        ];
     pub static ref ENV: Environment = {
-        if let Ok(env) = get_env() {
+        if let Ok(env) = get_env(&*MATCHES) {
             return env;
         };
         panic!("Could not get environment variables");
@@ -29,22 +43,25 @@ pub struct Environment {
     pub rev: usize,
     pub peer_id: String,
     pub data_path: PathBuf,
-    pub broadcast_port: usize,
-    pub ui_ip: String,
-    pub ui_port: usize,
+    // pub broadcast_port: usize,
+    // pub ui_ip: String,
+    // pub ui_port: usize,
     pub trackers: Vec<String>,
-    pub homepage: String,
-    pub lang: String,
-    pub dist: String,
+    // pub homepage: String,
+    // pub lang: String,
+    // pub dist: String,
 }
 
-pub fn get_env() -> Result<Environment, Error> {
-    let current_dir = current_dir()?;
-    let def_data_path = current_dir.join("data").to_str().unwrap().to_string();
-    let matches = Command::new("zeronet")
+fn get_matches() -> ArgMatches {
+    let sub_commands = (&*SUB_CMDS)
+        .iter()
+        .map(|cmd| Command::new(cmd))
+        .collect::<Vec<_>>();
+
+    Command::new("zeronet")
         .version((*VERSION).as_str())
         .author("PramUkesh <pramukesh@zeroid.bit>")
-        .about("ZeroNet implementation written in Rust.")
+        .about("ZeroNet Protocol Implementation in Rust.")
         .args(&[
             //     // Should probably be removed in favor of environment flags
             //     Arg::new("VERBOSE")
@@ -73,7 +90,7 @@ pub fn get_env() -> Result<Environment, Error> {
             //         .help("Path of config file"),
             Arg::new("DATA_DIR")
                 .long("data_dir")
-                .default_value(&def_data_path)
+                .default_value(&DEF_DATA_DIR)
                 .help("Path of data directory"),
             // Should be removed
             // Arg::new("CONSOLE_LOG_LEVEL")
@@ -95,19 +112,19 @@ pub fn get_env() -> Result<Environment, Error> {
             //     .long("log_rotate_backup_count")
             //     .default_value("5")
             //     .help("Log rotate backup count"),
-            Arg::new("LANGUAGE")
-                .short('l')
-                .long("language")
-                .default_value("en")
-                .help("Web interface language"),
-            Arg::new("UI_IP")
-                .long("ui_ip")
-                .default_value("127.0.0.1")
-                .help("Web interface bind address"),
-            Arg::new("UI_PORT")
-                .long("ui_port")
-                .default_value("43110")
-                .help("Web interface bind port"),
+            // Arg::new("LANGUAGE")
+            //     .short('l')
+            //     .long("language")
+            //     .default_value("en")
+            //     .help("Web interface language"),
+            // Arg::new("UI_IP")
+            //     .long("ui_ip")
+            //     .default_value("127.0.0.1")
+            //     .help("Web interface bind address"),
+            // Arg::new("UI_PORT")
+            //     .long("ui_port")
+            //     .default_value("43110")
+            //     .help("Web interface bind port"),
             // Arg::new("UI_RESTRICT")
             //     .long("ui_restrict")
             //     .help("Restrict web access"),
@@ -120,15 +137,15 @@ pub fn get_env() -> Result<Environment, Error> {
             // Arg::new("OPEN_BROWSER")
             //     .long("open_browser")
             //     .help("Open homepage in web browser automatically"),
-            Arg::new("HOMEPAGE")
-                .long("homepage")
-                .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
-                .help("Web interface Homepage"),
-            // UPDATE SITE?
-            Arg::new("DIST_TYPE")
-                .long("dist_type")
-                .default_value("source")
-                .help("Type of installed distribution"),
+            // Arg::new("HOMEPAGE")
+            //     .long("homepage")
+            //     .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
+            //     .help("Web interface Homepage"),
+            // // UPDATE SITE?
+            // Arg::new("DIST_TYPE")
+            //     .long("dist_type")
+            //     .default_value("source")
+            //     .help("Type of installed distribution"),
             // Arg::new("SIZE_LIMIT")
             //     .long("size_limit")
             //     .default_value("10")
@@ -170,46 +187,39 @@ pub fn get_env() -> Result<Environment, Error> {
             //     .long("tor_hs_port")
             //     .default_value("15441")
             //     .help("Hidden service port in Tor always mode"),
-            Arg::new("BROADCAST_PORT")
-                .long("broadcast_port")
-                .default_value("1544")
-                .help("Port to broadcast local discovery messages"),
+            // Arg::new("BROADCAST_PORT")
+            //     .long("broadcast_port")
+            //     .default_value("1544")
+            //     .help("Port to broadcast local discovery messages"),
         ])
-        // .subcommands(vec![
-        //     Command::new("siteCreate"),
-        //     Command::new("siteNeedFile"),
-        //     Command::new("siteDownload"),
-        //     Command::new("siteSign"),
-        //     Command::new("sitePublish"),
-        //     Command::new("siteVerify"),
-        //     Command::new("siteCmd"),
-        //     Command::new("dbRebuild"),
-        //     Command::new("dbQuery"),
-        // ])
-        .get_matches();
+        .subcommands(sub_commands)
+        .get_matches()
+}
 
+pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let data_path_str = matches.value_of("DATA_DIR").unwrap();
-    let data_path = if let Ok(path) = PathBuf::from_str(data_path_str) {
-        path
+    let data_path = PathBuf::from_str(data_path_str).unwrap();
+    let data_path = if data_path.exists() && data_path.is_dir() {
+        data_path
     } else {
         fs::create_dir_all(data_path_str).unwrap();
         PathBuf::from_str(data_path_str).unwrap()
     };
-    let ui_ip = matches.value_of("UI_IP").unwrap();
-    let ui_port: usize = matches.value_of("UI_PORT").unwrap().parse()?;
-    let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
+    // let ui_ip = matches.value_of("UI_IP").unwrap();
+    // let ui_port: usize = matches.value_of("UI_PORT").unwrap().parse()?;
+    // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
     let env = Environment {
         version: VERSION.clone(),
         rev: *REV,
         peer_id: gen_peer_id(),
         data_path,
-        broadcast_port,
-        ui_ip: String::from(ui_ip),
-        ui_port,
+        // broadcast_port,
+        // ui_ip: String::from(ui_ip),
+        // ui_port,
         trackers: TRACKERS.iter().map(|s| String::from(*s)).collect(),
-        homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
-        lang: String::from(matches.value_of("LANGUAGE").unwrap()),
-        dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
+        // homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
+        // lang: String::from(matches.value_of("LANGUAGE").unwrap()),
+        // dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
     };
     Ok(env)
 }

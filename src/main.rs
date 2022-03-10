@@ -10,6 +10,7 @@ pub mod utils;
 
 use crate::{
     core::{discovery::Discovery, peer::Peer},
+    environment::MATCHES,
     io::db::DbManager,
     net::Protocol,
 };
@@ -19,12 +20,27 @@ use zeronet_protocol::PeerAddr;
 
 use crate::core::{error::Error, io::*, site::Site, user::User};
 
-async fn _main_old() -> Result<(), Error> {
-    println!("Loading User");
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let _user = User::load()?;
-    let site = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
-    println!("Loading Site : {site}");
-    let site = Site::new(site, (*ENV).data_path.clone())?;
+    let sub_cmd = (&*MATCHES).subcommand();
+    if let Some((cmd, _args)) = sub_cmd {
+        let site = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
+        let mut site = Site::new(site, (*ENV).data_path.clone())?;
+        match cmd {
+            "siteDownload" => download_site(&mut site).await?,
+            "siteFindPeers" => find_peers(&mut site).await?,
+            "dbRebuild" => rebuild_db(&mut site).await?,
+            "sitePeerExchange" => peer_exchange(&mut site).await?,
+            "siteFetchChanges" => fetch_changes(&mut site).await?,
+            "siteVerify" => check_site_integrity(&mut site).await?,
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+async fn find_peers(site: &mut Site) -> Result<(), Error> {
     let peers = site.discover().await?;
     for peer in &peers {
         println!("{:?}", peer);
@@ -42,7 +58,7 @@ async fn _main_old() -> Result<(), Error> {
         }
     }
     let connectable_peers = connections.iter().map(|peer| peer.address().to_string());
-    _save_peers(connectable_peers).await;
+    save_peers(connectable_peers).await;
 
     // let mut peer = Peer::new(PeerAddr::IPV4([127, 0, 0, 1], 11917));
     // let _ = peer.connect();
@@ -68,14 +84,7 @@ async fn _main_old() -> Result<(), Error> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    println!("Loading User");
-    let _user = User::load()?;
-    let site = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
-    println!("Loading Site : {site}");
-    let site = Site::new(site, (*ENV).data_path.clone())?;
-    // download_site_(&mut site).await?;
+async fn rebuild_db(site: &mut Site) -> Result<(), Error> {
     let mut db_manager = DbManager::new();
     let has_schema = db_manager.has_schema(&site.address());
     let address = site.address();
@@ -85,43 +94,57 @@ async fn main() -> Result<(), Error> {
         db_manager.create_tables(&address);
         db_manager.load_data(&address).await;
     }
-
     Ok(())
 }
 
-async fn _download_site_(site: &mut Site) -> Result<(), Error> {
+async fn download_site(site: &mut Site) -> Result<(), Error> {
     let exists = site.content_path().exists();
     if !exists {
-        _download_site(site).await?;
-    } else {
-        // add_peers_to_site(&mut site).await?;
-        // site.load_content().await?;
-        // let mut peers_cons = vec![];
-        // let peers = site.fetch_peers().await?;
-        // println!("Found Peers : {:?}", peers);
-        // for peer in peers {
-        //     let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
-        //     let res = peer.connect();
-        //     if let Ok(_) = res {
-        //         peers_cons.push(peer);
-        //     }
-        // }
-        // for mut con in peers_cons {
-        //     let res = Protocol::new(con.connection_mut().unwrap())
-        //         .handshake()
-        //         .await?;
-        //     println!("Ping Result : {:?} from Peer : {:?}", res, con.address());
-        // }
-        // let modified = site.content().unwrap().modified;
-        // println!("{:?}", modified);
-        // site.fetch_changes(1421043090).await?;
-        // site.check_site_integrity().await?;
+        add_peers_to_site(site).await?;
+        println!("Downloading Site");
+        site.init_download().await?;
     }
     Ok(())
 }
 
-async fn _add_peers_to_site(site: &mut Site) -> Result<(), Error> {
-    let peers = _load_peers().await;
+async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
+    add_peers_to_site(site).await?;
+    site.load_content().await?;
+    let mut peers_cons = vec![];
+    let peers = site.fetch_peers().await?;
+    println!("Found Peers : {:?}", peers);
+    for peer in peers {
+        let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
+        let res = peer.connect();
+        if let Ok(_) = res {
+            peers_cons.push(peer);
+        }
+    }
+    for mut con in peers_cons {
+        let res = Protocol::new(con.connection_mut().unwrap()).ping().await?;
+        println!("Ping Result : {:?} from Peer : {:?}", res, con.address());
+    }
+    Ok(())
+}
+
+async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
+    add_peers_to_site(site).await?;
+    site.load_content().await?;
+    let modified = site.content().unwrap().modified;
+    println!("{:?}", modified);
+    let changes = site.fetch_changes(1421043090).await?;
+    println!("{:#?}", changes);
+    Ok(())
+}
+
+async fn check_site_integrity(site: &mut Site) -> Result<(), Error> {
+    site.load_content().await?;
+    site.check_site_integrity().await?;
+    Ok(())
+}
+
+async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
+    let peers = load_peers().await;
     let peers = peers
         .iter()
         .map(|peer| Peer::new(PeerAddr::parse(peer.to_string()).unwrap()))
@@ -144,14 +167,7 @@ async fn _add_peers_to_site(site: &mut Site) -> Result<(), Error> {
     Ok(())
 }
 
-async fn _download_site(site: &mut Site) -> Result<(), Error> {
-    _add_peers_to_site(site).await?;
-    println!("Downloading Site");
-    site.init_download().await?;
-    Ok(())
-}
-
-async fn _save_peers(peers: impl Iterator<Item = String>) {
+async fn save_peers(peers: impl Iterator<Item = String>) {
     let mut file = tokio::fs::File::create("data/peers.txt").await.unwrap();
     for peer in peers {
         tokio::io::AsyncWriteExt::write_all(&mut file, peer.as_bytes())
@@ -160,7 +176,7 @@ async fn _save_peers(peers: impl Iterator<Item = String>) {
     }
 }
 
-async fn _load_peers() -> Vec<String> {
+async fn load_peers() -> Vec<String> {
     let mut file = tokio::fs::File::open("data/peers.txt").await.unwrap();
     let mut buf = vec![];
     tokio::io::AsyncReadExt::read_to_end(&mut file, &mut buf)

@@ -22,7 +22,7 @@ use zerucontent::Content;
 use crate::{
     core::{error::*, io::*, models::*, peer::*, site::*, user::*},
     discovery::tracker::IpPort,
-    environment::{self, ENV},
+    environment::ENV,
     net::Protocol,
     utils::atomic_write,
 };
@@ -241,14 +241,15 @@ impl SiteIO for Site {
     }
 
     async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
-        let env = environment::get_env().unwrap();
+        let env = &*ENV;
         let sites_file_path = env.data_path.join("sites.json");
         if !sites_file_path.exists() {
             let mut file = File::create(&sites_file_path).await?;
-            let mut settings = SiteSettings::default();
-            if address == ENV.homepage {
-                settings.permissions.push("ADMIN".to_string());
-            }
+            let settings = SiteSettings::default();
+            // let mut settings = SiteSettings::default();
+            // if address == ENV.homepage {
+            //     settings.permissions.push("ADMIN".to_string());
+            // }
             let site_file = SiteFile::default().from_site_settings(&settings);
             let s = json! {
                 {
@@ -292,7 +293,7 @@ impl SiteIO for Site {
     }
 
     async fn save_settings(&self) -> Result<(), Error> {
-        let env = environment::get_env().unwrap();
+        let env = &*ENV;
         let sites_file_path = env.data_path.join("sites.json");
 
         let mut sites_file = File::open(sites_file_path).await?;
