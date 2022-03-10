@@ -1,3 +1,6 @@
+pub mod db;
+pub mod schema;
+
 use std::{
     collections::HashMap,
     fs::OpenOptions,
