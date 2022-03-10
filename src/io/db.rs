@@ -7,6 +7,7 @@ use serde_json::Value;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    thread,
 };
 use tokio::fs;
 
@@ -78,8 +79,15 @@ impl DbManager {
     pub fn create_tables(&mut self, site: &str) {
         let tables = self.schema[site].tables.clone();
         let conn = self.get_db(site).unwrap();
-        for (table_name, table) in tables {
+        tables.keys().for_each(|table_name| {
+            if table_name == "json" {
+                //Note: Required because other tables depend on json table, it needs to droped last.
+                return;
+            }
             let _res = conn.execute(&format!("DROP TABLE {}", table_name), []);
+        });
+        let _res = conn.execute(&format!("DROP TABLE json"), []);
+        for (table_name, table) in tables {
             let query = table.to_query(&table_name);
             conn.execute(&query, params![]).unwrap();
             let indexes = table.indexes;
