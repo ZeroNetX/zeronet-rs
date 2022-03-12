@@ -22,12 +22,13 @@ use crate::core::{error::Error, io::*, site::Site, user::User};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let _user = User::load()?;
+    let mut user = User::load()?;
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
         let site = _args.values_of("site").unwrap().into_iter().next().unwrap();
         let mut site = Site::new(&site, (*ENV).data_path.clone())?;
         match cmd {
+            "siteCreate" => site_create(&mut user, true).await?,
             "siteDownload" => download_site(&mut site).await?,
             "siteFindPeers" => find_peers(&mut site).await?,
             "dbRebuild" => rebuild_db(&mut site).await?,
@@ -36,7 +37,29 @@ async fn main() -> Result<(), Error> {
             "siteVerify" => check_site_integrity(&mut site).await?,
             _ => {}
         }
+    } else {
+        println!("{}", "No command specified");
     }
+    Ok(())
+}
+
+async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
+    let site_data;
+    if use_master_seed {
+        site_data = user.get_new_site_data();
+        println!("\n");
+        println!(
+            "Site Private Key : {:?} <<< Store this to Safe Place",
+            site_data.get_privkey().unwrap()
+        );
+        println!("Site Address     : {:?}", site_data.address);
+        println!("\n");
+    } else {
+        unimplemented!();
+    }
+    let mut site = Site::new(&site_data.address, (*ENV).data_path.clone())?;
+    site.create(site_data.index.unwrap(), &site_data.get_privkey().unwrap())
+        .await?;
     Ok(())
 }
 
@@ -139,7 +162,12 @@ async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
 
 async fn check_site_integrity(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
-    site.check_site_integrity().await?;
+    let res = site.verify_content(false).await?;
+    if res {
+        println!("Site {} verified", site.address());
+    } else {
+        println!("Site {} verification failed", site.address());
+    }
     Ok(())
 }
 

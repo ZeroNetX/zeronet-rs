@@ -10,6 +10,7 @@ lazy_static! {
     pub static ref MATCHES: ArgMatches = get_matches();
     pub static ref SUB_CMDS: Vec<String> =
         vec![
+            "siteCreate".into(),
             "siteDownload".into(),
             "siteFindPeers".into(),
             // "siteNeedFile".into(),

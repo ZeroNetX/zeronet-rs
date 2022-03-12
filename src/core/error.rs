@@ -3,12 +3,14 @@
 
 #[derive(Debug)]
 pub enum Error {
+    AddressError(String),
     Err(String),
-    FileNotFound,
+    IOError(String),
+    FileNotFound(String),
     WrapperKeyNotFound,
     Deserialization(serde_json::Error),
     MissingError,
-    ReqwestError,
+    CryptError(String),
     MsgPackEncoding,
     MsgPackDecoding(rmp_serde::decode::Error),
     MailboxError,
@@ -25,7 +27,7 @@ pub enum Error {
 
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Error {
-        Error::FileNotFound
+        Error::IOError(error.to_string())
     }
 }
 
@@ -64,17 +66,15 @@ impl From<zeronet_protocol::Error> for Error {
 
 impl From<zeronet_protocol::address::ParseError> for Error {
     fn from(error: zeronet_protocol::address::ParseError) -> Error {
-        println!("{:?}", error);
         Error::ParseError
     }
 }
 
-// impl From<diesel::result::Error> for Error {
-//     fn from(error: diesel::result::Error) -> Error {
-//         println!("{:?}", error);
-//         Error::MissingError
-//     }
-// }
+impl From<zeronet_cryptography::Error> for Error {
+    fn from(error: zeronet_cryptography::Error) -> Error {
+        Error::CryptError(error.to_string())
+    }
+}
 
 // impl ResponseError for Error {}
 

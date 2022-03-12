@@ -67,7 +67,10 @@ impl FromStr for Address {
                 "Length should be 34 or 33, was {}, and start with a '1'.",
                 string.len(),
             );
-            return Err(Error::FileNotFound);
+            return Err(Error::AddressError(format!(
+                "Address length {} is invalid",
+                string
+            )));
         }
         Ok(Address {
             address: String::from(string),

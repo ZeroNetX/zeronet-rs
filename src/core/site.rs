@@ -41,21 +41,31 @@ impl Site {
         self.content.clone()
     }
 
+    pub fn content_mut(&mut self) -> Option<&mut Content> {
+        self.content.as_mut()
+    }
+
     pub fn modify_content(&mut self, content: Content) {
         self.content = Some(content);
     }
 
-    pub async fn verify_content(&self) -> bool {
+    pub async fn verify_content(&self, content_only: bool) -> Result<bool, Error> {
         if self.content.is_none() {
-            false
+            Err(Error::Err("No content to verify".into()))
         } else {
+            if !content_only {
+                self.check_site_integrity().await?;
+            }
             let content = self.content.clone().unwrap();
             let verified = content.verify((&self.address()).clone());
             if !verified {
-                error!("Content verification failed for {}", self.address());
+                return Err(Error::Err(format!(
+                    "Content verification failed for {}",
+                    self.address()
+                )));
+            } else {
+                Ok(verified)
             }
-            //TODO! Return the result of the verification
-            true
         }
     }
 

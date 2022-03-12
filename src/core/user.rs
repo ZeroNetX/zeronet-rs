@@ -100,7 +100,7 @@ impl User {
     /// Get user site data
     ///
     /// Return: {"auth_address": "1AddR", "auth_privatekey": "xxx"}
-    fn get_site_data(&mut self, address: &str, create: bool) -> SiteData {
+    pub fn get_site_data(&mut self, address: &str, create: bool) -> SiteData {
         if let Some(site_auth_data) = self.sites.get(address) {
             site_auth_data.to_owned()
         } else {
@@ -132,7 +132,8 @@ impl User {
     /// Get data for a new, unique site
     ///
     /// Return: [site_address, bip32_index, {"auth_address": "1AddR", "auth_privatekey": "xxx", "privatekey": "xxx"}]
-    fn get_new_site_data(&mut self) -> SiteData {
+    pub fn get_new_site_data(&mut self) -> SiteData {
+        //TODO: Add option to get a new site without master seed
         let (site_privkey, site_address, bip32_idx) =
             self.get_site_keypair_from_seed(&self.master_seed, None);
 

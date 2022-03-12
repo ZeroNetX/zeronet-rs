@@ -1,9 +1,9 @@
 pub mod db;
 pub mod schema;
+pub mod utils;
 
 use std::{
     collections::HashMap,
-    fs::OpenOptions,
     io::{Read, Write},
     path::{Path, PathBuf},
     time::SystemTime,
@@ -11,10 +11,8 @@ use std::{
 
 use futures::future::join_all;
 use serde_bytes::ByteBuf;
-use sha1::Digest;
-use sha2::Sha512;
 use tokio::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
 };
 use zerucontent::Content;
@@ -29,7 +27,18 @@ use crate::{
 use log::*;
 use serde_json::json;
 
-impl Site {
+use self::utils::{check_file_integrity, get_file_hash};
+
+#[async_trait::async_trait]
+trait ContentMod {
+    async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error>;
+    async fn add_file_to_content(&mut self, path: PathBuf) -> Result<(), Error>;
+    async fn sign_content(&mut self, private_key: &str) -> Result<(), Error>;
+    async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error>;
+}
+
+#[async_trait::async_trait]
+impl ContentMod for Site {
     async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error> {
         let path = &self.site_path().join(&inner_path);
         if path.exists() {
@@ -40,6 +49,69 @@ impl Site {
             return Ok(content);
         }
         Err(Error::Err("Content File Not Found".into()))
+    }
+
+    async fn add_file_to_content(&mut self, inner_path: PathBuf) -> Result<(), Error> {
+        let path = self.site_path().join(&inner_path);
+        if path.exists() {
+            let (size, sha512) = get_file_hash(path).await?;
+            let file = zerucontent::File { sha512, size };
+            let res = &mut self.content_mut().unwrap().files;
+            res.insert(inner_path.display().to_string(), file);
+            Ok(())
+        } else {
+            return Err(Error::Err("File does not exist".into()));
+        }
+    }
+
+    async fn sign_content(&mut self, private_key: &str) -> Result<(), Error> {
+        let content = self.content_mut().unwrap();
+        let sign = content.sign(private_key.to_string());
+        let address = zeronet_cryptography::privkey_to_pubkey(private_key)?;
+        content.signs.insert(address, sign);
+        Ok(())
+    }
+
+    async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error> {
+        let content = self.content().unwrap();
+        let content_json = serde_json::to_string_pretty(&content)?;
+        let inner_path = inner_path.unwrap_or("content.json");
+        let path = self.site_path().join(inner_path);
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&path)
+            .await?;
+        file.write_all(content_json.as_bytes()).await?;
+        Ok(())
+    }
+}
+
+impl Site {
+    pub async fn create(&mut self, addr_idx: u32, private_key: &str) -> Result<(), Error> {
+        let mut content = Content::create(self.address(), addr_idx);
+        content.zeronet_version = ENV.version.clone();
+        content.signs_required = 1;
+        content.signers_sign =
+            zeronet_cryptography::sign(format!("1:{}", self.address()), private_key)?;
+        self.modify_content(content);
+        self.add_file_data(private_key).await?;
+        Ok(())
+    }
+
+    async fn add_file_data(&mut self, private_key: &str) -> Result<(), Error> {
+        let data_dir = &*ENV.data_path;
+        let site_dir = data_dir.join(&self.address());
+        fs::create_dir_all(&site_dir).await?;
+        let index_path = site_dir.join("index.html");
+        let mut file = File::create(&index_path).await?;
+        file.write_all(b"Welcome to World of DecentNet, A Peer to Peer Framework for Decentralised App and Services!")
+            .await?;
+        let _ = &self.add_file_to_content("index.html".into()).await?;
+
+        self.sign_content(private_key).await?;
+        self.save_content(None).await?;
+        Ok(())
     }
 
     async fn download_file_from_peer(
@@ -144,20 +216,8 @@ impl Site {
         let buf = ByteBuf::from(buf);
         let content = Content::from_buf(buf).unwrap();
         self.modify_content(content);
-        let res = Self::verify_content(self).await;
+        let res = self.verify_content(true).await?;
         Ok(res)
-    }
-
-    async fn check_file_integrity(path: impl AsRef<Path>, hash_str: String) -> Result<(), Error> {
-        let mut file = File::open(path).await?;
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf).await?;
-        let digest = Sha512::digest(buf);
-        let hash = format!("{:x}", digest)[..64].to_string();
-        if hash_str != hash {
-            return Err(Error::Err("File integrity check failed".into()));
-        }
-        Ok(())
     }
 
     pub async fn check_site_integrity(&self) -> Result<(), Error> {
@@ -166,13 +226,14 @@ impl Site {
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
             let hash = file.sha512.clone();
-            let task = Self::check_file_integrity(self.site_path().join(inner_path), hash);
+            let task = check_file_integrity(self.site_path().join(inner_path), hash);
             tasks.push(task);
         }
+        //TODO!: Verify includes, user data files
         let mut res = join_all(tasks).await;
         let errs = res.drain_filter(|res| res.is_err()).collect::<Vec<_>>();
         for err in &errs {
-            error!("{:?}", err);
+            println!("{:?}", err);
         }
         if !errs.is_empty() {
             return Err(Error::Err("Site integrity check failed".into()));
@@ -233,10 +294,11 @@ impl SiteIO for Site {
         if !content_exists {
             Self::download_file(self, "content.json".into(), None).await?;
         }
-        let verified = Self::load_content(self).await?;
+        let verified = self.load_content().await?;
         if verified {
             let _ = self.download_site_files().await;
         }
+        self.verify_content(false).await?;
         Ok(verified)
     }
 
@@ -260,9 +322,9 @@ impl SiteIO for Site {
             file.write_all(content.as_bytes()).await?;
             Ok(settings)
         } else {
-            let mut sites_file = OpenOptions::new().read(true).open(&sites_file_path)?;
+            let mut sites_file = OpenOptions::new().read(true).open(&sites_file_path).await?;
             let mut content = String::new();
-            sites_file.read_to_string(&mut content)?;
+            sites_file.read_to_string(&mut content).await?;
             let mut value: serde_json::Value = serde_json::from_str(&content)?;
             let site_settings = value[address].clone();
             let settings = if site_settings.is_null() {
@@ -275,8 +337,9 @@ impl SiteIO for Site {
                 let mut sites_file = OpenOptions::new()
                     .write(true)
                     .truncate(true)
-                    .open(&sites_file_path)?;
-                sites_file.write_all(content.as_bytes())?;
+                    .open(&sites_file_path)
+                    .await?;
+                sites_file.write_all(content.as_bytes()).await?;
                 set
             } else {
                 let v = value[address].clone();
