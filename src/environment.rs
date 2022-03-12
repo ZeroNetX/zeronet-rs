@@ -1,5 +1,7 @@
 use clap::{Arg, ArgMatches, Command};
 use lazy_static::lazy_static;
+use rand::Rng;
+use serde_json::json;
 use std::{env::current_dir, fs, path::PathBuf, str::FromStr};
 
 use crate::{core::error::Error, utils::gen_peer_id};
@@ -7,18 +9,29 @@ use crate::{core::error::Error, utils::gen_peer_id};
 lazy_static! {
     pub static ref CURRENT_DIR: PathBuf = current_dir().unwrap();
     pub static ref DEF_DATA_DIR: String = CURRENT_DIR.join("data").to_str().unwrap().to_string();
+    pub static ref DEF_LOG_DIR: String = CURRENT_DIR.join("log").to_str().unwrap().to_string();
     pub static ref MATCHES: ArgMatches = get_matches();
     pub static ref SUB_CMDS: Vec<String> =
         vec![
             "siteCreate".into(),
-            "siteDownload".into(),
-            "siteFindPeers".into(),
             // "siteNeedFile".into(),
+            "siteDownload".into(),
+            //"siteSign".into(),
+            //"sitePublish".into(),
             "siteVerify".into(),
-            "sitePeerExchange".into(),
-            "siteFetchChanges".into(),
+            // "siteCmd".into(),
             "dbRebuild".into(),
             // "dbQuery".into()
+            // "peerPing".into()
+            // "peerGetFile".into()
+            // "peerCmd".into()
+            // "cryptSign".into()
+            // "cryptVerify".into()
+            // "cryptGetPrivateKey".into()
+            "getConfig".into(),
+            "siteFindPeers".into(),
+            "sitePeerExchange".into(),
+            "siteFetchChanges".into(),
         ];
     pub static ref ENV: Environment = {
         if let Ok(env) = get_env(&*MATCHES) {
@@ -44,12 +57,13 @@ pub struct Environment {
     pub rev: usize,
     pub peer_id: String,
     pub data_path: PathBuf,
+    pub log_path: PathBuf,
+    pub fileserver_ip: String,
+    pub fileserver_port: u16,
     // pub broadcast_port: usize,
-    // pub ui_ip: String,
-    // pub ui_port: usize,
     pub trackers: Vec<String>,
     // pub homepage: String,
-    // pub lang: String,
+    pub lang: String,
     // pub dist: String,
 }
 
@@ -66,8 +80,8 @@ fn get_matches() -> ArgMatches {
         })
         .collect::<Vec<_>>();
 
-    Command::new("zeronet")
-        .version((*VERSION).as_str())
+    Command::new("ZeroNetX")
+        .version(format!("{} r{}", &*VERSION, &*REV).as_str())
         .author("PramUkesh <pramukesh@zeroid.bit>")
         .about("ZeroNet Protocol Implementation in Rust.")
         .args(&[
@@ -100,14 +114,14 @@ fn get_matches() -> ArgMatches {
                 .long("data_dir")
                 .default_value(&DEF_DATA_DIR)
                 .help("Path of data directory"),
+            Arg::new("LOG_DIR")
+                .long("log_dir")
+                .default_value(&DEF_LOG_DIR)
+                .help("Path of logging directory"),
             // Should be removed
             // Arg::new("CONSOLE_LOG_LEVEL")
             //     .long("console_log_level")
-            //     .help("Level of logging to file"),
-            // Arg::new("LOG_DIR")
-            //     .long("log_dir")
-            //     .default_value("./log")
-            //     .help("Path of logging directory"),
+            //     .help("Level of logging to file")
             // Arg::new("LOG_LEVEL")
             //     .long("log_level")
             //     .help("Level of loggin to file"),
@@ -120,11 +134,11 @@ fn get_matches() -> ArgMatches {
             //     .long("log_rotate_backup_count")
             //     .default_value("5")
             //     .help("Log rotate backup count"),
-            // Arg::new("LANGUAGE")
-            //     .short('l')
-            //     .long("language")
-            //     .default_value("en")
-            //     .help("Web interface language"),
+            Arg::new("LANGUAGE")
+                .short('l')
+                .long("language")
+                .default_value("en")
+                .help("Web interface language"),
             // Arg::new("UI_IP")
             //     .long("ui_ip")
             //     .default_value("127.0.0.1")
@@ -170,14 +184,14 @@ fn get_matches() -> ArgMatches {
             //     .long("global_connected_limit")
             //     .default_value("512")
             //     .help("Max connections"),
-            // Arg::new("FILESERVER_IP")
-            //     .long("fileserver_ip")
-            //     .default_value("*")
-            //     .help("Fileserver bind address"),
-            // Arg::new("FILESERVER_PORT_RANGE")
-            //     .long("fileserver_port_range")
-            //     .default_value("10000-40000")
-            //     .help("Fileserver randomization range"),
+            Arg::new("FILESERVER_IP")
+                .long("fileserver_ip")
+                .default_value("*")
+                .help("Fileserver bind address"),
+            Arg::new("FILESERVER_PORT")
+                .long("fileserver_port")
+                .default_value("10000-40000")
+                .help("Fileserver randomization range 10000-40000"),
             // Arg::new("FILESERVER_IP_TYPE")
             //     .long("fileserver_ip_type")
             //     .default_value("dual")
@@ -213,6 +227,26 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fs::create_dir_all(data_path_str).unwrap();
         PathBuf::from_str(data_path_str).unwrap()
     };
+    let log_path_str = matches.value_of("LOG_DIR").unwrap();
+    let log_path = PathBuf::from_str(log_path_str).unwrap();
+    let log_path = if log_path.exists() && log_path.is_dir() {
+        log_path
+    } else {
+        fs::create_dir_all(log_path_str).unwrap();
+        PathBuf::from_str(log_path_str).unwrap()
+    };
+    let fileserver_ip = matches.value_of("FILESERVER_IP").unwrap().into();
+    let fileserver_port = if let Some(port) = matches.value_of("FILESERVER_PORT") {
+        if port.contains("10000-40000") {
+            let mut rng = rand::thread_rng();
+            let port = rng.gen_range(10000..=40000);
+            port
+        } else {
+            port.parse::<u16>().unwrap()
+        }
+    } else {
+        10000 + rand::random::<u16>() % 10000
+    };
     // let ui_ip = matches.value_of("UI_IP").unwrap();
     // let ui_port: usize = matches.value_of("UI_PORT").unwrap().parse()?;
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
@@ -221,13 +255,45 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         rev: *REV,
         peer_id: gen_peer_id(),
         data_path,
-        // broadcast_port,
+        log_path,
+        fileserver_ip,
+        fileserver_port,
         // ui_ip: String::from(ui_ip),
         // ui_port,
         trackers: TRACKERS.iter().map(|s| String::from(*s)).collect(),
         // homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
-        // lang: String::from(matches.value_of("LANGUAGE").unwrap()),
+        lang: String::from(matches.value_of("LANGUAGE").unwrap()),
         // dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
     };
     Ok(env)
+}
+
+pub fn client_info() -> serde_json::Value {
+    let os = if cfg!(windows) {
+        "windows"
+    } else if cfg!(unix) {
+        "unix"
+    } else if cfg!(macos) {
+        "macos"
+    } else if cfg!(android) {
+        "android"
+    } else if cfg!(android) {
+        "ios"
+    } else {
+        "unrecognised"
+    };
+    json!({
+        "platform": os,
+        "fileserver_ip": *ENV.fileserver_ip,
+        "fileserver_port": (*ENV).fileserver_port,
+        "version": *VERSION,
+        "rev": *REV,
+        "language": *ENV.lang,
+        "debug": false,
+        "log_dir":*ENV.data_path,
+        "data_dir": *ENV.log_path,
+        "plugins" : [
+            "Placeholder Data",
+        ],
+    })
 }
