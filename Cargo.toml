@@ -5,6 +5,7 @@ authors = ["canewsin <canews.in@gmail.com>"]
 edition = "2021"
 
 [features]
+default = ["userio"]
 userio = []
 
 [dependencies]
