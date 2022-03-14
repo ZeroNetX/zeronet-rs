@@ -1,3 +1,6 @@
+#[cfg(feature = "userio")]
+use super::io::UserIO;
+
 use super::{
     error::Error,
     models::{AuthPair, Cert, SiteData},
@@ -82,8 +85,9 @@ impl User {
             .with_index(address_id);
         self.sites.insert(address.to_string(), site_data);
 
-        // #[cfg(not(test))]
-        // self.save();
+        #[cfg(not(test))]
+        #[cfg(feature = "userio")]
+        self.save();
 
         debug!(
             "Added new site: {} in {}s",
@@ -114,8 +118,9 @@ impl User {
 
     fn delete_site_data(&mut self, address: &str) {
         if self.sites.remove(address).is_some() {
-            // #[cfg(not(test))]
-            // self.save();
+            #[cfg(not(test))]
+            #[cfg(feature = "userio")]
+            self.save();
 
             debug!("Deleted site: {}", address);
         }
@@ -124,8 +129,11 @@ impl User {
     fn set_site_settings(&mut self, address: &str, settings: serde_json::Value) -> SiteData {
         #[allow(clippy::let_and_return)]
         let site_data = self.get_site_data(address, true).set_settings(settings);
-        // #[cfg(not(test))]
-        // self.save();
+
+        #[cfg(not(test))]
+        #[cfg(feature = "userio")]
+        self.save();
+
         site_data
     }
 
@@ -150,8 +158,9 @@ impl User {
         self.sites
             .insert(site_address.to_string(), site_data.clone());
 
-        // #[cfg(not(test))]
-        // self.save();
+        #[cfg(not(test))]
+        #[cfg(feature = "userio")]
+        self.save();
         site_data
     }
     /// Get BIP32 address from site address
@@ -219,8 +228,11 @@ impl User {
         //     false
         } else {
             self.certs.insert(domain.to_string(), cert_node);
-            // #[cfg(not(test))]
-            // self.save();
+
+            #[cfg(not(test))]
+            #[cfg(feature = "userio")]
+            self.save();
+
             true
         }
     }
@@ -240,8 +252,9 @@ impl User {
             site_data.delete_cert_provider();
         }
 
-        // #[cfg(not(test))]
-        // self.save();
+        #[cfg(not(test))]
+        #[cfg(feature = "userio")]
+        self.save();
 
         site_data
     }
