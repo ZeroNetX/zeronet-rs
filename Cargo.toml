@@ -4,6 +4,8 @@ version = "0.1.0"
 authors = ["canewsin <canews.in@gmail.com>"]
 edition = "2021"
 
+[features]
+userio = []
 
 [dependencies]
 tokio = { version = "1.17.0", features = ["full"] }
