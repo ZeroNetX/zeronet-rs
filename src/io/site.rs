@@ -68,6 +68,10 @@ impl Site {
         Ok(true)
     }
 
+    pub async fn need_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
+        self.download_file(inner_path, _peer).await
+    }
+
     async fn download_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
         let path = &self.site_path().join(&inner_path);
         if path.exists() {

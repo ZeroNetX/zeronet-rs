@@ -94,6 +94,28 @@ pub async fn download_site(site: &mut Site) -> Result<(), Error> {
     Ok(())
 }
 
+pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), Error> {
+    add_peers_to_site(site).await?;
+    let download = if inner_path.ends_with("content.json") {
+        true
+    } else {
+        site.load_content().await?;
+        let files = site.content().unwrap().files;
+        files.keys().any(|path| path == &inner_path)
+    };
+    if !download {
+        println!("Inner Path Not Exists in content.json");
+    } else {
+        let result = site.need_file(inner_path.clone(), None).await;
+        if let Err(e) = &result {
+            println!("Error : {:?}", e);
+        } else {
+            println!("File Downloaded : {:?}", inner_path);
+        }
+    }
+    Ok(())
+}
+
 pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
     add_peers_to_site(site).await?;
     site.load_content().await?;

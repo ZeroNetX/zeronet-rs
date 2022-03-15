@@ -24,13 +24,17 @@ async fn main() -> Result<(), Error> {
         let mut site = Site::new(site, (*ENV).data_path.clone())?;
         match cmd {
             "siteCreate" => site_create(&mut user, true).await?,
+            "siteNeedFile" => {
+                let inner_path = site_args.next().unwrap();
+                site_need_file(&mut site, inner_path.into()).await?
+            }
             "siteDownload" => download_site(&mut site).await?,
-            "siteFindPeers" => find_peers(&mut site).await?,
+            "siteVerify" => check_site_integrity(&mut site).await?,
             "dbRebuild" => rebuild_db(&mut site).await?,
+            "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
+            "siteFindPeers" => find_peers(&mut site).await?,
             "sitePeerExchange" => peer_exchange(&mut site).await?,
             "siteFetchChanges" => fetch_changes(&mut site).await?,
-            "siteVerify" => check_site_integrity(&mut site).await?,
-            "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
             _ => {
                 println!("Unknown command: {}", cmd);
             }

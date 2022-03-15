@@ -75,7 +75,8 @@ fn get_matches() -> ArgMatches {
                 Arg::new("site")
                     .short('s')
                     .default_value("15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk")
-                    .required(false),
+                    .required(false)
+                    .min_values(1),
             )
         })
         .collect::<Vec<_>>();
