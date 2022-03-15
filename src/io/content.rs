@@ -8,7 +8,7 @@ use zerucontent::Content;
 
 use crate::{
     core::{error::*, io::*, site::*},
-    io::utils::get_file_hash,
+    io::utils::get_zfile_info,
 };
 
 #[async_trait::async_trait]
@@ -28,8 +28,7 @@ impl ContentMod for Site {
     async fn add_file_to_content(&mut self, inner_path: PathBuf) -> Result<(), Error> {
         let path = self.site_path().join(&inner_path);
         if path.exists() {
-            let (size, sha512) = get_file_hash(path).await?;
-            let file = zerucontent::File { sha512, size };
+            let file = get_zfile_info(path).await?;
             let res = &mut self.content_mut().unwrap().files;
             res.insert(inner_path.display().to_string(), file);
             Ok(())

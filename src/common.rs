@@ -93,6 +93,34 @@ pub async fn download_site(site: &mut Site) -> Result<(), Error> {
     }
     Ok(())
 }
+pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error> {
+    site.load_content().await?;
+    let changes = site.check_site_integrity().await?;
+    if changes.is_empty() {
+        println!("No changes to sign");
+    } else {
+        let content = {
+            let mut content = site.content().unwrap();
+            let mut files = content.files.clone();
+            for (inner_path, file) in changes {
+                if files.insert(inner_path, file).is_none() {
+                    unreachable!();
+                };
+            }
+            content.files = files;
+            content
+        };
+        site.modify_content(content);
+        let res = site.verify_content(false).await?;
+        if res {
+            site.sign_content(&private_key).await?;
+            site.save_content(None).await?;
+        } else {
+            println!("Site Not Signed");
+        }
+    }
+    Ok(())
+}
 
 pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), Error> {
     add_peers_to_site(site).await?;

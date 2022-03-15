@@ -16,7 +16,7 @@ lazy_static! {
             "siteCreate".into(),
             "siteNeedFile".into(),
             "siteDownload".into(),
-            //"siteSign".into(),
+            "siteSign".into(),
             //"sitePublish".into(),
             "siteVerify".into(),
             // "siteCmd".into(),

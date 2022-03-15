@@ -160,13 +160,13 @@ impl Site {
         Ok(res)
     }
 
-    pub async fn check_site_integrity(&self) -> Result<(), Error> {
+    pub async fn check_site_integrity(&self) -> Result<Vec<(String, zerucontent::File)>, Error> {
         let content = self.content().unwrap();
         let files = content.files;
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
             let hash = file.sha512.clone();
-            let task = check_file_integrity(self.site_path().join(inner_path), hash);
+            let task = check_file_integrity(self.site_path(), inner_path, hash);
             tasks.push(task);
         }
         //TODO!: Verify includes, user data files
@@ -178,7 +178,23 @@ impl Site {
         if !errs.is_empty() {
             return Err(Error::Err("Site integrity check failed".into()));
         }
-        Ok(())
+        let res = res
+            .iter_mut()
+            .filter_map(|r| {
+                let r = &(r);
+                if let Ok(r) = r {
+                    let (v, i, h) = r;
+                    if *v {
+                        None
+                    } else {
+                        Some((i.clone(), h.clone()))
+                    }
+                } else {
+                    unreachable!()
+                }
+            })
+            .collect::<Vec<_>>();
+        Ok(res)
     }
 
     pub async fn fetch_changes(&self, since: usize) -> Result<HashMap<String, usize>, Error> {

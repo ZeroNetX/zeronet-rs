@@ -54,7 +54,10 @@ impl Site {
             Err(Error::Err("No content to verify".into()))
         } else {
             if !content_only {
-                self.check_site_integrity().await?;
+                let res = self.check_site_integrity().await?;
+                if !res.is_empty() {
+                    return Err(Error::Err("Site Integrity Check Failed".into()));
+                }
             }
             let content = self.content.clone().unwrap();
             let verified = content.verify((&self.address()).clone());

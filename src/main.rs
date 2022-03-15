@@ -20,7 +20,8 @@ async fn main() -> Result<(), Error> {
     let mut user = User::load().await?;
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
-        let site = _args.values_of("site").unwrap().into_iter().next().unwrap();
+        let mut site_args = _args.values_of("site").unwrap();
+        let site = site_args.next().unwrap();
         let mut site = Site::new(site, (*ENV).data_path.clone())?;
         match cmd {
             "siteCreate" => site_create(&mut user, true).await?,
@@ -29,6 +30,10 @@ async fn main() -> Result<(), Error> {
                 site_need_file(&mut site, inner_path.into()).await?
             }
             "siteDownload" => download_site(&mut site).await?,
+            "siteSign" => {
+                let private_key = site_args.next().unwrap();
+                site_sign(&mut site, private_key.into()).await?
+            }
             "siteVerify" => check_site_integrity(&mut site).await?,
             "dbRebuild" => rebuild_db(&mut site).await?,
             "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
