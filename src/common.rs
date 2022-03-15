@@ -103,7 +103,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
     for peer in peers {
         let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
         let res = peer.connect();
-        if let Ok(_) = res {
+        if res.is_ok() {
             peers_cons.push(peer);
         }
     }

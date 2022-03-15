@@ -17,11 +17,11 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut user = User::load()?;
+    let mut user = User::load().await?;
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
         let site = _args.values_of("site").unwrap().into_iter().next().unwrap();
-        let mut site = Site::new(&site, (*ENV).data_path.clone())?;
+        let mut site = Site::new(site, (*ENV).data_path.clone())?;
         match cmd {
             "siteCreate" => site_create(&mut user, true).await?,
             "siteDownload" => download_site(&mut site).await?,
@@ -31,10 +31,12 @@ async fn main() -> Result<(), Error> {
             "siteFetchChanges" => fetch_changes(&mut site).await?,
             "siteVerify" => check_site_integrity(&mut site).await?,
             "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
-            _ => {}
+            _ => {
+                println!("Unknown command: {}", cmd);
+            }
         }
     } else {
-        println!("{}", "No command specified");
+        println!("No command specified");
     }
     Ok(())
 }

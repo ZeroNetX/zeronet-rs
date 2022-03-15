@@ -14,7 +14,7 @@ lazy_static! {
     pub static ref SUB_CMDS: Vec<String> =
         vec![
             "siteCreate".into(),
-            // "siteNeedFile".into(),
+            "siteNeedFile".into(),
             "siteDownload".into(),
             //"siteSign".into(),
             //"sitePublish".into(),
@@ -239,8 +239,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let fileserver_port = if let Some(port) = matches.value_of("FILESERVER_PORT") {
         if port.contains("10000-40000") {
             let mut rng = rand::thread_rng();
-            let port = rng.gen_range(10000..=40000);
-            port
+            rng.gen_range(10000..=40000)
         } else {
             port.parse::<u16>().unwrap()
         }

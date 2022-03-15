@@ -1,17 +1,16 @@
-use crate::environment::ENV;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+
 use async_recursion::async_recursion;
 use log::debug;
 use regex::Regex;
 use rusqlite::{params, Connection};
 use serde_json::Value;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
 use tokio::fs;
 
-use super::schema::{DBSchema, Table, ToTable};
-
+use crate::{core::schema::*, environment::ENV};
 pub struct DbManager {
     db: HashMap<String, Connection>,
     pub schema: HashMap<String, DBSchema>,
@@ -85,7 +84,7 @@ impl DbManager {
             }
             let _res = conn.execute(&format!("DROP TABLE {}", table_name), []);
         });
-        let _res = conn.execute(&format!("DROP TABLE json"), []);
+        let _res = conn.execute("DROP TABLE json", []);
         for (table_name, table) in tables {
             let query = table.to_query(&table_name);
             conn.execute(&query, params![]).unwrap();
