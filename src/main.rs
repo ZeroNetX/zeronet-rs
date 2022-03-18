@@ -20,28 +20,45 @@ async fn main() -> Result<(), Error> {
     let mut user = User::load().await?;
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
-        let mut site_args = _args.values_of("site").unwrap();
-        let site = site_args.next().unwrap();
-        let mut site = Site::new(site, (*ENV).data_path.clone())?;
-        match cmd {
-            "siteCreate" => site_create(&mut user, true).await?,
-            "siteNeedFile" => {
-                let inner_path = site_args.next().unwrap();
-                site_need_file(&mut site, inner_path.into()).await?
+        if let Some(mut site_args) = _args.values_of("site") {
+            let site_addr = site_args.next().unwrap();
+            let mut site = Site::new(site_addr, (*ENV).data_path.clone())?;
+            match cmd {
+                "siteNeedFile" => {
+                    let inner_path = site_args.next().unwrap();
+                    site_need_file(&mut site, inner_path.into()).await?
+                }
+                "siteDownload" => download_site(&mut site).await?,
+                "siteSign" => {
+                    let private_key = site_args.next().unwrap();
+                    site_sign(&mut site, private_key.into()).await?
+                }
+                "siteVerify" => check_site_integrity(&mut site).await?,
+                "dbRebuild" => rebuild_db(&mut site).await?,
+                "siteFindPeers" => find_peers(&mut site).await?,
+                "sitePeerExchange" => peer_exchange(&mut site).await?,
+                "siteFetchChanges" => fetch_changes(&mut site).await?,
+                _ => {
+                    println!("Unknown command: {}", cmd);
+                }
             }
-            "siteDownload" => download_site(&mut site).await?,
-            "siteSign" => {
-                let private_key = site_args.next().unwrap();
-                site_sign(&mut site, private_key.into()).await?
+        } else if let Some(mut peer_args) = _args.values_of("peer") {
+            let peer = peer_args.next().unwrap();
+            println!("{:?}", peer);
+            match cmd {
+                "peerPing" => peer_ping(peer).await?,
+                _ => {
+                    println!("Unknown command: {}", cmd);
+                }
             }
-            "siteVerify" => check_site_integrity(&mut site).await?,
-            "dbRebuild" => rebuild_db(&mut site).await?,
-            "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
-            "siteFindPeers" => find_peers(&mut site).await?,
-            "sitePeerExchange" => peer_exchange(&mut site).await?,
-            "siteFetchChanges" => fetch_changes(&mut site).await?,
-            _ => {
-                println!("Unknown command: {}", cmd);
+        } else {
+            match cmd {
+                "siteCreate" => site_create(&mut user, true).await?,
+                "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
+                _ => {
+                    println!("Unknown command: {}", cmd);
+                    println!("Unknown command: {}", cmd);
+                }
             }
         }
     } else {

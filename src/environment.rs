@@ -22,7 +22,7 @@ lazy_static! {
             // "siteCmd".into(),
             "dbRebuild".into(),
             // "dbQuery".into()
-            // "peerPing".into()
+            "peerPing".into(),
             // "peerGetFile".into()
             // "peerCmd".into()
             // "cryptSign".into()
@@ -71,13 +71,9 @@ fn get_matches() -> ArgMatches {
     let sub_commands = (&*SUB_CMDS)
         .iter()
         .map(|cmd| {
-            Command::new(cmd).arg(
-                Arg::new("site")
-                    .short('s')
-                    .default_value("15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk")
-                    .required(false)
-                    .min_values(1),
-            )
+            Command::new(cmd)
+                .arg(Arg::new("site").short('s').required(false).min_values(1))
+                .arg(Arg::new("peer").short('p').required(false).min_values(1))
         })
         .collect::<Vec<_>>();
 

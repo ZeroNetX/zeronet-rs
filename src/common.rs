@@ -4,7 +4,7 @@ use crate::{
     core::{discovery::Discovery, error::Error, io::*, peer::*, site::*, user::*},
     environment::ENV,
     io::db::DbManager,
-    net::Protocol,
+    net::protocol::Protocol,
 };
 
 pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
@@ -142,6 +142,17 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
         }
     }
     Ok(())
+}
+
+pub async fn peer_ping(addr: &str) -> Result<(), Error> {
+    let mut peer = Peer::new(PeerAddr::parse(addr).unwrap());
+    let res = peer.connect();
+    if !res.is_err() {
+        let res = Protocol::new(peer.connection_mut().unwrap()).ping().await?;
+        println!("Ping Result : {:?} from Peer : {:?}", res, addr);
+        return Ok(());
+    }
+    Err(Error::Err("Peer Not Found".into()))
 }
 
 pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {

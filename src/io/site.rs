@@ -20,7 +20,7 @@ use crate::{
     discovery::tracker::IpPort,
     environment::ENV,
     io::utils::check_file_integrity,
-    net::Protocol,
+    net::protocol::Protocol,
 };
 
 impl Site {
