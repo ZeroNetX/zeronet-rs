@@ -224,7 +224,7 @@ fn get_matches() -> ArgMatches {
 pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let data_path_str = matches.value_of("DATA_DIR").unwrap();
     let data_path = PathBuf::from_str(data_path_str).unwrap();
-    let data_path = if data_path.exists() && data_path.is_dir() {
+    let data_path = if data_path.is_dir() {
         data_path
     } else {
         fs::create_dir_all(data_path_str).unwrap();
@@ -232,7 +232,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     };
     let log_path_str = matches.value_of("LOG_DIR").unwrap();
     let log_path = PathBuf::from_str(log_path_str).unwrap();
-    let log_path = if log_path.exists() && log_path.is_dir() {
+    let log_path = if log_path.is_dir() {
         log_path
     } else {
         fs::create_dir_all(log_path_str).unwrap();

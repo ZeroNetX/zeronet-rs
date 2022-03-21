@@ -23,7 +23,7 @@ impl UserIO for User {
     async fn load() -> Result<Self::IOType, Error> {
         let start_time = SystemTime::now();
         let file_path = ENV.data_path.join("users.json");
-        if !file_path.exists() {
+        if !file_path.is_file() {
             let mut file = File::create(&file_path).await?;
             let user = User::new();
             let content = &format!("{:#}", json!({ &user.master_address: user }));

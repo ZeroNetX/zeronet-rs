@@ -85,7 +85,7 @@ pub async fn rebuild_db(site: &mut Site) -> Result<(), Error> {
 }
 
 pub async fn download_site(site: &mut Site) -> Result<(), Error> {
-    let exists = site.content_path().exists();
+    let exists = site.content_path().is_file();
     if !exists {
         add_peers_to_site(site).await?;
         println!("Downloading Site");
