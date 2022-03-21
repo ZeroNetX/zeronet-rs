@@ -261,7 +261,7 @@ impl SiteIO for Site {
     async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
         let env = &*ENV;
         let sites_file_path = env.data_path.join("sites.json");
-        if !sites_file_path.is_file() {
+        if !sites_file_path.exists() {
             let mut file = File::create(&sites_file_path).await?;
             let settings = SiteSettings::default();
             // let mut settings = SiteSettings::default();
