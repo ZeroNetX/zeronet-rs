@@ -15,7 +15,7 @@ use crate::{
 impl ContentMod for Site {
     async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error> {
         let path = &self.site_path().join(&inner_path);
-        if path.exists() {
+        if path.is_file() {
             let mut file = File::open(path).await?;
             let mut buf = Vec::new();
             file.read_to_end(&mut buf).await?;
@@ -27,7 +27,7 @@ impl ContentMod for Site {
 
     async fn add_file_to_content(&mut self, inner_path: PathBuf) -> Result<(), Error> {
         let path = self.site_path().join(&inner_path);
-        if path.exists() {
+        if path.is_file() {
             let file = get_zfile_info(path).await?;
             let res = &mut self.content_mut().unwrap().files;
             res.insert(inner_path.display().to_string(), file);

@@ -60,7 +60,7 @@ impl Site {
             .get_file(self.address(), inner_path)
             .await?;
         let parent = path.parent().unwrap();
-        if !parent.exists() {
+        if !parent.is_dir() {
             fs::create_dir_all(parent).await?;
         }
         let mut file = File::create(path).await?;
@@ -74,7 +74,7 @@ impl Site {
 
     async fn download_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
         let path = &self.site_path().join(&inner_path);
-        if path.exists() {
+        if path.is_file() {
             let mut file = File::open(path).await?;
             let mut buf = Vec::new();
             file.read_to_end(&mut buf).await?;
@@ -243,10 +243,10 @@ impl SiteIO for Site {
     }
 
     async fn init_download(&mut self) -> Result<bool, Error> {
-        if !&self.site_path().exists() {
+        if !&self.site_path().is_dir() {
             fs::create_dir_all(self.site_path()).await?;
         }
-        let content_exists = self.content_path().exists();
+        let content_exists = self.content_path().is_file();
         if !content_exists {
             Self::download_file(self, "content.json".into(), None).await?;
         }
@@ -261,7 +261,7 @@ impl SiteIO for Site {
     async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
         let env = &*ENV;
         let sites_file_path = env.data_path.join("sites.json");
-        if !sites_file_path.exists() {
+        if !sites_file_path.is_file() {
             let mut file = File::create(&sites_file_path).await?;
             let settings = SiteSettings::default();
             // let mut settings = SiteSettings::default();

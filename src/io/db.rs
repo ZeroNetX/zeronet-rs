@@ -33,7 +33,7 @@ impl DbManager {
     pub fn has_schema(&self, site: &str) -> (bool, Option<PathBuf>) {
         let data_path = ENV.data_path.join(site);
         let schema_path = data_path.join("dbschema.json");
-        if schema_path.exists() {
+        if schema_path.is_file() {
             (true, Some(schema_path))
         } else {
             (false, None)
