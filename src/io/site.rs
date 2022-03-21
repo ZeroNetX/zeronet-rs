@@ -1,22 +1,20 @@
 use std::{
     collections::HashMap,
-    io::Write,
     path::{Path, PathBuf},
 };
 
 use futures::future::join_all;
 use log::*;
 use serde_bytes::ByteBuf;
-use serde_json::json;
 use tokio::{
-    fs::{self, File, OpenOptions},
+    fs::{self, File},
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
 use zerucontent::Content;
 
 use crate::{
-    core::{error::*, io::*, models::*, peer::*, site::*},
+    core::{error::*, io::*, peer::*, site::*},
     discovery::tracker::IpPort,
     environment::ENV,
     io::utils::check_file_integrity,
@@ -258,73 +256,11 @@ impl SiteIO for Site {
         Ok(verified)
     }
 
-    async fn load_settings(address: &str) -> Result<SiteSettings, Error> {
-        let env = &*ENV;
-        let sites_file_path = env.data_path.join("sites.json");
-        if !sites_file_path.exists() {
-            let mut file = File::create(&sites_file_path).await?;
-            let settings = SiteSettings::default();
-            // let mut settings = SiteSettings::default();
-            // if address == ENV.homepage {
-            //     settings.permissions.push("ADMIN".to_string());
-            // }
-            let site_file = SiteFile::default().from_site_settings(&settings);
-            let s = json! {
-                {
-                    address: &site_file
-                }
-            };
-            let content = format!("{:#}", s);
-            file.write_all(content.as_bytes()).await?;
-            Ok(settings)
-        } else {
-            let mut sites_file = OpenOptions::new().read(true).open(&sites_file_path).await?;
-            let mut content = String::new();
-            sites_file.read_to_string(&mut content).await?;
-            let mut value: serde_json::Value = serde_json::from_str(&content)?;
-            let site_settings = value[address].clone();
-            let settings = if site_settings.is_null() {
-                let set = SiteSettings::default();
-                let site_file: SiteFile = SiteFile::default().from_site_settings(&set);
-                value[address] = json! {
-                    &site_file
-                };
-                let content = format!("{:#}", value);
-                let mut sites_file = OpenOptions::new()
-                    .write(true)
-                    .truncate(true)
-                    .open(&sites_file_path)
-                    .await?;
-                sites_file.write_all(content.as_bytes()).await?;
-                set
-            } else {
-                let v = value[address].clone();
-                let res = serde_json::from_value(v);
-                if let Err(e) = &res {
-                    print!("{}", e);
-                }
-                let site_file: SiteFile = res.unwrap();
-                site_file.site_settings()
-            };
-
-            Ok(settings)
-        }
+    async fn load_storage(_path: &str) -> Result<bool, Error> {
+        unimplemented!()
     }
 
-    async fn save_settings(&self) -> Result<(), Error> {
-        let env = &*ENV;
-        let sites_file_path = env.data_path.join("sites.json");
-
-        let mut sites_file = File::open(sites_file_path).await?;
-
-        let site_settings = self.settings.clone();
-        let content: String = serde_json::to_string(&site_settings)?;
-
-        let mut full_content = String::new();
-        sites_file.read_to_string(&mut full_content).await?;
-        let _settings: serde_json::Value = serde_json::from_str(&content)?;
-
-        write!(sites_file.into_std().await, "{}", content)?;
-        Ok(())
+    async fn save_storage(&self) -> Result<bool, Error> {
+        unimplemented!()
     }
 }

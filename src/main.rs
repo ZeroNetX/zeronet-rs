@@ -1,6 +1,7 @@
 #![feature(drain_filter)]
 
 pub mod common;
+pub mod controllers;
 #[allow(unused)]
 pub mod core;
 pub mod discovery;
@@ -11,13 +12,16 @@ pub mod utils;
 
 use crate::{
     common::*,
-    core::{error::Error, io::*, site::*, user::*},
+    controllers::sites::SitesController,
+    core::{error::Error, site::Site},
     environment::*,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    let mut user = User::load().await?;
+    let site_storage = &*SITE_STORAGE;
+    let user_storage = &*USER_STORAGE;
+    let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
         if let Some(mut site_args) = _args.values_of("site") {
@@ -63,6 +67,8 @@ async fn main() -> Result<(), Error> {
         }
     } else {
         println!("No command specified");
+        let mut controller = SitesController::new();
+        controller.extend_sites_from_sitedata(site_storage.clone());
     }
     Ok(())
 }

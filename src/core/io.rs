@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use zerucontent::Content;
 
-use super::{error::Error, models::SiteSettings};
+use super::error::Error;
 
 #[async_trait::async_trait]
 pub trait SiteIO {
@@ -11,8 +11,8 @@ pub trait SiteIO {
     // async fn content(self) -> Result<Content, Error>;
     // async fn content_exists(&self) -> Result<bool, Error>;
     async fn init_download(&mut self) -> Result<bool, Error>;
-    async fn load_settings(address: &str) -> Result<SiteSettings, Error>;
-    async fn save_settings(&self) -> Result<(), Error>;
+    async fn load_storage(path: &str) -> Result<bool, Error>;
+    async fn save_storage(&self) -> Result<bool, Error>;
 }
 
 #[async_trait::async_trait]

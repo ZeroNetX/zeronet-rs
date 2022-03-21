@@ -1,16 +1,174 @@
+use super::error::Error;
 #[cfg(feature = "userio")]
 use super::io::UserIO;
-
-use super::{
-    error::Error,
-    models::{AuthPair, Cert, SiteData},
-};
 use log::*;
+use models::*;
 use num_bigint::BigUint;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::SystemTime;
+
+pub mod models {
+    use chrono::Utc;
+    use serde::{Deserialize, Serialize};
+    use std::collections::{BTreeMap, HashMap};
+
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    pub struct AuthPair {
+        pub auth_address: String,
+        auth_privkey: String,
+    }
+
+    impl AuthPair {
+        pub fn new(auth_address: String, auth_privkey: String) -> Self {
+            AuthPair {
+                auth_address,
+                auth_privkey,
+            }
+        }
+
+        pub fn get_auth_privkey(&self) -> &str {
+            &self.auth_privkey
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+    pub struct Cert {
+        auth_pair: AuthPair,
+        pub auth_type: String,
+        pub auth_user_name: String,
+        pub cert_sign: String,
+    }
+
+    impl Cert {
+        pub fn new(
+            auth_pair: AuthPair,
+            auth_type: String,
+            auth_user_name: String,
+            cert_sign: String,
+        ) -> Self {
+            Cert {
+                auth_pair,
+                auth_type,
+                auth_user_name,
+                cert_sign,
+            }
+        }
+
+        pub fn get_auth_pair(&self) -> AuthPair {
+            self.auth_pair.clone()
+        }
+
+        pub fn get_cert_sign(&self) -> &str {
+            &self.cert_sign
+        }
+    }
+
+    #[derive(Serialize, Deserialize, Clone, Debug)]
+    pub struct SiteData {
+        #[serde(skip_serializing)]
+        pub address: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub index: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cert_provider: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        auth_pair: Option<AuthPair>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        privatekey: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        settings: Option<serde_json::Value>,
+        #[serde(skip_serializing_if = "HashMap::is_empty")]
+        plugin_data: HashMap<String, serde_json::Value>,
+    }
+
+    impl SiteData {
+        pub fn new(address: String) -> Self {
+            SiteData {
+                address,
+                index: None,
+                cert_provider: None,
+                auth_pair: None,
+                privatekey: None,
+                settings: None,
+                plugin_data: HashMap::new(),
+            }
+        }
+
+        pub fn create(address: String, index: u32, auth_pair: AuthPair, privkey: String) -> Self {
+            SiteData {
+                address,
+                index: Some(index),
+                cert_provider: None,
+                auth_pair: Some(auth_pair),
+                privatekey: Some(privkey),
+                settings: None,
+                plugin_data: HashMap::new(),
+            }
+        }
+
+        pub fn with_index(&mut self, index: u32) -> Self {
+            self.index = Some(index);
+            self.to_owned()
+        }
+
+        pub fn get_index(&self) -> Option<u32> {
+            self.index
+        }
+
+        pub fn get_cert_provider(&self) -> Option<String> {
+            self.cert_provider.clone()
+        }
+
+        pub fn add_cert_provider(&mut self, cert_provider: String) {
+            self.cert_provider = Some(cert_provider);
+        }
+
+        pub fn delete_cert_provider(&mut self) {
+            self.cert_provider = None;
+        }
+
+        pub fn with_auth_pair(&mut self, auth_pair: AuthPair) -> Self {
+            self.auth_pair = Some(auth_pair);
+            self.to_owned()
+        }
+
+        pub fn get_auth_pair(&self) -> Option<AuthPair> {
+            self.auth_pair.clone()
+        }
+
+        pub fn with_privatekey(&mut self, priv_key: String) -> Self {
+            self.privatekey = Some(priv_key);
+            self.to_owned()
+        }
+
+        pub fn get_privkey(&self) -> Option<String> {
+            self.privatekey.clone()
+        }
+
+        pub fn get_settings(&self) -> Option<serde_json::Value> {
+            self.settings.clone()
+        }
+
+        pub fn set_settings(&mut self, settings: serde_json::Value) -> Self {
+            self.settings = Some(settings);
+            self.to_owned()
+        }
+
+        pub fn get_plugin_data(&self) -> &HashMap<String, serde_json::Value> {
+            &self.plugin_data
+        }
+
+        pub fn get_plugin_data_mut(&mut self) -> &mut HashMap<String, serde_json::Value> {
+            &mut self.plugin_data
+        }
+
+        pub fn add_plugin_data(&mut self, key: String, value: serde_json::Value) {
+            self.plugin_data.insert(key, value);
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
@@ -55,7 +213,7 @@ impl User {
     }
 
     /// Creates a new user from a seed
-    fn from_seed(master_seed: String) -> User {
+    pub fn from_seed(master_seed: String) -> User {
         let privkey = zeronet_cryptography::seed_to_privkey(&master_seed).unwrap();
         let wif_privkey = zeronet_cryptography::privkey_to_wif(privkey);
         let master_address = zeronet_cryptography::privkey_to_pubkey(&wif_privkey).unwrap();
@@ -153,7 +311,7 @@ impl User {
         let site_data = self
             .get_site_data(&site_address, true)
             .with_index(bip32_idx)
-            .with_privkey(site_privkey);
+            .with_privatekey(site_privkey);
 
         self.sites
             .insert(site_address.to_string(), site_data.clone());
@@ -329,8 +487,7 @@ impl User {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::models::AuthPair;
-
+    use super::models::AuthPair;
     use super::User;
 
     const EXAMPLE_SITE: &str = "1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d";

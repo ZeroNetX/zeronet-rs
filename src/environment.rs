@@ -2,14 +2,20 @@ use clap::{Arg, ArgMatches, Command};
 use lazy_static::lazy_static;
 use rand::Rng;
 use serde_json::json;
-use std::{env::current_dir, fs, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, env::current_dir, fs, path::PathBuf, str::FromStr};
 
-use crate::{core::error::Error, utils::gen_peer_id};
+use crate::{
+    core::{error::Error, site::models::SiteStorage, user::User},
+    io::utils::{load_sites_file, load_users_file},
+    utils::gen_peer_id,
+};
 
 lazy_static! {
     pub static ref CURRENT_DIR: PathBuf = current_dir().unwrap();
     pub static ref DEF_DATA_DIR: String = CURRENT_DIR.join("data").to_str().unwrap().to_string();
     pub static ref DEF_LOG_DIR: String = CURRENT_DIR.join("log").to_str().unwrap().to_string();
+    pub static ref USER_STORAGE: HashMap<String, User> = load_users_file();
+    pub static ref SITE_STORAGE: HashMap<String, SiteStorage> = load_sites_file();
     pub static ref MATCHES: ArgMatches = get_matches();
     pub static ref SUB_CMDS: Vec<String> =
         vec![
