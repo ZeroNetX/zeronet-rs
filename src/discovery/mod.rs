@@ -4,7 +4,8 @@ use zeronet_protocol::PeerAddr;
 
 use crate::{
     core::{discovery::Discovery, error::Error, peer::Peer, site::Site},
-    discovery::tracker::{announce, get_info_hash, make_addr}, environment::ENV,
+    discovery::tracker::{announce, get_info_hash, make_addr},
+    environment::ENV,
 };
 
 use self::tracker::IpPort;
@@ -27,11 +28,9 @@ impl Discovery for Site {
             if let Err(e) = &res {
                 println!("Error : {:?}", e);
             } else {
-                let mut _res: Vec<Peer> = res.unwrap()
-                    .drain_filter(|a| 
-                        //consider ips with no port
-                        a.port > 0
-                    )
+                let mut _res: Vec<Peer> = res
+                    .unwrap()
+                    .drain_filter(|a| a.port > 0) //consider ips with no port
                     .collect::<Vec<_>>()
                     .iter()
                     .map(|p: &IpPort| Peer::new(PeerAddr::parse(p.to_string()).unwrap()))

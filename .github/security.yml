@@ -1,0 +1,19 @@
+name: Security audit
+on:
+  push:
+    paths: 
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+jobs:
+  security_audit:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: 'Audit Advisory'
+        uses: actions/checkout@v1
+        with:
+          submodules: true
+        
+        
+      - uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,83 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  test-desktop:
+    name: Build and test
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        args: [
+          "--all-features",
+        ]
+    steps:
+
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: actions/checkout@v2.4.0
+      with:
+        submodules: true
+
+    - uses: Swatinem/rust-cache@v1.3.0
+      with:
+        key: ${{ matrix.args }}
+
+    - run: cargo test --workspace ${{ matrix.args }}
+
+  check-clippy:
+    runs-on: ubuntu-18.04
+    steps:
+
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: actions/checkout@v2.4.0
+      with:
+        submodules: true
+
+    - uses: actions-rs/toolchain@v1.0.7
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: clippy
+
+    - uses: Swatinem/rust-cache@v1.3.0
+
+    - uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        args: --all-features
+
+  rustfmt:
+    runs-on: ubuntu-18.04
+    steps:
+
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.0
+      with:
+        access_token: ${{ github.token }}
+
+    - uses: actions/checkout@v2.4.0
+      with:
+        submodules: true
+
+    - uses: actions-rs/toolchain@v1.0.7
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: rustfmt
+
+    - name: Check formatting
+      run: cargo fmt -- --check
