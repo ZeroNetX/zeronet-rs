@@ -162,7 +162,7 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
 pub async fn peer_ping(addr: &str) -> Result<(), Error> {
     let mut peer = Peer::new(PeerAddr::parse(addr).unwrap());
     let res = peer.connect();
-    if !res.is_err() {
+    if res.is_ok() {
         let res = Protocol::new(peer.connection_mut().unwrap()).ping().await?;
         println!("Ping Result : {:?} from Peer : {:?}", res, addr);
         return Ok(());

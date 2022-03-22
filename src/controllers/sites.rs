@@ -13,12 +13,18 @@ pub struct SitesController {
     pub sites_changed: u64,
 }
 
-impl SitesController {
-    pub fn new() -> Self {
-        Self {
+impl Default for SitesController {
+    fn default() -> Self {
+        SitesController {
             sites: HashMap::new(),
             sites_changed: SitesController::current_time(),
         }
+    }
+}
+
+impl SitesController {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn add_site(&mut self, site: Site) {

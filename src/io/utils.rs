@@ -58,12 +58,11 @@ pub fn load_users_file() -> HashMap<String, User> {
     for (username, user_obj) in users_store {
         println!("Loading user: {}", username);
         if let Value::Object(user_map) = &user_obj {
-            let mut user;
-            if let Value::String(master_seed) = &user_map["master_seed"] {
-                user = User::from_seed(master_seed.clone());
+            let mut user = if let Value::String(master_seed) = &user_map["master_seed"] {
+                User::from_seed(master_seed.clone())
             } else {
                 unimplemented!("No master seed found");
-            }
+            };
             for (key, value) in user_map {
                 match key.as_str() {
                     "certs" => {
