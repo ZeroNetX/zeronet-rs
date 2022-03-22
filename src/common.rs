@@ -1,3 +1,5 @@
+use rusqlite::{params, types::Value, Connection};
+use serde_json::Map;
 use zeronet_protocol::PeerAddr;
 
 use crate::{
@@ -5,6 +7,7 @@ use crate::{
     environment::ENV,
     io::db::DbManager,
     net::protocol::Protocol,
+    utils::to_json_value,
 };
 
 pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
@@ -46,33 +49,10 @@ pub async fn find_peers(site: &mut Site) -> Result<(), Error> {
     }
     let connectable_peers = connections.iter().map(|peer| peer.address().to_string());
     save_peers(connectable_peers).await;
-
-    // let mut peer = Peer::new(PeerAddr::IPV4([127, 0, 0, 1], 11917));
-    // let _ = peer.connect();
-    // connections.push(peer);
-    // vec![];
-
-    // for mut peer in connections {
-    //     let request = zeronet_protocol::templates::Handshake::new();
-    //     let body = json!(request);
-    //     println!("{}", body);
-
-    //     let res = peer
-    //         .connection_mut()
-    //         .unwrap()
-    //         .request("handshake", body)
-    //         .await;
-    //     // println!("{:?}", res);
-    //     let response: templates::Handshake = res.unwrap().body()?;
-    //     println!("{:?}", response);
-    //     site.peers.insert(response.peer_id.clone(), peer);
-    // }
-    // site.init_download().await?;
     Ok(())
 }
 
-pub async fn rebuild_db(site: &mut Site) -> Result<(), Error> {
-    let mut db_manager = DbManager::new();
+pub async fn rebuild_db(site: &mut Site, db_manager: &mut DbManager) -> Result<(), Error> {
     let has_schema = db_manager.has_schema(&site.address());
     let address = site.address();
     if has_schema.0 {
@@ -80,6 +60,40 @@ pub async fn rebuild_db(site: &mut Site) -> Result<(), Error> {
         db_manager.connect_db(&address);
         db_manager.create_tables(&address);
         db_manager.load_data(&address).await;
+    }
+    Ok(())
+}
+
+pub async fn db_query(conn: &mut Connection, query: &str) -> Result<(), Error> {
+    let mut stmt = conn.prepare(query).unwrap();
+    let count = stmt.column_count();
+    let names = {
+        stmt.column_names()
+            .iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    };
+    let res = stmt
+        // .query(params![]).unwrap();
+        .query_map(params![], |row| {
+            let mut data_map = Map::new();
+            let mut i = 0;
+            loop {
+                while let Ok(value) = row.get::<_, Value>(i) {
+                    let name = names.get(i).unwrap().to_string();
+                    i += 1;
+                    let value = to_json_value(&value);
+                    data_map.insert(name, value);
+                }
+                if i == count {
+                    break;
+                }
+            }
+            Ok(data_map)
+        })
+        .unwrap();
+    for row in res {
+        println!("{:#?}", row.unwrap());
     }
     Ok(())
 }
@@ -93,6 +107,7 @@ pub async fn download_site(site: &mut Site) -> Result<(), Error> {
     }
     Ok(())
 }
+
 pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error> {
     site.load_content().await?;
     let changes = site.check_site_integrity().await?;

@@ -15,12 +15,14 @@ use crate::{
     controllers::sites::SitesController,
     core::{error::Error, site::Site},
     environment::*,
+    io::db::DbManager,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     let site_storage = &*SITE_STORAGE;
     let user_storage = &*USER_STORAGE;
+    let mut db_manager = DbManager::new();
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (&*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
@@ -38,7 +40,14 @@ async fn main() -> Result<(), Error> {
                     site_sign(&mut site, private_key.into()).await?
                 }
                 "siteVerify" => check_site_integrity(&mut site).await?,
-                "dbRebuild" => rebuild_db(&mut site).await?,
+                "dbRebuild" => rebuild_db(&mut site, &mut db_manager).await?,
+                "dbQuery" => {
+                    let _schema = db_manager.load_schema(&site.address()).unwrap();
+                    db_manager.connect_db(&site.address());
+                    let conn = db_manager.get_db(&site.address()).unwrap();
+                    let query = site_args.next().unwrap();
+                    db_query(conn, query).await?;
+                }
                 "siteFindPeers" => find_peers(&mut site).await?,
                 "sitePeerExchange" => peer_exchange(&mut site).await?,
                 "siteFetchChanges" => fetch_changes(&mut site).await?,

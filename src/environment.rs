@@ -27,7 +27,7 @@ lazy_static! {
             "siteVerify".into(),
             // "siteCmd".into(),
             "dbRebuild".into(),
-            // "dbQuery".into()
+            "dbQuery".into(),
             "peerPing".into(),
             // "peerGetFile".into()
             // "peerCmd".into()
