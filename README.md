@@ -33,7 +33,7 @@ Currently this is just a non active cmd line tool. You can use available command
 pass -s "Your Site Address" for above commands
 
 ## Download :
-Latest Packages Available on [Github Releases](https://github.com/canewsin/ZeroNetX/releases/latest).
+Latest Packages Available on [Github Releases](https://github.com/canewsin/zeronet-rs/releases/latest).
 
 ## Usage :
 ### Window :
