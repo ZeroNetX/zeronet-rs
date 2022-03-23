@@ -23,8 +23,8 @@ log = "0.4.14"
 num-bigint = "0.4.3"
 rand = "0.8.5"
 regex = "1.5.5"
-rmp-serde = "1.0.0"
 rmp = "0.8.10"
+rmp-serde = "1.0.0"
 rusqlite = {version = "0.27.0", features = ["serde_json", "bundled"]}
 serde = { version = "1.0.136", features = ["derive"] }
 serde_bytes = "0.11.5"
