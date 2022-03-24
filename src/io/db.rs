@@ -366,48 +366,33 @@ impl DbManager {
                     // let mut values = format!("VALUES (");
                     if let Some(key_column_name) = &key_col {
                         if let Some(column_name) = &value_col {
-                            let key_col = key_column_name.clone();
-
-                            DbManager::object_handler(
-                                &value,
-                                &key_col,
+                            DbManager::object_str_handler(
+                                key_column_name,
+                                key.clone(),
+                                &mut column_keys,
                                 &replacements,
                                 &replacement_cols,
-                                &mut column_keys,
                                 &mut values,
                             );
 
-                            let mut value_str = key.clone();
-
-                            let replacement_idx =
-                                replacement_cols.iter().position(|x| x == &key_col);
-                            column_keys.push(key_col);
-                            if let Some(replacement_idx) = replacement_idx {
-                                let rep_vec = replacements.get(replacement_idx).unwrap();
-                                value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
-                            }
-                            values.push(format!("'{}'", value_str));
-
-                            let key_col = column_name.clone();
                             DbManager::object_handler(
                                 &value,
-                                &key_col,
+                                &column_name,
                                 &replacements,
                                 &replacement_cols,
                                 &mut column_keys,
                                 &mut values,
                             );
                         } else {
-                            let key_col = key_column_name.clone();
-                            let mut value_str = key.clone();
-                            let replacement_idx =
-                                replacement_cols.iter().position(|x| x == &key_col);
-                            column_keys.push(key_col);
-                            if let Some(replacement_idx) = replacement_idx {
-                                let rep_vec = replacements.get(replacement_idx).unwrap();
-                                value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
-                            }
-                            values.push(format!("'{}'", value_str));
+                            DbManager::object_str_handler(
+                                key_column_name,
+                                key.clone(),
+                                &mut column_keys,
+                                &replacements,
+                                &replacement_cols,
+                                &mut values,
+                            );
+
                             if let Value::Object(value) = value {
                                 for (key_col, value) in value {
                                     if use_import_cols && !import_cols.contains(key_col) {
@@ -465,6 +450,24 @@ impl DbManager {
                 unreachable!("Please File a Bug Request");
             }
         }
+    }
+
+    fn object_str_handler(
+        key_col: &str,
+        key: String,
+        column_keys: &mut Vec<String>,
+        replacements: &[(String, String)],
+        replacement_cols: &[String],
+        values: &mut Vec<String>,
+    ) {
+        let mut value_str = key;
+        let replacement_idx = replacement_cols.iter().position(|x| x == &key_col);
+        column_keys.push(key_col.to_string());
+        if let Some(replacement_idx) = replacement_idx {
+            let rep_vec = replacements.get(replacement_idx).unwrap();
+            value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
+        }
+        values.push(format!("'{}'", value_str));
     }
 
     fn object_handler(
