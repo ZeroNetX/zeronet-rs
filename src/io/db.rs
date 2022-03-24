@@ -338,40 +338,25 @@ impl DbManager {
                             if use_import_cols && !import_cols.contains(key) {
                                 continue;
                             }
-                            let key = (&*key).to_string();
-                            let mut need_replacement = false;
-                            let mut replacement_idx = 255;
-                            if replacement_cols.contains(&key) {
-                                need_replacement = true;
-                                replacement_idx =
-                                    replacement_cols.iter().position(|x| x == &key).unwrap();
-                            }
-                            column_keys.push(key);
-                            if let Value::String(value) = value {
-                                //TODO!: Do we need to escape the "(" and ")" ?
-                                let mut value = value.replace('\'', "''");
-                                if need_replacement {
-                                    let rep_vec = replacements.get(replacement_idx).unwrap();
-                                    value = value.replace(&rep_vec.0, &rep_vec.1);
-                                }
-                                values.push(format!("'{}'", value));
-                            } else if let Value::Number(value) = value {
-                                values.push(format!("{}", value));
-                            }
+                            DbManager::object_handler(
+                                &value,
+                                &key,
+                                &replacements,
+                                &replacement_cols,
+                                &mut column_keys,
+                                &mut values,
+                            );
                         }
                     } else {
                         unimplemented!("Please file a bug report");
                     }
-                    column_keys.push("json_id".to_owned());
-                    values.push(format!("{}", json_id));
-                    let stmt = format!(
-                        "INSERT INTO {} ({}) VALUES ({})",
-                        table,
-                        column_keys.join(", "),
-                        values.join(", ")
+                    DbManager::insert_to_table(
+                        &mut column_keys,
+                        &json_id,
+                        &mut values,
+                        &table,
+                        &_conn,
                     );
-                    //TODO!: Handle Result
-                    let _res = _conn.execute(&stmt, []);
                 }
             } else if let Value::Object(obj) = value {
                 for (key, value) in obj {
@@ -382,52 +367,43 @@ impl DbManager {
                     if let Some(key_column_name) = &key_col {
                         if let Some(column_name) = &value_col {
                             let key_col = key_column_name.clone();
+
+                            DbManager::object_handler(
+                                &value,
+                                &key_col,
+                                &replacements,
+                                &replacement_cols,
+                                &mut column_keys,
+                                &mut values,
+                            );
+
                             let mut value_str = key.clone();
-                            let mut need_replacement = false;
-                            let mut replacement_idx = 255;
-                            if replacement_cols.contains(&key_col) {
-                                need_replacement = true;
-                                replacement_idx =
-                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
-                            }
+
+                            let replacement_idx =
+                                replacement_cols.iter().position(|x| x == &key_col);
                             column_keys.push(key_col);
-                            if need_replacement {
+                            if let Some(replacement_idx) = replacement_idx {
                                 let rep_vec = replacements.get(replacement_idx).unwrap();
                                 value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
                             }
                             values.push(format!("'{}'", value_str));
+
                             let key_col = column_name.clone();
-                            let mut need_replacement = false;
-                            let mut replacement_idx = 255;
-                            if replacement_cols.contains(&key_col) {
-                                need_replacement = true;
-                                replacement_idx =
-                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
-                            }
-                            column_keys.push(key_col);
-                            if let Value::String(value) = value {
-                                //TODO!: Do we need to escape the "(" and ")" ?
-                                let mut value = value.replace('\'', "''");
-                                if need_replacement {
-                                    let rep_vec = replacements.get(replacement_idx).unwrap();
-                                    value = value.replace(&rep_vec.0, &rep_vec.1);
-                                }
-                                values.push(format!("'{}'", value));
-                            } else if let Value::Number(value) = value {
-                                values.push(format!("{}", value));
-                            }
+                            DbManager::object_handler(
+                                &value,
+                                &key_col,
+                                &replacements,
+                                &replacement_cols,
+                                &mut column_keys,
+                                &mut values,
+                            );
                         } else {
                             let key_col = key_column_name.clone();
                             let mut value_str = key.clone();
-                            let mut need_replacement = false;
-                            let mut replacement_idx = 255;
-                            if replacement_cols.contains(&key_col) {
-                                need_replacement = true;
-                                replacement_idx =
-                                    replacement_cols.iter().position(|x| x == &key_col).unwrap();
-                            }
+                            let replacement_idx =
+                                replacement_cols.iter().position(|x| x == &key_col);
                             column_keys.push(key_col);
-                            if need_replacement {
+                            if let Some(replacement_idx) = replacement_idx {
                                 let rep_vec = replacements.get(replacement_idx).unwrap();
                                 value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
                             }
@@ -437,28 +413,14 @@ impl DbManager {
                                     if use_import_cols && !import_cols.contains(key_col) {
                                         continue;
                                     }
-                                    let mut need_replacement = false;
-                                    let mut replacement_idx = 255;
-                                    if replacement_cols.contains(key_col) {
-                                        need_replacement = true;
-                                        replacement_idx = replacement_cols
-                                            .iter()
-                                            .position(|x| x == key_col)
-                                            .unwrap();
-                                    }
-                                    column_keys.push(key_col.to_string());
-                                    if let Value::String(value) = value {
-                                        //TODO!: Do we need to escape the "(" and ")" ?
-                                        let mut value = value.replace('\'', "''");
-                                        if need_replacement {
-                                            let rep_vec =
-                                                replacements.get(replacement_idx).unwrap();
-                                            value = value.replace(&rep_vec.0, &rep_vec.1);
-                                        }
-                                        values.push(format!("'{}'", value));
-                                    } else if let Value::Number(value) = value {
-                                        values.push(format!("{}", value));
-                                    }
+                                    DbManager::object_handler(
+                                        &value,
+                                        &key_col,
+                                        &replacements,
+                                        &replacement_cols,
+                                        &mut column_keys,
+                                        &mut values,
+                                    );
                                 }
                             } else if let Value::Array(value) = value {
                                 for value in value {
@@ -467,70 +429,85 @@ impl DbManager {
                                             if use_import_cols && !import_cols.contains(key_col) {
                                                 continue;
                                             }
-                                            let mut need_replacement = false;
-                                            let mut replacement_idx = 255;
-                                            if replacement_cols.contains(key_col) {
-                                                need_replacement = true;
-                                                replacement_idx = replacement_cols
-                                                    .iter()
-                                                    .position(|x| x == key_col)
-                                                    .unwrap();
-                                            }
-                                            column_keys.push(key_col.to_string());
-                                            if let Value::String(value) = value {
-                                                //TODO!: Do we need to escape the "(" and ")" ?
-                                                let mut value = value.replace('\'', "''");
-                                                if need_replacement {
-                                                    let rep_vec =
-                                                        replacements.get(replacement_idx).unwrap();
-                                                    value = value.replace(&rep_vec.0, &rep_vec.1);
-                                                }
-                                                values.push(format!("'{}'", value));
-                                            } else if let Value::Number(value) = value {
-                                                values.push(format!("{}", value));
-                                            }
+                                            DbManager::object_handler(
+                                                &value,
+                                                &key_col,
+                                                &replacements,
+                                                &replacement_cols,
+                                                &mut column_keys,
+                                                &mut values,
+                                            );
                                         }
                                     }
                                 }
                             }
                         }
                     } else {
-                        let mut need_replacement = false;
-                        let mut replacement_idx = 255;
-                        if replacement_cols.contains(key) {
-                            need_replacement = true;
-                            replacement_idx =
-                                replacement_cols.iter().position(|x| x == key).unwrap();
-                        }
-                        column_keys.push(key.to_string());
-                        if let Value::String(value) = value {
-                            //TODO!: Do we need to escape the "(" and ")" ?
-                            let mut value = value.replace('\'', "''");
-                            if need_replacement {
-                                let rep_vec = replacements.get(replacement_idx).unwrap();
-                                value = value.replace(&rep_vec.0, &rep_vec.1);
-                            }
-                            values.push(format!("'{}'", value));
-                        } else if let Value::Number(value) = value {
-                            values.push(format!("{}", value));
-                        }
+                        DbManager::object_handler(
+                            &value,
+                            &key,
+                            &replacements,
+                            &replacement_cols,
+                            &mut column_keys,
+                            &mut values,
+                        );
                     }
-                    column_keys.push("json_id".to_string());
-                    values.push(format!("{}", json_id));
-                    let stmt = format!(
-                        "INSERT INTO {} ({}) VALUES ({})",
-                        table,
-                        column_keys.join(", "),
-                        values.join(", ")
+
+                    DbManager::insert_to_table(
+                        &mut column_keys,
+                        &json_id,
+                        &mut values,
+                        &table,
+                        &_conn,
                     );
-                    //TODO!: Handle Result
-                    let _res = _conn.execute(&stmt, []);
-                    // println!("{:?}", _res);
                 }
             } else {
                 unreachable!("Please File a Bug Request");
             }
         }
+    }
+
+    fn object_handler(
+        value: &Value,
+        key_col: &str,
+        replacements: &[(String, String)],
+        replacement_cols: &[String],
+        column_keys: &mut Vec<String>,
+        values: &mut Vec<String>,
+    ) {
+        let replacement_idx = replacement_cols.iter().position(|x| x == &key_col);
+
+        column_keys.push(key_col.to_string());
+        if let Value::String(value) = value {
+            //TODO!: Do we need to escape the "(" and ")" ?
+            let mut value = value.replace('\'', "''");
+            if let Some(replacement_idx) = replacement_idx {
+                let rep_vec = replacements.get(replacement_idx).unwrap();
+                value = value.replace(&rep_vec.0, &rep_vec.1);
+            }
+            values.push(format!("'{}'", value));
+        } else if let Value::Number(value) = value {
+            values.push(format!("{}", value));
+        }
+    }
+
+    fn insert_to_table(
+        column_keys: &mut Vec<String>,
+        json_id: &i64,
+        values: &mut Vec<String>,
+        table: &str,
+        conn: &Connection,
+    ) {
+        column_keys.push("json_id".to_owned());
+        values.push(format!("{}", json_id));
+        let stmt = format!(
+            "INSERT INTO {} ({}) VALUES ({})",
+            table,
+            column_keys.join(", "),
+            values.join(", ")
+        );
+        //TODO!: Handle Result
+        let _res = conn.execute(&stmt, []);
     }
 
     fn load_key_value_table(
