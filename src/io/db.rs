@@ -288,12 +288,12 @@ impl DbManager {
     }
 
     fn handle_to_table_map(
-        to_table: &[ToTable],
+        to_table_list: &[ToTable],
         json_id: i64,
         content: &HashMap<String, Value>,
         _conn: &Connection,
     ) {
-        for to_table in to_table {
+        for to_table in to_table_list {
             let node = to_table.node.clone();
             let table = to_table.table.clone();
             let key_col = to_table.key_col.clone();
@@ -301,16 +301,17 @@ impl DbManager {
             let import_col = to_table.import_cols.clone();
             let replaces = to_table.replaces.clone();
             let value = &content[node.as_str()].clone();
-            if let Value::Array(a) = value {
-                if a.is_empty() {
+
+            if let Value::Array(v) = value {
+                if v.is_empty() {
+                    continue;
+                }
+            } else if let Value::Object(v) = value {
+                if v.is_empty() {
                     continue;
                 }
             }
-            if let Value::Object(a) = value {
-                if a.is_empty() {
-                    continue;
-                }
-            }
+
             let mut import_cols = vec![];
             let use_import_cols = import_col.is_some();
             if let Some(cols) = import_col {
