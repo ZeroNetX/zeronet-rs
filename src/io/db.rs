@@ -10,7 +10,10 @@ use rusqlite::{params, Connection};
 use serde_json::Value;
 use tokio::fs;
 
-use crate::{core::schema::*, environment::ENV};
+use crate::{
+    core::{error::Error, schema::*},
+    environment::ENV,
+};
 pub struct DbManager {
     db: HashMap<String, Connection>,
     pub schema: HashMap<String, DBSchema>,
@@ -40,36 +43,55 @@ impl DbManager {
         }
     }
 
+    pub fn connect_db_from_path(path: &PathBuf) -> Result<Connection, Error> {
+        Connection::open(path).map_err(|e| Error::Err(e.to_string()))
+    }
+
     pub fn connect_db(&mut self, site: &str) {
         let db_path = self.schema[site].db_file.clone();
-        let conn =
-            Connection::open(ENV.data_path.join(site).join(db_path).to_str().unwrap()).unwrap();
+        let site_db_path = ENV.data_path.join(site).join(db_path);
+        let conn = Self::connect_db_from_path(&site_db_path)
+            .expect(&format!("Could not connect to {}", site));
+        self.insert_connection(site.into(), conn);
+    }
+
+    pub fn load_schema_from_str(schema_str: &str) -> DBSchema {
+        let mut schema: DBSchema = serde_json::from_str(&schema_str).unwrap();
+        let version = schema.version;
+        let mut table_names = vec![];
+        for table_name in schema.tables.keys() {
+            table_names.push(table_name.clone());
+        }
+        if table_names.contains(&"json".to_string()) {
+            debug!("Json tables specified in tables");
+        } else {
+            let json_table = Self::def_json_table(version);
+            schema.tables.insert("json".to_string(), json_table);
+        }
+        let key_value_table = Self::def_keyvalue_table();
+        schema
+            .tables
+            .insert("keyvalue".to_string(), key_value_table);
+        schema
+    }
+
+    pub fn load_schema_from_path(path: &PathBuf) -> DBSchema {
+        let schema_str = std::fs::read_to_string(&path).unwrap();
+        Self::load_schema_from_str(&schema_str)
+    }
+
+    pub fn insert_schema(&mut self, site: &str, schema: DBSchema) {
+        self.schema.insert(site.into(), schema);
+    }
+
+    pub fn insert_connection(&mut self, site: &str, conn: Connection) {
         self.db.insert(site.into(), conn);
     }
 
     pub fn load_schema(&mut self, site: &str) -> Option<DBSchema> {
         let (_, schema) = self.has_schema(site);
         if let Some(path) = schema {
-            let schema_str = std::fs::read_to_string(&path).unwrap();
-            let mut schema: DBSchema = serde_json::from_str(&schema_str).unwrap();
-            let version = schema.version;
-            let mut table_names = vec![];
-            for table_name in schema.tables.keys() {
-                table_names.push(table_name.clone());
-            }
-            // println!("{:?}", table_names);
-            if table_names.contains(&"json".to_string()) {
-                debug!("Json tables specified in tables");
-            } else {
-                let json_table = Self::def_json_table(version);
-                schema.tables.insert("json".to_string(), json_table);
-            }
-            let key_value_table = Self::def_keyvalue_table();
-            schema
-                .tables
-                .insert("keyvalue".to_string(), key_value_table);
-            self.schema.insert(site.into(), schema.clone());
-            return Some(schema);
+            return Some(Self::load_schema_from_path(&path));
         }
         None
     }

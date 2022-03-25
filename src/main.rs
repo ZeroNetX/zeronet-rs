@@ -42,7 +42,8 @@ async fn main() -> Result<(), Error> {
                 "siteVerify" => check_site_integrity(&mut site).await?,
                 "dbRebuild" => rebuild_db(&mut site, &mut db_manager).await?,
                 "dbQuery" => {
-                    let _schema = db_manager.load_schema(&site.address()).unwrap();
+                    let schema = db_manager.load_schema(&site.address()).unwrap();
+                    db_manager.insert_schema(&site.address(), schema);
                     db_manager.connect_db(&site.address());
                     let conn = db_manager.get_db(&site.address()).unwrap();
                     let query = site_args.next().unwrap();
