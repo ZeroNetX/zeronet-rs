@@ -36,7 +36,15 @@ async fn main() -> Result<(), Error> {
                 }
                 "siteDownload" => download_site(&mut site).await?,
                 "siteSign" => {
-                    let private_key = site_args.next().unwrap();
+                    let private_key = if let Some(private_key) = site_args.next() {
+                        private_key.to_owned()
+                    } else {
+                        if let Some(key) = user.sites.get(&site.address()).unwrap().get_privkey() {
+                            key
+                        } else {
+                            unreachable!("No private key for site");
+                        }
+                    };
                     site_sign(&mut site, private_key.into()).await?
                 }
                 "siteVerify" => check_site_integrity(&mut site).await?,
