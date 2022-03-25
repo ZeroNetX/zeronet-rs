@@ -8,6 +8,7 @@ pub mod discovery;
 pub mod environment;
 pub mod io;
 pub mod net;
+pub mod protocol;
 pub mod utils;
 
 use crate::{
@@ -16,6 +17,7 @@ use crate::{
     core::{error::Error, site::Site},
     environment::*,
     io::db::DbManager,
+    protocol::Protocol,
 };
 
 #[tokio::main]

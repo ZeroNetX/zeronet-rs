@@ -1,2 +1,2 @@
-pub mod builders;
-pub mod protocol;
+pub mod request;
+pub mod response;

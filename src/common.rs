@@ -6,7 +6,7 @@ use crate::{
     core::{discovery::Discovery, error::Error, io::*, peer::*, site::*, user::*},
     environment::ENV,
     io::db::DbManager,
-    net::protocol::Protocol,
+    protocol::{api::Request, Protocol},
     utils::to_json_value,
 };
 
