@@ -99,12 +99,9 @@ pub async fn db_query(conn: &mut Connection, query: &str) -> Result<(), Error> {
 }
 
 pub async fn download_site(site: &mut Site) -> Result<(), Error> {
-    let exists = site.content_path().is_file();
-    if !exists {
-        add_peers_to_site(site).await?;
-        println!("Downloading Site");
-        site.init_download().await?;
-    }
+    add_peers_to_site(site).await?;
+    println!("Downloading Site");
+    site.init_download().await?;
     Ok(())
 }
 
@@ -139,12 +136,19 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
 
 pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), Error> {
     add_peers_to_site(site).await?;
-    let download = if inner_path.ends_with("content.json") {
+    let download = if inner_path == "content.json" {
         true
     } else {
         site.load_content().await?;
-        let files = site.content().unwrap().files;
-        files.keys().any(|path| path == &inner_path)
+        let content = site.content().unwrap();
+        let files = content.files;
+        let files_res = files.keys().any(|path| path == &inner_path);
+        let includes_res = content.includes.keys().any(|path| path == &inner_path);
+        let users_res = content
+            .includes
+            .keys()
+            .any(|path| path.starts_with("data/users/"));
+        files_res || includes_res || users_res
     };
     if !download {
         println!("Inner Path Not Exists in content.json");

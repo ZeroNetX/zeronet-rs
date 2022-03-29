@@ -16,6 +16,7 @@ use crate::{
     environment::ENV,
 };
 
+#[cfg(feature = "userio")]
 #[async_trait::async_trait]
 impl UserIO for User {
     type IOType = User;
