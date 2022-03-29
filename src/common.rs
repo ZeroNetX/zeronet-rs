@@ -57,7 +57,7 @@ pub async fn rebuild_db(site: &mut Site, db_manager: &mut DbManager) -> Result<(
     let address = site.address();
     if has_schema.0 {
         let _schema = db_manager.load_schema(&address).unwrap();
-        db_manager.connect_db(&address);
+        db_manager.connect_db(&address)?;
         db_manager.create_tables(&address);
         db_manager.load_data(&address).await;
     }

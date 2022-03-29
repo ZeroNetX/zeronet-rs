@@ -43,20 +43,20 @@ impl DbManager {
         }
     }
 
-    pub fn connect_db_from_path(path: &PathBuf) -> Result<Connection, Error> {
+    pub fn connect_db_from_path(path: &Path) -> Result<Connection, Error> {
         Connection::open(path).map_err(|e| Error::Err(e.to_string()))
     }
 
-    pub fn connect_db(&mut self, site: &str) {
+    pub fn connect_db(&mut self, site: &str) -> Result<(), Error> {
         let db_path = self.schema[site].db_file.clone();
         let site_db_path = ENV.data_path.join(site).join(db_path);
-        let conn = Self::connect_db_from_path(&site_db_path)
-            .expect(&format!("Could not connect to {}", site));
-        self.insert_connection(site.into(), conn);
+        let conn = Self::connect_db_from_path(&site_db_path)?;
+        self.insert_connection(site, conn);
+        Ok(())
     }
 
     pub fn load_schema_from_str(schema_str: &str) -> DBSchema {
-        let mut schema: DBSchema = serde_json::from_str(&schema_str).unwrap();
+        let mut schema: DBSchema = serde_json::from_str(schema_str).unwrap();
         let version = schema.version;
         let mut table_names = vec![];
         for table_name in schema.tables.keys() {
@@ -75,7 +75,7 @@ impl DbManager {
         schema
     }
 
-    pub fn load_schema_from_path(path: &PathBuf) -> DBSchema {
+    pub fn load_schema_from_path(path: &Path) -> DBSchema {
         let schema_str = std::fs::read_to_string(&path).unwrap();
         Self::load_schema_from_str(&schema_str)
     }
@@ -238,7 +238,7 @@ impl DbManager {
         site: &str,
         to_json_table: &[String],
         json_content: &HashMap<String, Value>,
-        _conn: &mut Connection,
+        conn: &mut Connection,
     ) -> i64 {
         // println!("{:?}", json_content);
         let (mut json_statement, mut values, select_statement) = match version {
@@ -302,8 +302,8 @@ impl DbManager {
         }
         let json_statement = format!("INSERT INTO json ({}) VALUES ({})", json_statement, values);
         let select_statement = format!("SELECT json_id FROM json WHERE ({})", select_statement);
-        let _result = _conn.execute(&json_statement, params![]);
-        let mut stmt = (&*_conn).prepare(&select_statement).unwrap();
+        let _result = conn.execute(&json_statement, params![]);
+        let mut stmt = (&*conn).prepare(&select_statement).unwrap();
         let mut rows = stmt.query([]).unwrap();
         let a = rows.next().unwrap();
         a.unwrap().get(0).unwrap()
@@ -313,7 +313,7 @@ impl DbManager {
         to_table_list: &[ToTable],
         json_id: i64,
         content: &HashMap<String, Value>,
-        _conn: &Connection,
+        conn: &Connection,
     ) {
         for to_table in to_table_list {
             let node = to_table.node.clone();
@@ -362,8 +362,8 @@ impl DbManager {
                                 continue;
                             }
                             DbManager::object_handler(
-                                &value,
-                                &key,
+                                value,
+                                key,
                                 &replacements,
                                 &replacement_cols,
                                 &mut column_keys,
@@ -378,7 +378,7 @@ impl DbManager {
                         &json_id,
                         &mut values,
                         &table,
-                        &_conn,
+                        conn,
                     );
                 }
             } else if let Value::Object(obj) = value {
@@ -399,8 +399,8 @@ impl DbManager {
                             );
 
                             DbManager::object_handler(
-                                &value,
-                                &column_name,
+                                value,
+                                column_name,
                                 &replacements,
                                 &replacement_cols,
                                 &mut column_keys,
@@ -422,8 +422,8 @@ impl DbManager {
                                         continue;
                                     }
                                     DbManager::object_handler(
-                                        &value,
-                                        &key_col,
+                                        value,
+                                        key_col,
                                         &replacements,
                                         &replacement_cols,
                                         &mut column_keys,
@@ -438,8 +438,8 @@ impl DbManager {
                                                 continue;
                                             }
                                             DbManager::object_handler(
-                                                &value,
-                                                &key_col,
+                                                value,
+                                                key_col,
                                                 &replacements,
                                                 &replacement_cols,
                                                 &mut column_keys,
@@ -452,8 +452,8 @@ impl DbManager {
                         }
                     } else {
                         DbManager::object_handler(
-                            &value,
-                            &key,
+                            value,
+                            key,
                             &replacements,
                             &replacement_cols,
                             &mut column_keys,
@@ -466,7 +466,7 @@ impl DbManager {
                         &json_id,
                         &mut values,
                         &table,
-                        &_conn,
+                        conn,
                     );
                 }
             } else {
@@ -484,7 +484,7 @@ impl DbManager {
         values: &mut Vec<String>,
     ) {
         let mut value_str = key;
-        let replacement_idx = replacement_cols.iter().position(|x| x == &key_col);
+        let replacement_idx = replacement_cols.iter().position(|x| x == key_col);
         column_keys.push(key_col.to_string());
         if let Some(replacement_idx) = replacement_idx {
             let rep_vec = replacements.get(replacement_idx).unwrap();
@@ -501,7 +501,7 @@ impl DbManager {
         column_keys: &mut Vec<String>,
         values: &mut Vec<String>,
     ) {
-        let replacement_idx = replacement_cols.iter().position(|x| x == &key_col);
+        let replacement_idx = replacement_cols.iter().position(|x| x == key_col);
 
         column_keys.push(key_col.to_string());
         if let Value::String(value) = value {
@@ -540,7 +540,7 @@ impl DbManager {
         keyvalue: &[String],
         json_id: i64,
         content: &HashMap<String, Value>,
-        _conn: &Connection,
+        conn: &Connection,
     ) {
         for key in keyvalue {
             let value: &Value = &content[key];
@@ -550,14 +550,14 @@ impl DbManager {
                     key, value, json_id
                 );
                 //TODO!: Handle Result
-                let _res = _conn.execute(&query, params![]);
+                let _res = conn.execute(&query, params![]);
             } else if let Some(value) = value.as_str() {
                 let query = format!(
                     "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', '{}', {})",
                     key, value, json_id
                 );
                 //TODO!: Handle Result
-                let _res = _conn.execute(&query, params![]);
+                let _res = conn.execute(&query, params![]);
             }
         }
     }
