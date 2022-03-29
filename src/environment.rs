@@ -71,6 +71,7 @@ pub struct Environment {
     // pub homepage: String,
     pub lang: String,
     // pub dist: String,
+    pub use_block_storage: bool,
 }
 
 fn get_matches() -> ArgMatches {
@@ -216,6 +217,10 @@ fn get_matches() -> ArgMatches {
             //     .long("broadcast_port")
             //     .default_value("1544")
             //     .help("Port to broadcast local discovery messages"),
+            Arg::new("USE_BLOCK_STORAGE")
+                .long("use_block_storage")
+                .short('b')
+                .help("Use Block Storage for Files instead of Normal Site Storage"),
         ])
         .subcommands(sub_commands)
         .get_matches()
@@ -249,6 +254,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     } else {
         10000 + rand::random::<u16>() % 10000
     };
+    let use_block_storage = matches.is_present("USE_BLOCK_STORAGE");
     // let ui_ip = matches.value_of("UI_IP").unwrap();
     // let ui_port: usize = matches.value_of("UI_PORT").unwrap().parse()?;
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
@@ -266,6 +272,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         // homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
         // dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
+        use_block_storage,
     };
     Ok(env)
 }

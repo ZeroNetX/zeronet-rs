@@ -8,16 +8,17 @@ use log::*;
 use serde_bytes::ByteBuf;
 use tokio::{
     fs::{self, File},
-    io::{AsyncReadExt, AsyncWriteExt},
+    io::AsyncWriteExt,
 };
 
-use zerucontent::Content;
+use zerucontent::{Content, File as ZFile};
 
 use crate::{
     core::{error::*, io::*, peer::*, site::*},
     discovery::tracker::IpPort,
     environment::ENV,
     io::utils::check_file_integrity,
+    plugins::BlockStorage,
     protocol::{api::Request, Protocol},
 };
 
@@ -52,50 +53,76 @@ impl Site {
         &self,
         inner_path: String,
         peer: &mut Peer,
-    ) -> Result<bool, Error> {
-        let path = &self.site_path().join(&inner_path);
+    ) -> Result<ByteBuf, Error> {
         let message = Protocol::new(peer.connection_mut().unwrap())
-            .get_file(self.address(), inner_path)
-            .await?;
-        let parent = path.parent().unwrap();
+            .get_file(self.address(), inner_path.clone())
+            .await;
+        if let Err(e) = &message {
+            Err(format!("Error Downloading File from Peer, Error : {:?}", e)
+                .as_str()
+                .into())
+        } else {
+            Ok(message.unwrap().body)
+        }
+    }
+
+    pub async fn need_file(
+        &self,
+        inner_path: String,
+        file: Option<ZFile>,
+        _peer: Option<Peer>,
+    ) -> Result<bool, Error> {
+        self.download_file(inner_path, file, _peer).await
+    }
+
+    async fn download_file(
+        &self,
+        inner_path: String,
+        file: Option<ZFile>,
+        _peer: Option<Peer>,
+    ) -> Result<bool, Error> {
+        let (parent, path) = if let Some(file) = file {
+            if cfg!(feature = "blockstorage") && Self::use_block_storage() {
+                let file_path = BlockStorage::get_block_file_path(self, &file.sha512);
+                let parent = BlockStorage::get_block_storage_path(self);
+                (parent, file_path)
+            } else {
+                let path = self.site_path().join(&inner_path);
+                (path.parent().unwrap().into(), path)
+            }
+        } else {
+            let path = self.site_path().join(&inner_path);
+            (path.parent().unwrap().into(), path)
+        };
         if !parent.is_dir() {
             fs::create_dir_all(parent).await?;
         }
-        let mut file = File::create(path).await?;
-        file.write_all(&message.body).await?;
-        Ok(true)
-    }
-
-    pub async fn need_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
-        self.download_file(inner_path, _peer).await
-    }
-
-    async fn download_file(&self, inner_path: String, _peer: Option<Peer>) -> Result<bool, Error> {
-        let path = &self.site_path().join(&inner_path);
         if path.is_file() {
-            let mut file = File::open(path).await?;
-            let mut buf = Vec::new();
-            file.read_to_end(&mut buf).await?;
+            //TODO! Verify file integrity here.
             return Ok(true);
         }
         //TODO!: Download from multiple peers
         let mut peer = self.peers.values().next().unwrap().clone();
-        Self::download_file_from_peer(self, inner_path, &mut peer).await
+        let bytes = Self::download_file_from_peer(self, inner_path, &mut peer).await?;
+        let mut file = File::create(path).await?;
+        file.write_all(&bytes).await?;
+
+        Ok(true)
     }
 
     async fn download_site_files(&self) -> Result<(), Error> {
         let files = self.content().unwrap().files;
         let mut tasks = Vec::new();
         let mut inner_paths = Vec::new();
-        for (inner_path, _file) in files {
+        for (inner_path, file) in files {
             inner_paths.push(inner_path.clone());
-            let task = self.download_file(inner_path, None);
+            let task = self.download_file(inner_path, Some(file), None);
             tasks.push(task);
         }
         let includes = self.content().unwrap().includes;
         for (inner_path, _file) in includes {
             inner_paths.push(inner_path.clone());
-            let task = self.download_file(inner_path, None);
+            let task = self.download_file(inner_path, None, None);
             tasks.push(task);
         }
         //TODO!: Other client may not have an up-to-date site files
@@ -107,7 +134,7 @@ impl Site {
                 continue;
             }
             user_data_files.push(inner_path.clone());
-            let task = self.download_file(inner_path, None);
+            let task = self.download_file(inner_path, None, None);
             tasks.push(task);
         }
         let mut res = join_all(tasks).await;
@@ -133,10 +160,12 @@ impl Site {
             let path = Path::new(&content.inner_path);
             if let Some(parent) = path.parent() {
                 let files_inner = content.files.clone();
-                for (path, _file) in files_inner {
-                    files.push(
-                        self.download_file(parent.join(path).to_str().unwrap().to_owned(), None),
-                    );
+                for (path, file) in files_inner {
+                    files.push(self.download_file(
+                        parent.join(path).to_str().unwrap().to_owned(),
+                        Some(file),
+                        None,
+                    ));
                 }
             }
         });
@@ -164,7 +193,13 @@ impl Site {
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
             let hash = file.sha512.clone();
-            let task = check_file_integrity(self.site_path(), inner_path, hash);
+            let (site_path, inner_path) = if cfg!(feature = "blockstorage") {
+                let path = BlockStorage::get_block_storage_path(self);
+                (path, hash.clone())
+            } else {
+                (self.site_path(), inner_path)
+            };
+            let task = check_file_integrity(site_path, inner_path, hash);
             tasks.push(task);
         }
         //TODO!: Verify includes, user data files
@@ -246,7 +281,7 @@ impl SiteIO for Site {
         }
         let content_exists = self.content_path().is_file();
         if !content_exists {
-            Self::download_file(self, "content.json".into(), None).await?;
+            Self::download_file(self, "content.json".into(), None, None).await?;
         }
         let verified = self.load_content().await?;
         if verified {

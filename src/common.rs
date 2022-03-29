@@ -149,7 +149,7 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
     if !download {
         println!("Inner Path Not Exists in content.json");
     } else {
-        let result = site.need_file(inner_path.clone(), None).await;
+        let result = site.need_file(inner_path.clone(), None, None).await;
         if let Err(e) = &result {
             println!("Error : {:?}", e);
         } else {

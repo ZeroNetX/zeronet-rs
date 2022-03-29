@@ -8,6 +8,7 @@ pub mod discovery;
 pub mod environment;
 pub mod io;
 pub mod net;
+pub mod plugins;
 pub mod protocol;
 pub mod utils;
 

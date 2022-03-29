@@ -5,8 +5,9 @@ authors = ["canewsin <canews.in@gmail.com>"]
 edition = "2021"
 
 [features]
-default = ["userio"]
+default = ["userio", "blockstorage"]
 userio = []
+blockstorage = []
 
 [dependencies]
 async-recursion = "1.0.0"
