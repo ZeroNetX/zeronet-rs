@@ -1,4 +1,4 @@
-// bencode subfolder and item enum implemenation
+// bencode subfolder and item enum implementation
 #![allow(dead_code)]
 
 pub mod decode;

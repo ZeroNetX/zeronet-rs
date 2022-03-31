@@ -19,7 +19,7 @@ impl Address {
         hasher.finalize().to_vec()
     }
 
-    // digest of Sha1 hash of ACII encoding
+    // digest of Sha1 hash of ASCII encoding
     pub fn get_address_sha1(&self) -> Vec<u8> {
         let mut hasher = Sha1::default();
         hasher.update(&self.address);
