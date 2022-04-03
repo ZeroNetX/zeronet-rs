@@ -101,7 +101,7 @@ impl DbManager {
         let conn = self.get_db(site).unwrap();
         tables.keys().for_each(|table_name| {
             if table_name == "json" {
-                //Note: Required because other tables depend on json table, it needs to droped last.
+                //Note: Required because other tables depend on json table, it needs to be dropped last.
                 return;
             }
             let _res = conn.execute(&format!("DROP TABLE {}", table_name), []);

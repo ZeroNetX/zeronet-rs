@@ -128,7 +128,7 @@ fn get_matches() -> ArgMatches {
             //     .help("Level of logging to file")
             // Arg::new("LOG_LEVEL")
             //     .long("log_level")
-            //     .help("Level of loggin to file"),
+            //     .help("Level of logging to file"),
             // Arg::new("LOG_ROTATE")
             //     .long("log_rotate")
             //     .default_value("daily")
@@ -299,8 +299,8 @@ pub fn client_info() -> serde_json::Value {
         "rev": *REV,
         "language": *ENV.lang,
         "debug": false,
-        "log_dir":*ENV.data_path,
-        "data_dir": *ENV.log_path,
+        "log_dir":*ENV.log_path,
+        "data_dir": *ENV.data_path,
         "plugins" : [
             "Placeholder Data",
         ],
