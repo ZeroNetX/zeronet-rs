@@ -41,9 +41,12 @@ async fn main() -> Result<(), Error> {
                 "siteSign" => {
                     let private_key = if let Some(private_key) = site_args.next() {
                         private_key.to_owned()
-                    } else if let Some(key) = user.sites.get(&site.address()).unwrap().get_privkey()
-                    {
-                        key
+                    } else if let Some(key) = user.sites.get(&site.address()) {
+                        if let Some(key) = key.get_privkey() {
+                            key
+                        } else {
+                            unreachable!("No private key for site");
+                        }
                     } else {
                         unreachable!("No private key for site");
                     };
