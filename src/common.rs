@@ -169,7 +169,7 @@ pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), E
         path.push_str(".old");
         let path = site.site_path().join(path);
         let old_content = fs::read_to_string(&path).await?;
-        fs::remove_file(path).await?;
+        // fs::remove_file(path).await?;
         let diff = utils::diff::calc_diff(&old_content, &content);
         map.insert(inner_path, diff);
     }
