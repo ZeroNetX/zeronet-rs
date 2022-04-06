@@ -142,7 +142,7 @@ pub async fn site_file_edit(site: &mut Site, inner_path: String) -> Result<(), E
     let mut file_path_str = inner_path.clone();
     file_path_str.push_str(".old");
     let old_path = site.site_path().join(file_path_str);
-    if file_path.exists() {
+    if old_path.exists() {
         fs::remove_file(&old_path).await.unwrap();
     }
     fs::copy(&file_path, &old_path).await.unwrap();
@@ -164,11 +164,12 @@ pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), E
     for path in diffs {
         let inner_path = (*path).clone();
         let content_path = site.site_path().join(inner_path.clone());
-        let content = fs::read_to_string(content_path.clone()).await.unwrap();
+        let content = fs::read_to_string(content_path.clone()).await?;
         let mut path = path.to_string();
         path.push_str(".old");
         let path = site.site_path().join(path);
-        let old_content = fs::read_to_string(path).await.unwrap();
+        let old_content = fs::read_to_string(&path).await?;
+        fs::remove_file(path).await?;
         let diff = utils::diff::calc_diff(&old_content, &content);
         map.insert(inner_path, diff);
     }

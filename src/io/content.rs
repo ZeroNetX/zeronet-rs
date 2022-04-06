@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use tokio::{
-    fs::{File, OpenOptions},
+    fs::{self, File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
 };
 use zerucontent::Content;
@@ -53,6 +53,9 @@ impl ContentMod for Site {
         let content_json = serde_json::to_string_pretty(&content)?;
         let inner_path = inner_path.unwrap_or("content.json");
         let path = self.site_path().join(inner_path);
+        if path.exists() {
+            fs::remove_file(&path).await?;
+        }
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
