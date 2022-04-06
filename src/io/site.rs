@@ -53,17 +53,43 @@ impl Site {
     async fn download_file_from_peer(
         &self,
         inner_path: String,
+        file: Option<ZFile>,
         peer: &mut Peer,
     ) -> Result<ByteBuf, Error> {
-        let message = Protocol::new(peer.connection_mut().unwrap())
-            .get_file(self.address(), inner_path.clone())
-            .await;
-        if let Err(e) = &message {
-            Err(format!("Error Downloading File from Peer, Error : {:?}", e)
-                .as_str()
-                .into())
+        let mut file_size = 0;
+        if let Some(file) = file {
+            file_size = file.size;
+        }
+        if file_size > 512 * 1024 {
+            let mut bytes = ByteBuf::new();
+            let mut downloaded = 0;
+            while downloaded != file_size {
+                let message = Protocol::new(peer.connection_mut().unwrap())
+                    .get_file(self.address(), inner_path.clone(), file_size, downloaded)
+                    .await;
+                if let Err(e) = &message {
+                    return Err(format!("Error Downloading File from Peer, Error : {:?}", e)
+                        .as_str()
+                        .into());
+                } else {
+                    let bytes_downloaded = message.unwrap().body;
+                    downloaded += bytes_downloaded.len();
+                    println!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
+                    bytes.extend_from_slice(&bytes_downloaded);
+                }
+            }
+            Ok(bytes)
         } else {
-            Ok(message.unwrap().body)
+            let message = Protocol::new(peer.connection_mut().unwrap())
+                .get_file(self.address(), inner_path.clone(), file_size, 0)
+                .await;
+            if let Err(e) = &message {
+                Err(format!("Error Downloading File from Peer, Error : {:?}", e)
+                    .as_str()
+                    .into())
+            } else {
+                Ok(message.unwrap().body)
+            }
         }
     }
 
@@ -82,7 +108,7 @@ impl Site {
         file: Option<ZFile>,
         _peer: Option<Peer>,
     ) -> Result<bool, Error> {
-        let (parent, path) = if let Some(file) = file {
+        let (parent, path) = if let Some(file) = file.clone() {
             if cfg!(feature = "blockstorage") && Self::use_block_storage() {
                 let file_path = BlockStorage::get_block_file_path(self, &file.sha512);
                 let parent = BlockStorage::get_block_storage_path(self);
@@ -104,7 +130,7 @@ impl Site {
         }
         //TODO!: Download from multiple peers
         let mut peer = self.peers.values().next().unwrap().clone();
-        let bytes = Self::download_file_from_peer(self, inner_path, &mut peer).await?;
+        let bytes = Self::download_file_from_peer(self, inner_path, file, &mut peer).await?;
         let mut file = File::create(path).await?;
         file.write_all(&bytes).await?;
 

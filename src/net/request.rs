@@ -50,9 +50,11 @@ impl<'a> Request for Protocol<'a> {
         &mut self,
         site: String,
         inner_path: String,
+        file_size: usize,
+        location: usize,
     ) -> Result<GetFileResponse, Error> {
         //TODO!: Remove default values from builder, file_size and location
-        let builder = get_file(site, inner_path, 0, 0);
+        let builder = get_file(site, inner_path, file_size, location);
         let res = self.invoke_with_builder(builder).await?;
         let body: GetFileResponse = res.body()?;
         Ok(body)
