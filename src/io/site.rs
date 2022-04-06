@@ -193,12 +193,13 @@ impl Site {
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
             let hash = file.sha512.clone();
-            let (site_path, inner_path) = if cfg!(feature = "blockstorage") {
-                let path = BlockStorage::get_block_storage_path(self);
-                (path, hash.clone())
-            } else {
-                (self.site_path(), inner_path)
-            };
+            let (site_path, inner_path) =
+                if cfg!(feature = "blockstorage") && Self::use_block_storage() {
+                    let path = BlockStorage::get_block_storage_path(self);
+                    (path, hash.clone())
+                } else {
+                    (self.site_path(), inner_path)
+                };
             let task = check_file_integrity(site_path, inner_path, hash);
             tasks.push(task);
         }
