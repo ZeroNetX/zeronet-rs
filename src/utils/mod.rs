@@ -1,3 +1,5 @@
+pub mod diff;
+
 use std::default::Default;
 
 use rusqlite::types::{Type, Value};
