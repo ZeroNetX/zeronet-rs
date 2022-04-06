@@ -6,6 +6,7 @@ use std::{
 use futures::future::join_all;
 use log::*;
 use serde_bytes::ByteBuf;
+use serde_json::Value;
 use tokio::{
     fs::{self, File},
     io::AsyncWriteExt,
@@ -263,6 +264,24 @@ impl Site {
             })
             .collect::<Vec<_>>();
         Ok(res)
+    }
+
+    pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
+        let addr = (&self.address()).clone();
+        let path = self.site_path().join(inner_path);
+        let peer = self.peers.values_mut().next().unwrap();
+        let content = fs::read_to_string(path).await.unwrap();
+        let res = Protocol::new(peer.connection_mut().unwrap())
+            .update(
+                addr,
+                inner_path.to_owned(),
+                content,
+                diff.unwrap_or_default(),
+            )
+            .await;
+        if let Err(err) = res {
+            error!("{:?}", err);
+        }
     }
 }
 

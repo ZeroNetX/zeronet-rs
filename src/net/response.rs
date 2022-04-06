@@ -56,4 +56,10 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
         self.0.respond(id, json!(builder.1)).await?;
         Ok(true)
     }
+
+    async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error> {
+        let builder = update_site(msg.into());
+        self.0.respond(id, json!(builder.1)).await?;
+        Ok(true)
+    }
 }

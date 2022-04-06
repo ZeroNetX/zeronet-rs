@@ -11,6 +11,8 @@ use crate::{
     io::utils::get_zfile_info,
 };
 
+use super::utils::current_unix_epoch;
+
 #[async_trait::async_trait]
 impl ContentMod for Site {
     async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error> {
@@ -39,6 +41,7 @@ impl ContentMod for Site {
 
     async fn sign_content(&mut self, private_key: &str) -> Result<(), Error> {
         let content = self.content_mut().unwrap();
+        content.modified = current_unix_epoch() as usize;
         let sign = content.sign(private_key.to_string());
         let address = zeronet_cryptography::privkey_to_pubkey(private_key)?;
         content.signs.insert(address, sign);

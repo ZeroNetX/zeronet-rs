@@ -25,6 +25,8 @@ lazy_static! {
             "siteSign".into(),
             //"sitePublish".into(),
             "siteVerify".into(),
+            "siteFileEdit".into(),
+            "siteUpdate".into(),
             // "siteCmd".into(),
             "dbRebuild".into(),
             "dbQuery".into(),

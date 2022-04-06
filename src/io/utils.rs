@@ -4,6 +4,7 @@ use std::{
     collections::HashMap,
     io::Read,
     path::{Path, PathBuf},
+    time::SystemTime,
 };
 use tokio::{fs::File, io::AsyncReadExt};
 use zerucontent::File as ZFile;
@@ -19,6 +20,13 @@ use crate::{
     },
     environment::ENV,
 };
+
+pub fn current_unix_epoch() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs()
+}
 
 pub async fn get_zfile_info(path: impl AsRef<Path>) -> Result<ZFile, Error> {
     let file = File::open(&path).await;

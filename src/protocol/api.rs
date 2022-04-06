@@ -24,6 +24,13 @@ pub trait Request {
         since: usize,
     ) -> Result<ListModifiedResponse, Error>;
     async fn pex(&mut self, site: String) -> Result<PexResponse, Error>;
+    async fn update(
+        &mut self,
+        site: String,
+        inner_path: String,
+        body: String,
+        diffs: HashMap<String, Vec<serde_json::Value>>,
+    ) -> Result<UpdateFileResponse, Error>;
 }
 
 #[async_trait::async_trait]
@@ -43,4 +50,5 @@ pub trait Response {
         peers: Vec<ByteBuf>,
         peers_onion: Vec<ByteBuf>,
     ) -> Result<bool, Error>;
+    async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error>;
 }

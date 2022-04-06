@@ -18,7 +18,6 @@ use crate::{
     core::{error::Error, site::Site},
     environment::*,
     io::db::DbManager,
-    protocol::Protocol,
 };
 
 #[tokio::main]
@@ -51,6 +50,14 @@ async fn main() -> Result<(), Error> {
                         unreachable!("No private key for site");
                     };
                     site_sign(&mut site, private_key).await?
+                }
+                "siteFileEdit" => {
+                    let inner_path = site_args.next().unwrap();
+                    site_file_edit(&mut site, inner_path.into()).await?;
+                }
+                "siteUpdate" => {
+                    let inner_path = site_args.next().unwrap();
+                    site_update(&mut site, Some(inner_path)).await?
                 }
                 "siteVerify" => check_site_integrity(&mut site).await?,
                 "dbRebuild" => rebuild_db(&mut site, &mut db_manager).await?,
@@ -92,6 +99,7 @@ async fn main() -> Result<(), Error> {
         println!("No command specified");
         let mut controller = SitesController::new();
         controller.extend_sites_from_sitedata(site_storage.clone());
+        let _s = controller.sites.values().next().unwrap();
     }
     Ok(())
 }

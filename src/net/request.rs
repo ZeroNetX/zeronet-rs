@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     core::error::Error,
     protocol::{
@@ -7,7 +9,7 @@ use crate::{
     },
 };
 use serde::Serialize;
-use serde_json::json;
+use serde_json::{json, Value};
 use zeronet_protocol::{message::Response, templates::*};
 
 impl<'a> Protocol<'a> {
@@ -87,6 +89,21 @@ impl<'a> Request for Protocol<'a> {
         let res = self.invoke_with_builder(builder).await?;
         let body: PexResponse = res.body()?;
         Ok(body)
+    }
+
+    async fn update(
+        &mut self,
+        site: String,
+        inner_path: String,
+        body: String,
+        diffs: HashMap<String, Vec<Value>>,
+    ) -> Result<UpdateFileResponse, Error> {
+        let builder = update_site(site, inner_path, body, diffs);
+        let res = self.invoke_with_builder(builder).await?;
+        match res.body() {
+            Ok(body) => Ok(body),
+            Err(e) => Err(Error::Err(format!("{:?}", e))),
+        }
     }
 }
 

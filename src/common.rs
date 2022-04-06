@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use rusqlite::{params, types::Value, Connection};
 use serde_json::Map;
+use tokio::fs;
 use zeronet_protocol::PeerAddr;
 
 use crate::{
@@ -7,7 +10,7 @@ use crate::{
     environment::ENV,
     io::db::DbManager,
     protocol::{api::Request, Protocol},
-    utils::to_json_value,
+    utils::{self, to_json_value},
 };
 
 pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
@@ -131,6 +134,45 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
             println!("Site Not Signed");
         }
     }
+    Ok(())
+}
+
+pub async fn site_file_edit(site: &mut Site, inner_path: String) -> Result<(), Error> {
+    let file_path = site.site_path().join(inner_path.clone());
+    let mut file_path_str = inner_path.clone();
+    file_path_str.push_str(".old");
+    let old_path = site.site_path().join(file_path_str);
+    if file_path.exists() {
+        fs::remove_file(&old_path).await.unwrap();
+    }
+    fs::copy(&file_path, &old_path).await.unwrap();
+    Ok(())
+}
+
+pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), Error> {
+    let _ = add_peers_to_site(site).await;
+    site.load_content().await?;
+    let inner_path = content.unwrap_or_else(|| "content.json");
+    let path = site.site_path();
+    let content = site.content().unwrap();
+    let diffs = content.files.keys().filter(|path_str| {
+        let mut path_str = (*path_str).clone();
+        path_str.push_str(".old");
+        path.join(&path_str).exists()
+    });
+    let mut map = HashMap::new();
+    for path in diffs {
+        let inner_path = (*path).clone();
+        let content_path = site.site_path().join(inner_path.clone());
+        let content = fs::read_to_string(content_path.clone()).await.unwrap();
+        let mut path = path.to_string();
+        path.push_str(".old");
+        let path = site.site_path().join(path);
+        let old_content = fs::read_to_string(path).await.unwrap();
+        let diff = utils::diff::calc_diff(&old_content, &content);
+        map.insert(inner_path, diff);
+    }
+    site.update(inner_path, Some(map)).await;
     Ok(())
 }
 

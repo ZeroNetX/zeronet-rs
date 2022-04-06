@@ -26,7 +26,10 @@ pub fn handshake<'a>() -> (&'a str, Handshake) {
 }
 
 pub mod request {
+    use std::collections::HashMap;
+
     use serde_bytes::ByteBuf;
+    use serde_json::Value;
     use zeronet_protocol::templates::*;
 
     ///Peer requests
@@ -70,7 +73,8 @@ pub mod request {
     pub fn update_site<'a>(
         site: String,
         inner_path: String,
-        body: ByteBuf,
+        body: String,
+        diffs: HashMap<String, Vec<Value>>,
     ) -> (&'a str, UpdateFile) {
         (
             "update",
@@ -78,7 +82,7 @@ pub mod request {
                 site,
                 inner_path,
                 body,
-                diffs: vec![],
+                diffs,
             },
         )
     }
@@ -153,7 +157,7 @@ pub mod response {
         ("pex", PexResponse { peers, peers_onion })
     }
 
-    pub fn update_site<'a>(ok: bool) -> (&'a str, UpdateFileResponse) {
+    pub fn update_site<'a>(ok: String) -> (&'a str, UpdateFileResponse) {
         ("update", UpdateFileResponse { ok })
     }
 
