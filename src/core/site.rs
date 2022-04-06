@@ -115,7 +115,10 @@ impl Site {
             if !content_only {
                 let res = self.check_site_integrity().await?;
                 if !res.is_empty() {
-                    return Err(Error::Err("Site Integrity Check Failed".into()));
+                    return Err(Error::Err(format!(
+                        "Site Integrity Check Failed: {:?}",
+                        res
+                    )));
                 }
             }
             let content = self.content.clone().unwrap();
