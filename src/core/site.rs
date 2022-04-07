@@ -1,6 +1,5 @@
 use self::models::SiteStorage;
 use super::{address::Address as Addr, error::Error, peer::Peer};
-use chrono::Utc;
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -11,7 +10,6 @@ use std::{
 use zerucontent::Content;
 
 pub mod models {
-    use chrono::Utc;
     use serde::{Deserialize, Serialize};
     use std::collections::{BTreeMap, HashMap};
 
