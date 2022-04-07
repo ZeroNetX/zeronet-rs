@@ -1,11 +1,9 @@
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::collections::HashMap;
 
 use crate::{
     core::site::{models::SiteStorage, Site},
     environment::ENV,
+    io::utils::current_unix_epoch,
 };
 
 pub struct SitesController {
@@ -17,7 +15,7 @@ impl Default for SitesController {
     fn default() -> Self {
         SitesController {
             sites: HashMap::new(),
-            sites_changed: SitesController::current_time(),
+            sites_changed: current_unix_epoch(),
         }
     }
 }
@@ -52,14 +50,7 @@ impl SitesController {
         self.update_sites_changed();
     }
 
-    fn current_time() -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-    }
-
     fn update_sites_changed(&mut self) {
-        self.sites_changed = SitesController::current_time();
+        self.sites_changed = current_unix_epoch();
     }
 }

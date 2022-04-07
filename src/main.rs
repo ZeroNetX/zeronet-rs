@@ -14,7 +14,7 @@ pub mod utils;
 
 use crate::{
     common::*,
-    controllers::sites::SitesController,
+    controllers::{connections, sites::SitesController},
     core::{error::Error, site::Site},
     environment::*,
     io::db::DbManager,
@@ -100,6 +100,7 @@ async fn main() -> Result<(), Error> {
         let mut controller = SitesController::new();
         controller.extend_sites_from_sitedata(site_storage.clone());
         let _s = controller.sites.values().next().unwrap();
+        connections::start("127.0.0.1", 26117).await?;
     }
     Ok(())
 }
