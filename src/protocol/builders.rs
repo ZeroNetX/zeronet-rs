@@ -1,25 +1,21 @@
-use crate::environment::ENV;
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::{environment::ENV, io::utils::current_unix_epoch};
 use zeronet_protocol::templates::*;
 
 pub fn handshake<'a>() -> (&'a str, Handshake) {
     (
         "handshake",
         Handshake {
-            version: (*ENV.version).into(),
-            rev: ENV.rev,
+            version: "0.7.2".into(), //(*ENV.version).into(),
+            rev: 4555,               //ENV.rev,
             peer_id: (*ENV.peer_id).into(),
             protocol: "v2".into(),
             use_bin_type: true,
-            time: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-            fileserver_port: 0,
+            time: current_unix_epoch(),
+            fileserver_port: 26117,
             crypt: None,
             crypt_supported: vec![],
             onion: None,
-            port_opened: Some(false),
+            port_opened: Some(true),
             target_address: None,
         },
     )
@@ -64,7 +60,7 @@ pub mod request {
             Pex {
                 site,
                 peers: vec![],
-                peers_onion: vec![],
+                peers_onion: Some(vec![]),
                 need,
             },
         )
