@@ -362,8 +362,8 @@ impl DbManager {
                                 continue;
                             }
                             DbManager::object_handler(
-                                value,
-                                key,
+                                &value,
+                                &key,
                                 &replacements,
                                 &replacement_cols,
                                 &mut column_keys,
@@ -438,8 +438,8 @@ impl DbManager {
                                                 continue;
                                             }
                                             DbManager::object_handler(
-                                                value,
-                                                key_col,
+                                                &value,
+                                                &key_col,
                                                 &replacements,
                                                 &replacement_cols,
                                                 &mut column_keys,
