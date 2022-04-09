@@ -104,16 +104,16 @@ impl DbManager {
                 //Note: Required because other tables depend on json table, it needs to be dropped last.
                 return;
             }
-            Self::db_exec(&conn, &format!("DROP TABLE {}", table_name));
+            Self::db_exec(conn, &format!("DROP TABLE {}", table_name));
         });
-        Self::db_exec(&conn, "DROP TABLE json");
+        Self::db_exec(conn, "DROP TABLE json");
         for (table_name, table) in tables {
             let query = table.to_query(&table_name);
 
-            Self::db_exec(&conn, &query);
+            Self::db_exec(conn, &query);
             let indexes = table.indexes;
             indexes.into_iter().for_each(|i| {
-                Self::db_exec(&conn, &i);
+                Self::db_exec(conn, &i);
             });
         }
     }
@@ -303,7 +303,7 @@ impl DbManager {
         }
         let json_statement = format!("INSERT INTO json ({}) VALUES ({})", json_statement, values);
         let select_statement = format!("SELECT json_id FROM json WHERE ({})", select_statement);
-        Self::db_exec(&conn, &json_statement);
+        Self::db_exec(conn, &json_statement);
         let mut stmt = (&*conn).prepare(&select_statement).unwrap();
         let mut rows = stmt.query([]).unwrap();
         let a = rows.next().unwrap();
@@ -533,7 +533,7 @@ impl DbManager {
             column_keys.join(", "),
             values.join(", ")
         );
-        Self::db_exec(&conn, &stmt);
+        Self::db_exec(conn, &stmt);
     }
 
     fn load_key_value_table(
@@ -549,13 +549,13 @@ impl DbManager {
                     "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', {}, {})",
                     key, value, json_id
                 );
-                Self::db_exec(&conn, &query);
+                Self::db_exec(conn, &query);
             } else if let Some(value) = value.as_str() {
                 let query = format!(
                     "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', '{}', {})",
                     key, value, json_id
                 );
-                Self::db_exec(&conn, &query);
+                Self::db_exec(conn, &query);
             }
         }
     }
