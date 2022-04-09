@@ -1,3 +1,4 @@
+use rusqlite::params;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -15,6 +16,7 @@ use zeronet_protocol::{
 
 use crate::{
     core::error::Error,
+    io::db::DbManager,
     protocol::{api::Response, Protocol},
 };
 
@@ -22,18 +24,20 @@ use super::sites::SitesController;
 
 pub struct ConnectionController {
     listener: TcpListener,
+    pub db_manager: DbManager,
     sites_controller: SitesController,
     conn_len: usize,
     connections: HashMap<String, usize>,
 }
 
 impl ConnectionController {
-    pub async fn new(sites_controller: SitesController) -> Self {
+    pub async fn new(sites_controller: SitesController, db_manager: DbManager) -> Self {
         let listener = TcpListener::bind(format!("{}:{}", "159.65.50.3", 26117))
             .await
             .unwrap();
         Self {
             listener,
+            db_manager,
             sites_controller,
             conn_len: 0,
             connections: HashMap::new(),
@@ -105,7 +109,7 @@ impl ConnectionController {
         let stream = stream.into_std().unwrap();
         let mut connection =
             ZeroConnection::new(Box::new(stream.try_clone().unwrap()), Box::new(stream))?;
-        let _res = {
+        let _ = {
             loop {
                 let request = connection.recv().await;
                 if let Ok(request) = request {

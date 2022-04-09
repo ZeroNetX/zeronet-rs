@@ -276,6 +276,10 @@ impl Site {
         Ok(peers)
     }
 
+    pub fn add_peer(&mut self, peer: Peer) {
+        self.peers.insert(peer.address().to_string(), peer);
+    }
+
     pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
         let addr = (&self.address()).clone();
         let mut peer = self.peers.values().next().unwrap().clone();
