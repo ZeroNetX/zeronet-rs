@@ -98,9 +98,11 @@ async fn main() -> Result<(), Error> {
     } else {
         let conn = DbManager::connect_db_from_path(&ENV.data_path.join("content.db"))?;
         db_manager.insert_connection("content_db", conn);
-        let mut controller = SitesController::new();
-        controller.extend_sites_from_sitedata(site_storage.clone());
-        let mut con = ConnectionController::new(controller, db_manager).await;
+        let mut controller = SitesController::new(db_manager);
+        let _ = controller
+            .extend_sites_from_sitedata(site_storage.clone())
+            .await;
+        let mut con = ConnectionController::new(controller).await;
         let _ = con.run().await;
     }
     Ok(())
