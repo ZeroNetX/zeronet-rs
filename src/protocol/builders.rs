@@ -139,90 +139,73 @@ pub mod response {
     use zeronet_protocol::templates::*;
 
     ///Peer requests
-    pub fn get_file<'a>(body: ByteBuf, size: usize, location: usize) -> (&'a str, GetFileResponse) {
-        (
-            "getFile",
-            GetFileResponse {
-                body,
-                size,
-                location,
-            },
-        )
+    pub fn get_file(body: ByteBuf, size: usize, location: usize) -> GetFileResponse {
+        GetFileResponse {
+            body,
+            size,
+            location,
+        }
     }
 
-    pub fn stream_file<'a>(stream_bytes: usize) -> (&'a str, StreamFileResponse) {
-        ("streamFile", StreamFileResponse { stream_bytes })
+    pub fn stream_file(stream_bytes: usize) -> StreamFileResponse {
+        StreamFileResponse { stream_bytes }
     }
 
-    pub fn pex<'a>(
+    pub fn pex(
         peers: Vec<ByteBuf>,
         peers_ipv6: Vec<ByteBuf>,
         peers_onion: Vec<ByteBuf>,
-    ) -> (&'a str, PexResponse) {
-        (
-            "pex",
-            PexResponse {
-                peers,
-                peers_ipv6,
-                peers_onion,
-            },
-        )
+    ) -> PexResponse {
+        PexResponse {
+            peers,
+            peers_ipv6,
+            peers_onion,
+        }
     }
 
-    pub fn update_site<'a>(ok: String) -> (&'a str, UpdateFileResponse) {
-        ("update", UpdateFileResponse { ok })
+    pub fn update_site(ok: String) -> UpdateFileResponse {
+        UpdateFileResponse { ok }
     }
 
-    pub fn list_modified<'a>(
-        modified_files: HashMap<String, usize>,
-    ) -> (&'a str, ListModifiedResponse) {
-        ("listModified", ListModifiedResponse { modified_files })
+    pub fn list_modified(modified_files: HashMap<String, usize>) -> ListModifiedResponse {
+        ListModifiedResponse { modified_files }
     }
 
-    pub fn get_hashfield<'a>(hashfield_raw: ByteBuf) -> (&'a str, GetHashfieldResponse) {
-        ("getHashfield", GetHashfieldResponse { hashfield_raw })
+    pub fn get_hashfield(hashfield_raw: ByteBuf) -> GetHashfieldResponse {
+        GetHashfieldResponse { hashfield_raw }
     }
 
-    pub fn set_hashfield<'a>(ok: bool) -> (&'a str, SetHashfieldResponse) {
-        ("setHashfield", SetHashfieldResponse { ok })
+    pub fn set_hashfield(ok: bool) -> SetHashfieldResponse {
+        SetHashfieldResponse { ok }
     }
 
-    pub fn find_hash_ids<'a>(
+    pub fn find_hash_ids(
         peers: HashMap<usize, Vec<ByteBuf>>,
         peers_onion: HashMap<usize, Vec<ByteBuf>>,
         peers_ipv6: HashMap<usize, Vec<ByteBuf>>,
         my: Vec<usize>,
-    ) -> (&'a str, FindHashIdsResponse) {
-        (
-            "findHashIds",
-            FindHashIdsResponse {
-                peers,
-                peers_onion,
-                peers_ipv6,
-                my,
-            },
-        )
+    ) -> FindHashIdsResponse {
+        FindHashIdsResponse {
+            peers,
+            peers_onion,
+            peers_ipv6,
+            my,
+        }
     }
 
-    pub fn checkport<'a>(status: String, ip_external: String) -> (&'a str, CheckportResponse) {
-        (
-            "checkport",
-            CheckportResponse {
-                status,
-                ip_external,
-            },
-        )
+    pub fn checkport(status: String, ip_external: String) -> CheckportResponse {
+        CheckportResponse {
+            status,
+            ip_external,
+        }
     }
 
     ///Bigfile Plugin
-    pub fn get_piece_fields<'a>(piecefields_packed: ByteBuf) -> (&'a str, GetPieceFieldsResponse) {
-        (
-            "getPieceFields",
-            GetPieceFieldsResponse { piecefields_packed },
-        )
+    pub fn get_piece_fields(piecefields_packed: ByteBuf) -> GetPieceFieldsResponse {
+        GetPieceFieldsResponse { piecefields_packed }
     }
 
-    pub fn set_piece_fields<'a>(ok: bool) -> (&'a str, SetPieceFieldsResponse) {
-        ("setPieceFields", SetPieceFieldsResponse { ok })
+    pub fn set_piece_fields(ok: bool) -> SetPieceFieldsResponse {
+        SetPieceFieldsResponse { ok }
     }
 }
