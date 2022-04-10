@@ -30,11 +30,12 @@ impl Site {
         content.signs_required = 1;
         content.signers_sign =
             zeronet_cryptography::sign(format!("1:{}", self.address()), private_key)?;
-        self.modify_content(content);
+        self.modify_content(None, content);
         self.add_file_data(private_key).await?;
         Ok(())
     }
 
+    //TODO? Move this to templates module
     async fn add_file_data(&mut self, private_key: &str) -> Result<(), Error> {
         let data_dir = &*ENV.data_path;
         let site_dir = data_dir.join(&self.address());
@@ -44,8 +45,7 @@ impl Site {
         file.write_all(b"Welcome to World of DecentNet, A Peer to Peer Framework for Decentralised App and Services!")
             .await?;
         let _ = &self.add_file_to_content("index.html".into()).await?;
-
-        self.sign_content(private_key).await?;
+        self.sign_content(None, private_key).await?;
         self.save_content(None).await?;
         Ok(())
     }
@@ -138,7 +138,7 @@ impl Site {
     }
 
     async fn download_site_files(&self) -> Result<(), Error> {
-        let files = self.content().unwrap().files;
+        let files = self.content(None).unwrap().files;
         let mut tasks = Vec::new();
         let mut inner_paths = Vec::new();
         for (inner_path, file) in files {
@@ -146,7 +146,7 @@ impl Site {
             let task = self.download_file(inner_path, Some(file), None);
             tasks.push(task);
         }
-        let includes = self.content().unwrap().includes;
+        let includes = self.content(None).unwrap().includes;
         for (inner_path, _file) in includes {
             inner_paths.push(inner_path.clone());
             let task = self.download_file(inner_path, None, None);
@@ -209,13 +209,13 @@ impl Site {
         let buf = fs::read(self.content_path()).await?;
         let buf = ByteBuf::from(buf);
         let content = Content::from_buf(buf).unwrap();
-        self.modify_content(content);
+        self.modify_content(None, content);
         let res = self.verify_content(true).await?;
         Ok(res)
     }
 
     pub async fn check_site_integrity(&self) -> Result<Vec<(String, zerucontent::File)>, Error> {
-        let content = self.content().unwrap();
+        let content = self.content(None).unwrap();
         let files = content.files;
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
@@ -299,7 +299,7 @@ impl Site {
     pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
         let addr = (&self.address()).clone();
         let path = self.site_path().join(inner_path);
-        let modified = self.content().unwrap().modified;
+        let modified = self.content(None).unwrap().modified;
         let peer = self.peers.values_mut().next().unwrap();
         let content = fs::read_to_string(path).await.unwrap();
         let res = Protocol::new(peer.connection_mut().unwrap())

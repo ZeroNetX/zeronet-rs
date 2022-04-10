@@ -31,7 +31,7 @@ impl ContentMod for Site {
         let path = self.site_path().join(&inner_path);
         if path.is_file() {
             let file = get_zfile_info(path).await?;
-            let res = &mut self.content_mut().unwrap().files;
+            let res = &mut self.content_mut(None).unwrap().files;
             res.insert(inner_path.display().to_string(), file);
             Ok(())
         } else {
@@ -39,8 +39,12 @@ impl ContentMod for Site {
         }
     }
 
-    async fn sign_content(&mut self, private_key: &str) -> Result<(), Error> {
-        let content = self.content_mut().unwrap();
+    async fn sign_content(
+        &mut self,
+        inner_path: Option<&str>,
+        private_key: &str,
+    ) -> Result<(), Error> {
+        let content = self.content_mut(inner_path).unwrap();
         content.modified = current_unix_epoch() as usize;
         let sign = content.sign(private_key.to_string());
         let address = zeronet_cryptography::privkey_to_pubkey(private_key)?;
@@ -49,7 +53,7 @@ impl ContentMod for Site {
     }
 
     async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error> {
-        let content = self.content().unwrap();
+        let content = self.content(inner_path).unwrap();
         let content_json = serde_json::to_string_pretty(&content)?;
         let inner_path = inner_path.unwrap_or("content.json");
         let path = self.site_path().join(inner_path);

@@ -26,6 +26,10 @@ pub trait UserIO {
 pub trait ContentMod {
     async fn load_content_from_path(&self, inner_path: String) -> Result<Content, Error>;
     async fn add_file_to_content(&mut self, path: PathBuf) -> Result<(), Error>;
-    async fn sign_content(&mut self, private_key: &str) -> Result<(), Error>;
+    async fn sign_content(
+        &mut self,
+        inner_path: Option<&str>,
+        private_key: &str,
+    ) -> Result<(), Error>;
     async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error>;
 }

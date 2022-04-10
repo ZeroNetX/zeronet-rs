@@ -115,20 +115,21 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
         println!("No changes to sign");
     } else {
         let content = {
-            let mut content = site.content().unwrap();
-            let mut files = content.files.clone();
+            let mut content = site.content(None).unwrap();
+            let mut files = content.files;
             for (inner_path, file) in changes {
                 if files.insert(inner_path, file).is_none() {
                     unreachable!();
                 };
             }
+            //TODO! Verify inner content as well
             content.files = files;
             content
         };
-        site.modify_content(content);
+        site.modify_content(None, content);
         let res = site.verify_content(false).await?;
         if res {
-            site.sign_content(&private_key).await?;
+            site.sign_content(None, &private_key).await?;
             site.save_content(None).await?;
         } else {
             println!("Site Not Signed");
@@ -154,7 +155,7 @@ pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), E
     site.load_content().await?;
     let inner_path = content.unwrap_or("content.json");
     let path = site.site_path();
-    let content = site.content().unwrap();
+    let content = site.content(Some(inner_path)).unwrap();
     let diffs = content.files.keys().filter(|path_str| {
         let mut path_str = (*path_str).clone();
         path_str.push_str(".old");
@@ -183,7 +184,7 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
         true
     } else {
         site.load_content().await?;
-        let content = site.content().unwrap();
+        let content = site.content(None).unwrap();
         let files = content.files;
         let files_res = files.keys().any(|path| path == &inner_path);
         let includes_res = content.includes.keys().any(|path| path == &inner_path);
@@ -240,7 +241,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
 pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
     add_peers_to_site(site).await?;
     site.load_content().await?;
-    let modified = site.content().unwrap().modified;
+    let modified = site.content(None).unwrap().modified;
     println!("{:?}", modified);
     let changes = site.fetch_changes(1421043090).await?;
     println!("{:#?}", changes);

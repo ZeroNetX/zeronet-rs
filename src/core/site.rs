@@ -68,7 +68,7 @@ pub struct Site {
     pub peers: HashMap<String, Peer>,
     pub data_path: PathBuf,
     pub storage: SiteStorage,
-    content: Option<Content>,
+    content: HashMap<String, Content>,
 }
 
 impl Site {
@@ -77,7 +77,7 @@ impl Site {
             address: Addr::from_str(address)?,
             peers: HashMap::new(),
             data_path,
-            content: None,
+            content: HashMap::new(),
             storage: SiteStorage::default(),
         })
     }
@@ -87,19 +87,26 @@ impl Site {
     }
 
     fn content_exists(&self) -> bool {
-        self.content.is_some()
+        self.content.contains_key("content.json")
     }
 
-    pub fn content(&self) -> Option<Content> {
-        self.content.clone()
+    fn inner_content_exists(&self, inner_path: &str) -> bool {
+        self.content.contains_key(inner_path)
     }
 
-    pub fn content_mut(&mut self) -> Option<&mut Content> {
-        self.content.as_mut()
+    pub fn content(&self, inner_path: Option<&str>) -> Option<Content> {
+        self.content
+            .get(inner_path.unwrap_or("content.json"))
+            .cloned()
     }
 
-    pub fn modify_content(&mut self, content: Content) {
-        self.content = Some(content);
+    pub fn content_mut(&mut self, inner_path: Option<&str>) -> Option<&mut Content> {
+        self.content.get_mut(inner_path.unwrap_or("content.json"))
+    }
+
+    pub fn modify_content(&mut self, inner_path: Option<&str>, content: Content) {
+        self.content
+            .insert(inner_path.unwrap_or("content.json").into(), content);
     }
 
     pub fn modify_storage(&mut self, storage: SiteStorage) {
