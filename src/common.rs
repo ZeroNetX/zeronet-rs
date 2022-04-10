@@ -127,7 +127,7 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
             content
         };
         site.modify_content(None, content);
-        let res = site.verify_content(false).await?;
+        let res = site.verify_files(false).await?;
         if res {
             site.sign_content(None, &private_key).await?;
             site.save_content(None).await?;
@@ -250,7 +250,7 @@ pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
 
 pub async fn check_site_integrity(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
-    let res = site.verify_content(false).await?;
+    let res = site.verify_files(false).await?;
     if res {
         println!("Site {} verified", site.address());
     } else {

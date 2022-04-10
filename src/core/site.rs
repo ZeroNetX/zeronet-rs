@@ -112,30 +112,4 @@ impl Site {
     pub fn modify_storage(&mut self, storage: SiteStorage) {
         self.storage = storage;
     }
-
-    pub async fn verify_content(&self, content_only: bool) -> Result<bool, Error> {
-        if self.content.is_none() {
-            Err(Error::Err("No content to verify".into()))
-        } else {
-            if !content_only {
-                let res = self.check_site_integrity().await?;
-                if !res.is_empty() {
-                    return Err(Error::Err(format!(
-                        "Site Integrity Check Failed: {:?}",
-                        res
-                    )));
-                }
-            }
-            let content = self.content.clone().unwrap();
-            let verified = content.verify((&self.address()).clone());
-            if !verified {
-                return Err(Error::Err(format!(
-                    "Content verification failed for {}",
-                    self.address()
-                )));
-            } else {
-                Ok(verified)
-            }
-        }
-    }
 }

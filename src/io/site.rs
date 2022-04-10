@@ -210,8 +210,35 @@ impl Site {
         let buf = ByteBuf::from(buf);
         let content = Content::from_buf(buf).unwrap();
         self.modify_content(None, content);
-        let res = self.verify_content(true).await?;
+        let res = self.verify_content(None).is_ok();
         Ok(res)
+    }
+
+    pub async fn verify_files(&self, content_only: bool) -> Result<bool, Error> {
+        if self.content(None).is_none() {
+            Err(Error::Err("No content to verify".into()))
+        } else {
+            if !content_only {
+                let res = self.check_site_integrity().await?;
+                if !res.is_empty() {
+                    return Err(Error::Err(format!(
+                        "Site Integrity Check Failed: {:?}",
+                        res
+                    )));
+                }
+            }
+            let content = self.content(None).unwrap();
+            //TODO! Verify inner content also
+            let verified = content.verify((&self.address()).clone());
+            if !verified {
+                return Err(Error::Err(format!(
+                    "Content verification failed for {}",
+                    self.address()
+                )));
+            } else {
+                Ok(verified)
+            }
+        }
     }
 
     pub async fn check_site_integrity(&self) -> Result<Vec<(String, zerucontent::File)>, Error> {
@@ -339,7 +366,7 @@ impl SiteIO for Site {
         if verified {
             let _ = self.download_site_files().await;
         }
-        self.verify_content(false).await?;
+        self.verify_files(false).await?;
         Ok(verified)
     }
 
