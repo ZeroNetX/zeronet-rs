@@ -276,6 +276,10 @@ impl Site {
         Ok(peers)
     }
 
+    pub fn add_peer(&mut self, peer: Peer) {
+        self.peers.insert(peer.address().to_string(), peer);
+    }
+
     pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
         let addr = (&self.address()).clone();
         let mut peer = self.peers.values().next().unwrap().clone();
@@ -295,6 +299,7 @@ impl Site {
     pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
         let addr = (&self.address()).clone();
         let path = self.site_path().join(inner_path);
+        let modified = self.content().unwrap().modified;
         let peer = self.peers.values_mut().next().unwrap();
         let content = fs::read_to_string(path).await.unwrap();
         let res = Protocol::new(peer.connection_mut().unwrap())
@@ -303,6 +308,7 @@ impl Site {
                 inner_path.to_owned(),
                 content,
                 diff.unwrap_or_default(),
+                modified,
             )
             .await;
         if let Err(err) = res {

@@ -14,7 +14,7 @@ pub mod utils;
 
 use crate::{
     common::*,
-    controllers::sites::SitesController,
+    controllers::{connections::ConnectionController, sites::SitesController},
     core::{error::Error, site::Site},
     environment::*,
     io::db::DbManager,
@@ -96,10 +96,14 @@ async fn main() -> Result<(), Error> {
             }
         }
     } else {
-        println!("No command specified");
-        let mut controller = SitesController::new();
-        controller.extend_sites_from_sitedata(site_storage.clone());
-        let _s = controller.sites.values().next().unwrap();
+        let conn = DbManager::connect_db_from_path(&ENV.data_path.join("content.db"))?;
+        db_manager.insert_connection("content_db", conn);
+        let mut controller = SitesController::new(db_manager);
+        let _ = controller
+            .extend_sites_from_sitedata(site_storage.clone())
+            .await;
+        let mut con = ConnectionController::new(controller).await;
+        let _ = con.run().await;
     }
     Ok(())
 }

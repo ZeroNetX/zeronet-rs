@@ -1,30 +1,26 @@
-use std::{
-    collections::HashMap,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::collections::HashMap;
+
+use log::error;
 
 use crate::{
     core::site::{models::SiteStorage, Site},
     environment::ENV,
+    io::{db::DbManager, utils::current_unix_epoch},
 };
 
 pub struct SitesController {
     pub sites: HashMap<String, Site>,
     pub sites_changed: u64,
-}
-
-impl Default for SitesController {
-    fn default() -> Self {
-        SitesController {
-            sites: HashMap::new(),
-            sites_changed: SitesController::current_time(),
-        }
-    }
+    pub db_manager: DbManager,
 }
 
 impl SitesController {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(db_manager: DbManager) -> Self {
+        Self {
+            db_manager,
+            sites: HashMap::new(),
+            sites_changed: current_unix_epoch(),
+        }
     }
 
     pub fn add_site(&mut self, site: Site) {
@@ -32,17 +28,39 @@ impl SitesController {
         self.update_sites_changed();
     }
 
+    pub fn get_site(&self, site_addr: &str) -> Option<&Site> {
+        self.sites.get(site_addr)
+    }
+
+    pub fn get_site_mut(&mut self, site_addr: &str) -> Option<&mut Site> {
+        self.sites.get_mut(site_addr)
+    }
+
     pub fn remove_site(&mut self, address: &str) {
         self.sites.remove(address);
         self.update_sites_changed();
     }
 
-    pub fn extend_sites_from_sitedata(&mut self, sites: HashMap<String, SiteStorage>) {
+    pub async fn extend_sites_from_sitedata(&mut self, sites: HashMap<String, SiteStorage>) {
         for (address, site_storage) in sites {
             let path = ENV.data_path.join(&address);
-            let mut site = Site::new(&address, path).unwrap();
-            site.modify_storage(site_storage);
-            self.sites.insert(address.to_string(), site);
+            if path.exists() {
+                let mut site = Site::new(&address, path).unwrap();
+                site.modify_storage(site_storage);
+                let res = site.load_content().await;
+                if res.is_ok() {
+                    self.sites.insert(address, site);
+                } else {
+                    //TODO! Start Downloading Site Content
+                    error!(
+                        "Failed to load site {}, Error: {:?}",
+                        address,
+                        res.unwrap_err()
+                    );
+                }
+            } else {
+                println!("Site Dir with Address: {} not found", address);
+            }
         }
         self.update_sites_changed();
     }
@@ -52,14 +70,7 @@ impl SitesController {
         self.update_sites_changed();
     }
 
-    fn current_time() -> u64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-    }
-
     fn update_sites_changed(&mut self) {
-        self.sites_changed = SitesController::current_time();
+        self.sites_changed = current_unix_epoch();
     }
 }

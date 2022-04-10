@@ -1,8 +1,9 @@
+use log::error;
 use serde_json::Value;
 use sha2::{Digest, Sha512};
 use std::{
     collections::HashMap,
-    io::Read,
+    io::{Read, Write},
     path::{Path, PathBuf},
     time::SystemTime,
 };
@@ -60,92 +61,107 @@ pub async fn check_file_integrity(
 pub fn load_users_file() -> HashMap<String, User> {
     println!("Loading users file");
     let users_file = ENV.data_path.join("users.json");
-    let users_file_str = std::fs::read_to_string(&users_file).unwrap();
     let mut users = HashMap::<String, User>::new();
-    let users_store: HashMap<String, Value> = serde_json::from_str(&users_file_str).unwrap();
-    for (username, user_obj) in users_store {
-        println!("Loading user: {}", username);
-        if let Value::Object(user_map) = &user_obj {
-            let mut user = if let Value::String(master_seed) = &user_map["master_seed"] {
-                User::from_seed(master_seed.clone())
-            } else {
-                unimplemented!("No master seed found");
-            };
-            for (key, value) in user_map {
-                match key.as_str() {
-                    "certs" => {
-                        let mut certs = HashMap::<String, Cert>::new();
-                        for (cert_name, cert_value) in value.as_object().unwrap() {
-                            if let Value::Object(cert_map) = cert_value {
-                                let auth_address =
-                                    cert_map["auth_address"].as_str().unwrap().to_string();
-                                let auth_privatekey =
-                                    cert_map["auth_privatekey"].as_str().unwrap().to_string();
-                                let auth_pair = AuthPair::new(auth_address, auth_privatekey);
-                                let auth_type = cert_map["auth_type"].as_str().unwrap().to_string();
-                                let auth_user_name =
-                                    cert_map["auth_user_name"].as_str().unwrap().to_string();
-                                let cert_sign = cert_map["cert_sign"].as_str().unwrap().to_string();
-                                certs.insert(
-                                    cert_name.to_string(),
-                                    Cert::new(auth_pair, auth_type, auth_user_name, cert_sign),
-                                );
-                            }
-                        }
-                        user.certs.extend(certs);
-                    }
-                    "master_seed" => {}
-                    "settings" => {
-                        let sett: HashMap<String, Value> =
-                            serde_json::from_value(value.clone()).unwrap();
-                        user.settings.extend(sett);
-                    }
-                    "sites" => {
-                        let mut sites = HashMap::<String, SiteData>::new();
-
-                        if let Value::Object(map) = value {
-                            for (address, obj) in map {
-                                if let Value::Object(site_map) = obj {
-                                    let mut site_data = SiteData::new(address.to_string());
+    if users_file.exists() {
+        let users_file_str = std::fs::read_to_string(&users_file).unwrap();
+        let users_store: HashMap<String, Value> = serde_json::from_str(&users_file_str).unwrap();
+        for (username, user_obj) in users_store {
+            println!("Loading user: {}", username);
+            if let Value::Object(user_map) = &user_obj {
+                let mut user = if let Value::String(master_seed) = &user_map["master_seed"] {
+                    User::from_seed(master_seed.clone())
+                } else {
+                    unimplemented!("No master seed found");
+                };
+                for (key, value) in user_map {
+                    match key.as_str() {
+                        "certs" => {
+                            let mut certs = HashMap::<String, Cert>::new();
+                            for (cert_name, cert_value) in value.as_object().unwrap() {
+                                if let Value::Object(cert_map) = cert_value {
                                     let auth_address =
-                                        site_map["auth_address"].as_str().unwrap().to_string();
+                                        cert_map["auth_address"].as_str().unwrap().to_string();
                                     let auth_privatekey =
-                                        site_map["auth_privatekey"].as_str().unwrap().to_string();
+                                        cert_map["auth_privatekey"].as_str().unwrap().to_string();
                                     let auth_pair = AuthPair::new(auth_address, auth_privatekey);
-                                    site_data.with_auth_pair(auth_pair);
-                                    for (key, value) in site_map {
-                                        match key.as_str() {
-                                            "auth_address" | "auth_privatekey" => {}
-                                            "privatekey" => {
-                                                let priv_key = value.as_str().unwrap().to_string();
-                                                site_data.with_privatekey(priv_key);
-                                            }
-                                            "cert" => {
-                                                let cert_name = value.as_str().unwrap().to_string();
-                                                site_data.add_cert_provider(cert_name);
-                                            }
-                                            "index" => {
-                                                let index = value.as_i64().unwrap() as u32;
-                                                site_data.with_index(index);
-                                            }
-                                            "settings" => {
-                                                site_data.set_settings(value.clone());
-                                            }
-                                            _ => {
-                                                site_data.add_plugin_data(key.into(), value.clone())
-                                            }
-                                        }
-                                    }
-                                    sites.insert(address.to_string(), site_data);
+                                    let auth_type =
+                                        cert_map["auth_type"].as_str().unwrap().to_string();
+                                    let auth_user_name =
+                                        cert_map["auth_user_name"].as_str().unwrap().to_string();
+                                    let cert_sign =
+                                        cert_map["cert_sign"].as_str().unwrap().to_string();
+                                    certs.insert(
+                                        cert_name.to_string(),
+                                        Cert::new(auth_pair, auth_type, auth_user_name, cert_sign),
+                                    );
                                 }
                             }
+                            user.certs.extend(certs);
                         }
-                        user.sites.extend(sites);
+                        "master_seed" => {}
+                        "settings" => {
+                            let sett: HashMap<String, Value> =
+                                serde_json::from_value(value.clone()).unwrap();
+                            user.settings.extend(sett);
+                        }
+                        "sites" => {
+                            let mut sites = HashMap::<String, SiteData>::new();
+                            if let Value::Object(map) = value {
+                                for (address, obj) in map {
+                                    if let Value::Object(site_map) = obj {
+                                        let mut site_data = SiteData::new(address.to_string());
+                                        let auth_address =
+                                            site_map["auth_address"].as_str().unwrap().to_string();
+                                        let auth_privatekey = site_map["auth_privatekey"]
+                                            .as_str()
+                                            .unwrap()
+                                            .to_string();
+                                        let auth_pair =
+                                            AuthPair::new(auth_address, auth_privatekey);
+                                        site_data.with_auth_pair(auth_pair);
+                                        for (key, value) in site_map {
+                                            match key.as_str() {
+                                                "auth_address" | "auth_privatekey" => {}
+                                                "privatekey" => {
+                                                    let priv_key =
+                                                        value.as_str().unwrap().to_string();
+                                                    site_data.with_privatekey(priv_key);
+                                                }
+                                                "cert" => {
+                                                    let cert_name =
+                                                        value.as_str().unwrap().to_string();
+                                                    site_data.add_cert_provider(cert_name);
+                                                }
+                                                "index" => {
+                                                    let index = value.as_i64().unwrap() as u32;
+                                                    site_data.with_index(index);
+                                                }
+                                                "settings" => {
+                                                    site_data.set_settings(value.clone());
+                                                }
+                                                _ => site_data
+                                                    .add_plugin_data(key.into(), value.clone()),
+                                            }
+                                        }
+                                        sites.insert(address.to_string(), site_data);
+                                    }
+                                }
+                            }
+                            user.sites.extend(sites);
+                        }
+                        _ => {}
                     }
-                    _ => {}
                 }
+                users.insert(username, user);
             }
-            users.insert(username, user);
+        }
+    } else {
+        let res = std::fs::File::create(users_file);
+        if let Ok(mut file) = res {
+            //TODO: Create User and Add to users instead of just creating empty file
+            let _ = file.write(b"{}");
+        } else {
+            error!("Could not create Empty users.json file");
         }
     }
     users
@@ -156,7 +172,7 @@ pub fn load_sites_file() -> HashMap<String, SiteStorage> {
     println!("Loading sites.json file");
     let mut sites_file = HashMap::new();
     let path = ENV.data_path.join("sites.json");
-    if let Ok(mut file) = std::fs::File::open(path) {
+    if let Ok(mut file) = std::fs::File::open(&path) {
         let mut buf = String::new();
         file.read_to_string(&mut buf).unwrap();
         let sites: HashMap<String, Value> = serde_json::from_str(&buf).unwrap();
@@ -247,6 +263,13 @@ pub fn load_sites_file() -> HashMap<String, SiteStorage> {
                 }
                 sites_file.insert(site_addr, storage);
             }
+        }
+    } else {
+        let res = std::fs::File::create(path);
+        if let Ok(mut file) = res {
+            let _ = file.write(b"{}");
+        } else {
+            error!("Could not create Empty sites.json file");
         }
     }
     sites_file

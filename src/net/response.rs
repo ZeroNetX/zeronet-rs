@@ -27,13 +27,13 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
 
     async fn get_file(&mut self, id: usize, body: ByteBuf) -> Result<bool, Error> {
         let builder = get_file(body, 0, 0);
-        self.0.respond(id, json!(builder.1)).await?;
+        self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }
 
     async fn stream_file(&mut self, id: usize, stream_bytes: usize) -> Result<bool, Error> {
         let builder = stream_file(stream_bytes);
-        self.0.respond(id, json!(builder.1)).await?;
+        self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }
     async fn list_modified(
@@ -42,7 +42,7 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
         modified_files: HashMap<String, usize>,
     ) -> Result<bool, Error> {
         let builder = list_modified(modified_files);
-        self.0.respond(id, json!(builder.1)).await?;
+        self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }
 
@@ -50,16 +50,17 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
         &mut self,
         id: usize,
         peers: Vec<ByteBuf>,
+        peers_ipv6: Vec<ByteBuf>,
         peers_onion: Vec<ByteBuf>,
     ) -> Result<bool, Error> {
-        let builder = pex(peers, peers_onion);
-        self.0.respond(id, json!(builder.1)).await?;
+        let builder = pex(peers, peers_ipv6, peers_onion);
+        self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }
 
     async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error> {
         let builder = update_site(msg.into());
-        self.0.respond(id, json!(builder.1)).await?;
+        self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }
 }
