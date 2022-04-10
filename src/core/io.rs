@@ -31,5 +31,6 @@ pub trait ContentMod {
         inner_path: Option<&str>,
         private_key: &str,
     ) -> Result<(), Error>;
+    fn verify_content(&self, inner_path: Option<&str>) -> Result<(), Error>;
     async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error>;
 }

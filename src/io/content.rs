@@ -52,6 +52,30 @@ impl ContentMod for Site {
         Ok(())
     }
 
+    fn verify_content(&self, inner_path: Option<&str>) -> Result<(), Error> {
+        let content = self.content(inner_path).unwrap();
+        let verified = content
+            .signs
+            .keys()
+            .into_iter()
+            .find_map(|key| {
+                if content.verify(key.to_string()) {
+                    Some(true)
+                } else {
+                    None
+                }
+            })
+            .is_some();
+        if verified {
+            Ok(())
+        } else {
+            return Err(Error::Err(format!(
+                "Content verification failed for {}",
+                inner_path.unwrap()
+            )));
+        }
+    }
+
     async fn save_content(&mut self, inner_path: Option<&str>) -> Result<(), Error> {
         let content = self.content(inner_path).unwrap();
         let content_json = serde_json::to_string_pretty(&content)?;
