@@ -97,7 +97,7 @@ impl ConnectionController {
                             if res.is_err() {
                                 error!(
                                     "Error Sending Response: \nTo : {} : {:#?}",
-                                    peer_addr.to_string(),
+                                    peer_addr,
                                     res.unwrap_err()
                                 );
                             }
@@ -105,7 +105,7 @@ impl ConnectionController {
                         _req => {
                             println!(
                                 "\nFrom : {} : {} : {}",
-                                peer_addr.to_string(),
+                                peer_addr,
                                 serde_json::to_string_pretty(&request.cmd).unwrap(),
                                 serde_json::to_value(request.req_id).unwrap()
                             );
@@ -199,21 +199,19 @@ impl ConnectionController {
                     .filter_map(|(key, peer)| {
                         if keys.contains(key) {
                             None
-                        } else {
-                            if retrived < need {
-                                retrived += 1;
-                                let packed = peer.clone().address().pack();
-                                match peer.address() {
-                                    PeerAddr::IPV4(_, _) => Some(("ipv4", packed)),
-                                    PeerAddr::IPV6(_, _) => Some(("ipv6", packed)),
-                                    PeerAddr::OnionV2(_, _) | PeerAddr::OnionV3(_, _) => {
-                                        Some(("onion", packed))
-                                    }
-                                    _ => unimplemented!(),
+                        } else if retrived < need {
+                            retrived += 1;
+                            let packed = peer.clone().address().pack();
+                            match peer.address() {
+                                PeerAddr::IPV4(_, _) => Some(("ipv4", packed)),
+                                PeerAddr::IPV6(_, _) => Some(("ipv6", packed)),
+                                PeerAddr::OnionV2(_, _) | PeerAddr::OnionV3(_, _) => {
+                                    Some(("onion", packed))
                                 }
-                            } else {
-                                None
+                                _ => unimplemented!(),
                             }
+                        } else {
+                            None
                         }
                     })
                     .collect::<Vec<_>>();
