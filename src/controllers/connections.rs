@@ -102,8 +102,18 @@ impl ConnectionController {
                                 );
                             }
                         }
+                        "ping" => {
+                            let res = protocol.ping(request.req_id).await;
+                            if res.is_err() {
+                                error!(
+                                    "Error Sending Response: \nTo : {} : {:#?}",
+                                    peer_addr,
+                                    res.unwrap_err()
+                                );
+                            }
+                        }
                         _req => {
-                            println!(
+                            debug!(
                                 "\nFrom : {} : {} : {}",
                                 peer_addr,
                                 serde_json::to_string_pretty(&request.cmd).unwrap(),
@@ -115,7 +125,7 @@ impl ConnectionController {
                             let _ = req_tx.send(request.clone()).await;
                             let res = res_tx.recv().await;
                             let took = time.elapsed();
-                            println!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
+                            debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
                             if let Some(res) = res {
                                 let result = protocol.0.respond(request.req_id, res.clone()).await;
                                 if result.is_err() {
