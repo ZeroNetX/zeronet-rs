@@ -152,7 +152,7 @@ pub async fn site_file_edit(site: &mut Site, inner_path: String) -> Result<(), E
 pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), Error> {
     let _ = add_peers_to_site(site).await;
     site.load_content().await?;
-    let inner_path = content.unwrap_or_else(|| "content.json");
+    let inner_path = content.unwrap_or("content.json");
     let path = site.site_path();
     let content = site.content().unwrap();
     let diffs = content.files.keys().filter(|path_str| {
