@@ -50,9 +50,10 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
         &mut self,
         id: usize,
         peers: Vec<ByteBuf>,
+        peers_ipv6: Vec<ByteBuf>,
         peers_onion: Vec<ByteBuf>,
     ) -> Result<bool, Error> {
-        let builder = pex(peers, peers_onion);
+        let builder = pex(peers, peers_ipv6, peers_onion);
         self.0.respond(id, json!(builder.1)).await?;
         Ok(true)
     }

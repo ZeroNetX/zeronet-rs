@@ -32,6 +32,7 @@ pub trait Request {
         inner_path: String,
         body: String,
         diffs: HashMap<String, Vec<serde_json::Value>>,
+        modified: usize,
     ) -> Result<UpdateFileResponse, Error>;
 }
 
@@ -50,6 +51,7 @@ pub trait Response {
         &mut self,
         id: usize,
         peers: Vec<ByteBuf>,
+        peers_ipv6: Vec<ByteBuf>,
         peers_onion: Vec<ByteBuf>,
     ) -> Result<bool, Error>;
     async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error>;

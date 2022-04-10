@@ -34,6 +34,7 @@ pub mod request {
         inner_path: String,
         file_size: usize,
         location: usize,
+        read_bytes: Option<usize>,
     ) -> (&'a str, GetFile) {
         (
             "getFile",
@@ -42,6 +43,7 @@ pub mod request {
                 inner_path,
                 file_size,
                 location,
+                read_bytes,
             },
         )
     }
@@ -61,6 +63,7 @@ pub mod request {
                 site,
                 peers: vec![],
                 peers_onion: Some(vec![]),
+                peers_ipv6: Some(vec![]),
                 need,
             },
         )
@@ -71,6 +74,7 @@ pub mod request {
         inner_path: String,
         body: String,
         diffs: HashMap<String, Vec<Value>>,
+        modified: usize,
     ) -> (&'a str, UpdateFile) {
         (
             "update",
@@ -79,6 +83,7 @@ pub mod request {
                 inner_path,
                 body,
                 diffs,
+                modified,
             },
         )
     }
@@ -149,8 +154,19 @@ pub mod response {
         ("streamFile", StreamFileResponse { stream_bytes })
     }
 
-    pub fn pex<'a>(peers: Vec<ByteBuf>, peers_onion: Vec<ByteBuf>) -> (&'a str, PexResponse) {
-        ("pex", PexResponse { peers, peers_onion })
+    pub fn pex<'a>(
+        peers: Vec<ByteBuf>,
+        peers_ipv6: Vec<ByteBuf>,
+        peers_onion: Vec<ByteBuf>,
+    ) -> (&'a str, PexResponse) {
+        (
+            "pex",
+            PexResponse {
+                peers,
+                peers_ipv6,
+                peers_onion,
+            },
+        )
     }
 
     pub fn update_site<'a>(ok: String) -> (&'a str, UpdateFileResponse) {
@@ -174,8 +190,18 @@ pub mod response {
     pub fn find_hash_ids<'a>(
         peers: HashMap<usize, Vec<ByteBuf>>,
         peers_onion: HashMap<usize, Vec<ByteBuf>>,
+        peers_ipv6: HashMap<usize, Vec<ByteBuf>>,
+        my: Vec<usize>,
     ) -> (&'a str, FindHashIdsResponse) {
-        ("findHashIds", FindHashIdsResponse { peers, peers_onion })
+        (
+            "findHashIds",
+            FindHashIdsResponse {
+                peers,
+                peers_onion,
+                peers_ipv6,
+                my,
+            },
+        )
     }
 
     pub fn checkport<'a>(status: String, ip_external: String) -> (&'a str, CheckportResponse) {

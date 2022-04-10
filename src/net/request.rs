@@ -53,8 +53,7 @@ impl<'a> Request for Protocol<'a> {
         file_size: usize,
         location: usize,
     ) -> Result<GetFileResponse, Error> {
-        //TODO!: Remove default values from builder, file_size and location
-        let builder = get_file(site, inner_path, file_size, location);
+        let builder = get_file(site, inner_path, file_size, location, None); //TODO! Pass read_bytes to builder
         let res = self.invoke_with_builder(builder).await?;
         let body: GetFileResponse = res.body()?;
         Ok(body)
@@ -99,8 +98,9 @@ impl<'a> Request for Protocol<'a> {
         inner_path: String,
         body: String,
         diffs: HashMap<String, Vec<Value>>,
+        modified: usize,
     ) -> Result<UpdateFileResponse, Error> {
-        let builder = update_site(site, inner_path, body, diffs);
+        let builder = update_site(site, inner_path, body, diffs, modified);
         let res = self.invoke_with_builder(builder).await?;
         match res.body() {
             Ok(body) => Ok(body),
