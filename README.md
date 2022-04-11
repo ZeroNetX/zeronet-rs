@@ -1,7 +1,7 @@
 # ZeroNetX
 Rust Implementation of ZeroNet Protocol
 
-Currently this is just a non active cmd line tool. You can use available commands to execute things.
+Currently This Repo is open to Code Reviews/Security Audit/Best Code Practice Suggestions. You can freely review and suggest your opinions to us.
 
 ## Features:
  - Site Create => Create New Site
