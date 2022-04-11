@@ -8,7 +8,8 @@ use super::error::Error;
 pub trait SiteIO {
     fn site_path(&self) -> PathBuf;
     fn content_path(&self) -> PathBuf;
-    // async fn content(self) -> Result<Content, Error>;
+    fn get_path(&self, inner_path: &str) -> Result<PathBuf, Error>;
+    fn get_inner_path(&self, path: &str) -> Result<PathBuf, Error>;
     // async fn content_exists(&self) -> Result<bool, Error>;
     async fn init_download(&mut self) -> Result<bool, Error>;
     async fn load_storage(path: &str) -> Result<bool, Error>;

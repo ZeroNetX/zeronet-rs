@@ -86,11 +86,11 @@ impl Site {
         self.address.address.clone()
     }
 
-    fn content_exists(&self) -> bool {
+    pub fn content_exists(&self) -> bool {
         self.content.contains_key("content.json")
     }
 
-    fn inner_content_exists(&self, inner_path: &str) -> bool {
+    pub fn inner_content_exists(&self, inner_path: &str) -> bool {
         self.content.contains_key(inner_path)
     }
 

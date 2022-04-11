@@ -354,6 +354,41 @@ impl SiteIO for Site {
         self.site_path().join("content.json")
     }
 
+    fn get_path(&self, inner_path: &str) -> Result<PathBuf, Error> {
+        if inner_path.starts_with("../") {
+            return Err(Error::Err(format!("Path Not Allowed: {}", inner_path)));
+        }
+        let path = self.site_path().join(inner_path);
+        if path.exists() {
+            Ok(path)
+        } else {
+            Err(Error::Err(format!(
+                "Path not found: {}",
+                path.to_string_lossy()
+            )))
+        }
+    }
+
+    fn get_inner_path(&self, path: &str) -> Result<PathBuf, Error> {
+        if !path.starts_with(self.data_path.to_str().unwrap()) {
+            return Err(Error::Err(format!("Path Not Allowed: {}", path)));
+        } else {
+            let path = PathBuf::from(path);
+            if path.exists() {
+                if self.data_path == path {
+                    Ok(self.data_path.clone())
+                } else {
+                    Ok(path.strip_prefix(self.data_path.clone()).unwrap().into())
+                }
+            } else {
+                Err(Error::Err(format!(
+                    "Path not found: {}",
+                    path.to_string_lossy()
+                )))
+            }
+        }
+    }
+
     async fn init_download(&mut self) -> Result<bool, Error> {
         if !&self.site_path().is_dir() {
             fs::create_dir_all(self.site_path()).await?;
