@@ -1,14 +1,20 @@
+use itertools::Itertools;
 use log::{debug, error};
 use serde_bytes::ByteBuf;
 use serde_json::{json, Value};
-use std::collections::HashMap;
+use std::io::Read;
 use std::time::Duration;
+use std::{collections::HashMap, fs::File};
 use time::Instant;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
 };
-use zeronet_protocol::{templates::GetHashfield, PeerAddr};
+use zeronet_protocol::{
+    templates::{GetFile, GetHashfield, OkResponse, UpdateFile},
+    PeerAddr,
+};
+use zerucontent::Content;
 
 use zeronet_protocol::{
     message::Request as ZeroNetRequest,
@@ -17,9 +23,12 @@ use zeronet_protocol::{
 };
 
 use crate::{
-    core::{error::Error, peer::Peer},
+    core::{error::Error, io::SiteIO, peer::Peer},
     environment::ENV,
-    protocol::{api::Response, builders, Protocol},
+    protocol::{
+        api::{self, Response},
+        builders, Protocol,
+    },
 };
 
 use super::sites::SitesController;
@@ -112,7 +121,7 @@ impl ConnectionController {
                                 );
                             }
                         }
-                        _req => {
+                        cmd => {
                             debug!(
                                 "\nFrom : {} : {} : {}",
                                 peer_addr,
@@ -122,6 +131,32 @@ impl ConnectionController {
                             let time = Instant::now();
                             //TODO! Optimisation
                             //? For Unknown Sites, send direct Error Response instead for channel roundtrip
+                            if cmd == "update" {
+                                let body = request.body::<UpdateFile>();
+                                if let Ok(res) = body {
+                                    let is_body_empty = res.body.is_empty();
+                                    let site = res.site;
+                                    if is_body_empty {
+                                        let res = api::Request::get_file(
+                                            &mut protocol,
+                                            site,
+                                            res.inner_path,
+                                            0,
+                                            0,
+                                        )
+                                        .await;
+                                        if let Ok(res) = res {
+                                            let bytes = res.body;
+                                        }
+                                    }
+                                } else {
+                                    error!(
+                                        "Error Parsing Request Body: \nTo : {} : {:#?}",
+                                        peer_addr,
+                                        body.unwrap_err()
+                                    );
+                                }
+                            }
                             let _ = req_tx.send(request.clone()).await;
                             let res = res_tx.recv().await;
                             let took = time.elapsed();
@@ -157,6 +192,9 @@ impl ConnectionController {
         match req.cmd.as_str() {
             "pex" => self.handle_pex(req),
             "getHashfield" => self.get_hashfield(req),
+            "getFile" => self.handle_get_file(req, false),
+            "streamFile" => self.handle_get_file(req, true),
+            "update" => self.handle_update(req),
             _ => {
                 println!("Unknown cmd {}", req.cmd);
                 None
@@ -256,6 +294,123 @@ impl ConnectionController {
             }
         } else {
             error!("Invalid GetHashfield Request {:?}", req);
+            None
+        }
+    }
+
+    fn handle_get_file(&mut self, req: ZeroNetRequest, streaming: bool) -> Option<Value> {
+        if let Ok(res) = req.body::<GetFile>() {
+            let site = &res.site;
+            if self.sites_controller.sites.contains_key(site) {
+                let site = self.sites_controller.sites.get_mut(site).unwrap();
+                let inner_path = &res.inner_path;
+                match site.get_path(inner_path) {
+                    Ok(path) => {
+                        let location = res.location;
+                        let read_bytes = res.read_bytes.unwrap_or(512 * 1024);
+                        let file_size = res.file_size;
+                        let file = File::open(path).unwrap();
+                        let bytes = file.bytes();
+                        let file_size_actual = bytes.size_hint().1.unwrap();
+                        if location > file_size_actual {
+                            Some(json!(ErrorResponse {
+                                error: format!("File read error, Bad file location"),
+                            }))
+                        } else if file_size > file_size_actual {
+                            Some(json!(ErrorResponse {
+                                error: format!("File read error, Bad file size"),
+                            }))
+                        } else if read_bytes > file_size_actual {
+                            Some(json!(ErrorResponse {
+                                error: format!("File read error, File size does not match"),
+                            }))
+                        } else {
+                            let bytes = bytes
+                                .skip(location)
+                                .take(read_bytes)
+                                .filter_map(|a| a.ok())
+                                .collect_vec();
+                            if streaming {
+                                Some(json!(builders::response::stream_file(bytes.len())))
+                            } else {
+                                Some(json!(builders::response::get_file(
+                                    ByteBuf::from(bytes),
+                                    file_size_actual,
+                                    location + read_bytes
+                                )))
+                            }
+                        }
+                    }
+                    Err(err) => Some(json!(ErrorResponse {
+                        error: format!("{:?}", err),
+                    })),
+                }
+            } else {
+                Self::unknown_site_response()
+            }
+        } else {
+            error!("Invalid GetFile Request {:?}", req);
+            None
+        }
+    }
+
+    fn handle_update(&mut self, req: ZeroNetRequest) -> Option<Value> {
+        if let Ok(res) = req.body::<UpdateFile>() {
+            let site = &res.site;
+            if self.sites_controller.sites.contains_key(site) {
+                let inner_path = &res.inner_path;
+                let content_modified = res.modified;
+                if !inner_path.ends_with("content.json") {
+                    return Some(json!(ErrorResponse {
+                        error: "Only content.json update allowed".to_string(),
+                    }));
+                }
+                let validate_content = {
+                    let site = self.sites_controller.sites.get(site).unwrap();
+                    if !site.inner_content_exists(inner_path) {
+                        false
+                    } else {
+                        let exists_in_includes = site
+                            .content(None)
+                            .unwrap()
+                            .includes
+                            .keys()
+                            .find(|k| k.ends_with(inner_path))
+                            .is_some();
+                        if exists_in_includes {
+                            true
+                        } else {
+                            let site_content_modified =
+                                site.content(Some(inner_path)).unwrap().modified;
+                            content_modified > site_content_modified
+                        }
+                    }
+                };
+                if !validate_content {
+                    return Some(json!(OkResponse {
+                        ok: "File not changed".to_string(),
+                    }));
+                }
+                let body = res.body;
+                if body.is_empty() {
+                    unimplemented!()
+                }
+                let content = Content::from_buf(ByteBuf::from(body));
+                if let Ok(content) = content {
+                    let site = self.sites_controller.sites.get_mut(site).unwrap();
+                    Some(json!(OkResponse {
+                        ok: "File updated".to_string(),
+                    }))
+                } else {
+                    Some(json!(ErrorResponse {
+                        error: "File invalid JSON".to_string(),
+                    }))
+                }
+            } else {
+                Self::unknown_site_response()
+            }
+        } else {
+            error!("Invalid Update Request {:?}", req);
             None
         }
     }
