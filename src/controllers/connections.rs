@@ -331,7 +331,11 @@ impl ConnectionController {
                                 .filter_map(|a| a.ok())
                                 .collect_vec();
                             if streaming {
-                                Some(json!(builders::response::stream_file(bytes.len())))
+                                Some(json!(builders::response::stream_file(
+                                    bytes.len(),
+                                    location,
+                                    file_size
+                                )))
                             } else {
                                 Some(json!(builders::response::get_file(
                                     ByteBuf::from(bytes),

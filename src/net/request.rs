@@ -66,7 +66,7 @@ impl<'a> Request for Protocol<'a> {
         inner_path: String,
     ) -> Result<StreamFileResponse, Error> {
         //TODO!: Remove default values from builder, size
-        let builder = stream_file(site, inner_path, 0);
+        let builder = stream_file(site, inner_path, 0, 0, 0);
         let res = self.invoke_with_builder(builder).await?;
         let body: StreamFileResponse = res.body()?;
         Ok(body)

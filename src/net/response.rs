@@ -31,8 +31,14 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
         Ok(true)
     }
 
-    async fn stream_file(&mut self, id: usize, stream_bytes: usize) -> Result<bool, Error> {
-        let builder = stream_file(stream_bytes);
+    async fn stream_file(
+        &mut self,
+        id: usize,
+        stream_bytes: usize,
+        location: usize,
+        size: usize,
+    ) -> Result<bool, Error> {
+        let builder = stream_file(stream_bytes, location, size);
         self.0.respond(id, json!(builder)).await?;
         Ok(true)
     }

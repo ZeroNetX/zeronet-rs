@@ -41,7 +41,13 @@ pub trait Response {
     async fn handshake(&mut self, id: usize) -> Result<bool, Error>;
     async fn ping(&mut self, id: usize) -> Result<bool, Error>;
     async fn get_file(&mut self, id: usize, site: ByteBuf) -> Result<bool, Error>;
-    async fn stream_file(&mut self, id: usize, stream_bytes: usize) -> Result<bool, Error>;
+    async fn stream_file(
+        &mut self,
+        id: usize,
+        stream_bytes: usize,
+        location: usize,
+        size: usize,
+    ) -> Result<bool, Error>;
     async fn list_modified(
         &mut self,
         id: usize,

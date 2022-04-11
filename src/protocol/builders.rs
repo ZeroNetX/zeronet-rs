@@ -1,5 +1,5 @@
+use super::templates::*;
 use crate::{environment::ENV, io::utils::current_unix_epoch};
-use zeronet_protocol::templates::*;
 
 pub fn handshake<'a>() -> (&'a str, Handshake) {
     (
@@ -24,9 +24,9 @@ pub fn handshake<'a>() -> (&'a str, Handshake) {
 pub mod request {
     use std::collections::HashMap;
 
+    use super::super::templates::*;
     use serde_bytes::ByteBuf;
     use serde_json::Value;
-    use zeronet_protocol::templates::*;
 
     ///Peer requests
     pub fn get_file<'a>(
@@ -49,11 +49,22 @@ pub mod request {
     }
 
     pub fn stream_file<'a>(
-        _site: String,
+        site: String,
         inner_path: String,
-        size: usize,
+        location: usize,
+        file_size: usize,
+        read_bytes: usize,
     ) -> (&'a str, StreamFile) {
-        ("streamFile", StreamFile { inner_path, size })
+        (
+            "streamFile",
+            StreamFile {
+                site,
+                inner_path,
+                location,
+                file_size,
+                read_bytes,
+            },
+        )
     }
 
     pub fn pex<'a>(site: String, need: usize) -> (&'a str, Pex) {
@@ -75,10 +86,10 @@ pub mod request {
         body: String,
         diffs: HashMap<String, Vec<Value>>,
         modified: usize,
-    ) -> (&'a str, UpdateFile) {
+    ) -> (&'a str, Update) {
         (
             "update",
-            UpdateFile {
+            Update {
                 site,
                 inner_path,
                 body,
@@ -134,9 +145,9 @@ pub mod request {
 }
 
 pub mod response {
+    use super::super::templates::*;
     use serde_bytes::ByteBuf;
     use std::collections::HashMap;
-    use zeronet_protocol::templates::*;
 
     ///Peer requests
     pub fn get_file(body: ByteBuf, size: usize, location: usize) -> GetFileResponse {
@@ -147,8 +158,12 @@ pub mod response {
         }
     }
 
-    pub fn stream_file(stream_bytes: usize) -> StreamFileResponse {
-        StreamFileResponse { stream_bytes }
+    pub fn stream_file(stream_bytes: usize, location: usize, size: usize) -> StreamFileResponse {
+        StreamFileResponse {
+            stream_bytes,
+            location,
+            size,
+        }
     }
 
     pub fn pex(
@@ -175,7 +190,7 @@ pub mod response {
         GetHashfieldResponse { hashfield_raw }
     }
 
-    pub fn set_hashfield(ok: bool) -> SetHashfieldResponse {
+    pub fn set_hashfield(ok: String) -> SetHashfieldResponse {
         SetHashfieldResponse { ok }
     }
 
