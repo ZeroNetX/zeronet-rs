@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
-use serde_json::Number;
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(default)]
@@ -186,22 +186,4 @@ pub struct SetPieceFieldsResponse {
 
 pub fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     t == &T::default()
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[serde(untagged)]
-pub enum Value {
-    Null,
-    Bool(bool),
-    Number(Number),
-    String(String),
-    Bytes(ByteBuf),
-    Array(Vec<Value>),
-    Object(HashMap<String, Value>),
-}
-
-impl Default for Value {
-    fn default() -> Self {
-        Value::Null
-    }
 }
