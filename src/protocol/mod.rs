@@ -2,6 +2,7 @@ use zeronet_protocol::ZeroConnection;
 
 pub mod api;
 pub mod builders;
+pub mod msgpack;
 pub mod templates;
 pub mod utils;
 
