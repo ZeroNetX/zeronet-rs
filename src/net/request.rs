@@ -5,12 +5,13 @@ use crate::{
     protocol::{
         api::Request,
         builders::{request::*, *},
+        templates::*,
         Protocol,
     },
 };
 use serde::Serialize;
 use serde_json::{json, Value};
-use zeronet_protocol::{message::Response, templates::*};
+use zeronet_protocol::message::Response;
 
 impl<'a> Protocol<'a> {
     async fn jsoned_req<T: Serialize>(&mut self, cmd: &str, req: T) -> Result<Response, Error> {

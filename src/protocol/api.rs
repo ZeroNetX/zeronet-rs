@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
+use super::templates::*;
 use crate::core::error::Error;
 use serde_bytes::ByteBuf;
-use zeronet_protocol::templates::*;
 
 #[async_trait::async_trait]
 pub trait Request {

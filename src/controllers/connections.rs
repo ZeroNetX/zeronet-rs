@@ -10,28 +10,20 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
 };
-use zeronet_protocol::{
-    templates::{GetFile, GetHashfield, OkResponse, UpdateFile},
-    PeerAddr,
-};
+use zeronet_protocol::{message::Request as ZeroNetRequest, PeerAddr, ZeroConnection};
 use zerucontent::Content;
-
-use zeronet_protocol::{
-    message::Request as ZeroNetRequest,
-    templates::{ErrorResponse, Pex},
-    ZeroConnection,
-};
 
 use crate::{
     core::{error::Error, io::SiteIO, peer::Peer},
     environment::ENV,
     protocol::{
         api::{self, Response},
-        builders, Protocol,
+        builders,
+        templates::*,
+        Protocol,
     },
+    SitesController,
 };
-
-use super::sites::SitesController;
 
 pub struct ConnectionController {
     listener: TcpListener,
@@ -132,7 +124,7 @@ impl ConnectionController {
                             //TODO! Optimisation
                             //? For Unknown Sites, send direct Error Response instead for channel roundtrip
                             if cmd == "update" {
-                                let body = request.body::<UpdateFile>();
+                                let body = request.body::<Update>();
                                 if let Ok(res) = body {
                                     let is_body_empty = res.body.is_empty();
                                     let site = res.site;
@@ -359,7 +351,7 @@ impl ConnectionController {
     }
 
     fn handle_update(&mut self, req: ZeroNetRequest) -> Option<Value> {
-        if let Ok(res) = req.body::<UpdateFile>() {
+        if let Ok(res) = req.body::<Update>() {
             let site = &res.site;
             if self.sites_controller.sites.contains_key(site) {
                 let inner_path = &res.inner_path;
