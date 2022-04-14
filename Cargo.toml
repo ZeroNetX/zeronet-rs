@@ -1,14 +1,8 @@
 [package]
-name = "zeronet"
-version = "0.1.0"
 authors = ["canewsin <canews.in@gmail.com>"]
 edition = "2021"
-
-[features]
-default = ["userio", "blockstorage"]
-userio = []
-blockstorage = []
-
+name = "zeronet"
+version = "0.1.0"
 [dependencies]
 async-recursion = "1.0.0"
 async-trait = "0.1.52"
@@ -16,6 +10,7 @@ base64 = "0.13.0"
 bincode = "1.3.3"
 bitcoin = "0.27.1"
 clap = "3.1.6"
+diff = "0.1.12"
 futures = "0.3.21"
 itertools = "0.10.3"
 lazy_static = "1.4.0"
@@ -25,16 +20,36 @@ rand = "0.8.5"
 regex = "1.5.5"
 rmp = "0.8.10"
 rmp-serde = "1.0.0"
-rusqlite = {version = "0.27.0", features = ["serde_json", "bundled"]}
-serde = { version = "1.0.136", features = ["derive"] }
 serde_bytes = "0.11.5"
 serde_json = "1.0.79"
 sha1 = "0.10.1"
 sha2 = "0.10.2"
 time = "0.3.9"
-tokio = { version = "1.17.0", features = ["full"] }
-diff = "0.1.12"
+tor-stream = "*"
 
-zeronet_cryptography = { path = "./zeronet_cryptography" }
-zeronet_protocol = { path = "./zeronet_protocol", features = ["tor", "i2p"] }
-zerucontent = { path = "./zerucontent"}
+[dependencies.rusqlite]
+features = ["serde_json", "bundled"]
+version = "0.27.0"
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0.136"
+
+[dependencies.tokio]
+features = ["full"]
+version = "1.17.0"
+
+[dependencies.zeronet_cryptography]
+path = "./zeronet_cryptography"
+
+[dependencies.zeronet_protocol]
+features = ["tor", "i2p"]
+path = "./zeronet_protocol"
+
+[dependencies.zerucontent]
+path = "./zerucontent"
+
+[features]
+blockstorage = []
+default = ["userio", "blockstorage"]
+userio = []
