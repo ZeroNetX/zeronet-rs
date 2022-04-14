@@ -4,6 +4,16 @@ use serde::{Deserialize, Serialize};
 use serde_bytes::ByteBuf;
 use serde_json::Value;
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ErrorResponse {
+    pub error: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OkResponse {
+    pub ok: String,
+}
+
 #[derive(Serialize, Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct Handshake {
