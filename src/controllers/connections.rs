@@ -306,15 +306,15 @@ impl ConnectionController {
                         let file_size_actual = bytes.size_hint().1.unwrap();
                         if location > file_size_actual {
                             ResponseType::Err(ErrorResponse {
-                                error: format!("File read error, Bad file location"),
+                                error: "File read error, Bad file location".to_string(),
                             })
                         } else if file_size > file_size_actual {
                             ResponseType::Err(ErrorResponse {
-                                error: format!("File read error, Bad file size"),
+                                error: "File read error, Bad file size".to_string(),
                             })
                         } else if read_bytes > file_size_actual {
                             ResponseType::Err(ErrorResponse {
-                                error: format!("File read error, File size does not match"),
+                                error: "File read error, File size does not match".to_string(),
                             })
                         } else {
                             let bytes = bytes
@@ -374,8 +374,7 @@ impl ConnectionController {
                             .unwrap()
                             .includes
                             .keys()
-                            .find(|k| k.ends_with(inner_path))
-                            .is_some();
+                            .any(|k| k.ends_with(inner_path));
                         if exists_in_includes {
                             true
                         } else {

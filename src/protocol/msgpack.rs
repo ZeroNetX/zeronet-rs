@@ -9,7 +9,7 @@ pub fn pack(val: impl Serialize + Sized) -> Result<Vec<u8>, EncodeError> {
 }
 
 pub fn unpack<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, DecodeError> {
-    decode::from_slice(&bytes)
+    decode::from_slice(bytes)
 }
 
 pub fn write_packed(
