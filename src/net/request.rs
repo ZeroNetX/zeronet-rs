@@ -5,28 +5,13 @@ use crate::{
     protocol::{
         api::Request,
         builders::{request::*, *},
-        templates::*,
         Protocol,
     },
 };
-use serde::Serialize;
-use serde_json::{json, Value};
-use zeronet_protocol::message::Response;
 
-impl<'a> Protocol<'a> {
-    async fn jsoned_req<T: Serialize>(&mut self, cmd: &str, req: T) -> Result<Response, Error> {
-        let res = self.0.request(cmd, json!(req)).await?;
-        Ok(res)
-    }
-
-    pub async fn invoke_with_builder<T: Serialize>(
-        &mut self,
-        builder: (&str, T),
-    ) -> Result<Response, Error> {
-        let res = self.jsoned_req(builder.0, builder.1).await?;
-        Ok(res)
-    }
-}
+use serde_bytes::ByteBuf;
+use serde_json::Value;
+use zeronet_protocol::{message::RequestType, templates::*};
 
 ///https://docs.zeronet.dev/1DeveLopDZL1cHfKi8UXHh2UBEhzH6HhMp/help_zeronet/network_protocol/
 #[async_trait::async_trait]
@@ -34,14 +19,17 @@ impl<'a> Request for Protocol<'a> {
     ///#handshake
     async fn handshake(&mut self) -> Result<Handshake, Error> {
         let builder = handshake();
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::Handshake(builder.1))
+            .await?;
         let body: Handshake = res.body()?;
         Ok(body)
     }
 
     ///#ping
     async fn ping(&mut self) -> Result<bool, Error> {
-        let res = self.0.request("ping", json!({})).await?;
+        let res = self.0.request("ping", RequestType::Ping(Ping())).await?;
         let res: PingResponse = res.body()?;
         Ok(res.body == "Pong!")
     }
@@ -55,7 +43,10 @@ impl<'a> Request for Protocol<'a> {
         location: usize,
     ) -> Result<GetFileResponse, Error> {
         let builder = get_file(site, inner_path, file_size, location, None); //TODO! Pass read_bytes to builder
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::GetFile(builder.1))
+            .await?;
         let body: GetFileResponse = res.body()?;
         Ok(body)
     }
@@ -68,7 +59,10 @@ impl<'a> Request for Protocol<'a> {
     ) -> Result<StreamFileResponse, Error> {
         //TODO!: Remove default values from builder, size
         let builder = stream_file(site, inner_path, 0, 0, 0);
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::StreamFile(builder.1))
+            .await?;
         let body: StreamFileResponse = res.body()?;
         Ok(body)
     }
@@ -80,7 +74,10 @@ impl<'a> Request for Protocol<'a> {
         since: usize,
     ) -> Result<ListModifiedResponse, Error> {
         let builder = list_modified(site, since);
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::ListModified(builder.1))
+            .await?;
         let body: ListModifiedResponse = res.body()?;
         Ok(body)
     }
@@ -88,7 +85,10 @@ impl<'a> Request for Protocol<'a> {
     ///#pex
     async fn pex(&mut self, site: String) -> Result<PexResponse, Error> {
         let builder = pex(site, 10);
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::Pex(builder.1))
+            .await?;
         let body: PexResponse = res.body()?;
         Ok(body)
     }
@@ -97,12 +97,15 @@ impl<'a> Request for Protocol<'a> {
         &mut self,
         site: String,
         inner_path: String,
-        body: String,
+        body: ByteBuf,
         diffs: HashMap<String, Vec<Value>>,
         modified: usize,
-    ) -> Result<UpdateFileResponse, Error> {
+    ) -> Result<UpdateResponse, Error> {
         let builder = update_site(site, inner_path, body, diffs, modified);
-        let res = self.invoke_with_builder(builder).await?;
+        let res = self
+            .0
+            .request(builder.0, RequestType::Update(builder.1))
+            .await?;
         match res.body() {
             Ok(body) => Ok(body),
             Err(e) => Err(Error::Err(format!("{:?}", e))),

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use super::templates::*;
 use crate::core::error::Error;
 use serde_bytes::ByteBuf;
+use zeronet_protocol::templates::*;
 
 #[async_trait::async_trait]
 pub trait Request {
@@ -30,23 +30,30 @@ pub trait Request {
         &mut self,
         site: String,
         inner_path: String,
-        body: String,
+        body: ByteBuf,
         diffs: HashMap<String, Vec<serde_json::Value>>,
         modified: usize,
-    ) -> Result<UpdateFileResponse, Error>;
+    ) -> Result<UpdateResponse, Error>;
 }
 
 #[async_trait::async_trait]
 pub trait Response {
     async fn handshake(&mut self, id: usize) -> Result<bool, Error>;
     async fn ping(&mut self, id: usize) -> Result<bool, Error>;
-    async fn get_file(&mut self, id: usize, site: ByteBuf) -> Result<bool, Error>;
+    async fn get_file(
+        &mut self,
+        id: usize,
+        site: ByteBuf,
+        size: usize,
+        location: usize,
+    ) -> Result<bool, Error>;
     async fn stream_file(
         &mut self,
         id: usize,
         stream_bytes: usize,
         location: usize,
         size: usize,
+        bytes: ByteBuf,
     ) -> Result<bool, Error>;
     async fn list_modified(
         &mut self,

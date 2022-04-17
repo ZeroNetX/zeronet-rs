@@ -328,12 +328,12 @@ impl Site {
         let path = self.site_path().join(inner_path);
         let modified = self.content(None).unwrap().modified;
         let peer = self.peers.values_mut().next().unwrap();
-        let content = fs::read_to_string(path).await.unwrap();
+        let content = fs::read(path).await.unwrap();
         let res = Protocol::new(peer.connection_mut().unwrap())
             .update(
                 addr,
                 inner_path.to_owned(),
-                content,
+                ByteBuf::from(content),
                 diff.unwrap_or_default(),
                 modified,
             )

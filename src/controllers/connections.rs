@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use log::{debug, error};
 use serde_bytes::ByteBuf;
-use serde_json::{json, Value};
 use std::io::Read;
 use std::time::Duration;
 use std::{collections::HashMap, fs::File};
@@ -10,7 +9,12 @@ use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
 };
-use zeronet_protocol::{message::Request as ZeroNetRequest, PeerAddr, ZeroConnection};
+
+use zeronet_protocol::{
+    message::{Request as ZeroNetRequest, ResponseType},
+    templates::*,
+    PeerAddr, ZeroConnection,
+};
 use zerucontent::Content;
 
 use crate::{
@@ -18,9 +22,7 @@ use crate::{
     environment::ENV,
     protocol::{
         api::{self, Response},
-        builders,
-        templates::*,
-        Protocol,
+        builders, Protocol,
     },
     SitesController,
 };
@@ -67,9 +69,7 @@ impl ConnectionController {
                     let msg = req_rx.recv().await;
                     if let Some(req) = msg {
                         let res = self.handle_request(req).await;
-                        if let Some(v) = res {
-                            let _ = res_tx.send(v).await;
-                        }
+                        let _ = res_tx.send(res).await;
                     }
                 } else {
                     error!("Error : {}", stream.0.peer_addr().unwrap_err());
@@ -81,7 +81,7 @@ impl ConnectionController {
     async fn handle_connection(
         stream: TcpStream,
         req_tx: Sender<ZeroNetRequest>,
-        res_tx: &mut Receiver<Value>,
+        res_rx: &mut Receiver<ResponseType>,
     ) -> Result<(), Error> {
         let peer_addr = stream.peer_addr()?;
         let stream = stream.into_std().unwrap();
@@ -138,7 +138,7 @@ impl ConnectionController {
                                         )
                                         .await;
                                         if let Ok(res) = res {
-                                            let bytes = res.body;
+                                            let _bytes = res.body;
                                         }
                                     }
                                 } else {
@@ -150,7 +150,7 @@ impl ConnectionController {
                                 }
                             }
                             let _ = req_tx.send(request.clone()).await;
-                            let res = res_tx.recv().await;
+                            let res = res_rx.recv().await;
                             let took = time.elapsed();
                             debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
                             if let Some(res) = res {
@@ -180,7 +180,7 @@ impl ConnectionController {
         Ok(())
     }
 
-    async fn handle_request(&mut self, req: ZeroNetRequest) -> Option<Value> {
+    async fn handle_request(&mut self, req: ZeroNetRequest) -> ResponseType {
         match req.cmd.as_str() {
             "pex" => self.handle_pex(req),
             "getHashfield" => self.get_hashfield(req),
@@ -189,21 +189,21 @@ impl ConnectionController {
             "update" => self.handle_update(req),
             _ => {
                 println!("Unknown cmd {}", req.cmd);
-                None
+                ResponseType::UnknownCmd
             }
         }
     }
 }
 
 impl ConnectionController {
-    fn unknown_site_response() -> Option<Value> {
+    fn unknown_site_response() -> ResponseType {
         let res = ErrorResponse {
             error: "Unknown site".to_string(),
         };
-        Some(json!(res))
+        ResponseType::Err(res)
     }
 
-    fn handle_pex(&mut self, req: ZeroNetRequest) -> Option<Value> {
+    fn handle_pex(&mut self, req: ZeroNetRequest) -> ResponseType {
         if let Ok(res) = req.body::<Pex>() {
             let site = &res.site;
             let need = res.need;
@@ -266,17 +266,17 @@ impl ConnectionController {
                         _ => unimplemented!(),
                     }
                 }
-                Some(json!(builders::response::pex(ip_v4, ip_v6, onion)))
+                ResponseType::Pex(builders::response::pex(ip_v4, ip_v6, onion))
             } else {
                 Self::unknown_site_response()
             }
         } else {
             error!("Invalid Pex Request {:?}", req);
-            None
+            ResponseType::InvalidRequest
         }
     }
 
-    fn get_hashfield(&mut self, req: ZeroNetRequest) -> Option<Value> {
+    fn get_hashfield(&mut self, req: ZeroNetRequest) -> ResponseType {
         if let Ok(res) = req.body::<GetHashfield>() {
             let site = &res.site;
             if self.sites_controller.sites.contains_key(site) {
@@ -286,11 +286,11 @@ impl ConnectionController {
             }
         } else {
             error!("Invalid GetHashfield Request {:?}", req);
-            None
+            ResponseType::InvalidRequest
         }
     }
 
-    fn handle_get_file(&mut self, req: ZeroNetRequest, streaming: bool) -> Option<Value> {
+    fn handle_get_file(&mut self, req: ZeroNetRequest, streaming: bool) -> ResponseType {
         if let Ok(res) = req.body::<GetFile>() {
             let site = &res.site;
             if self.sites_controller.sites.contains_key(site) {
@@ -305,17 +305,17 @@ impl ConnectionController {
                         let bytes = file.bytes();
                         let file_size_actual = bytes.size_hint().1.unwrap();
                         if location > file_size_actual {
-                            Some(json!(ErrorResponse {
+                            ResponseType::Err(ErrorResponse {
                                 error: format!("File read error, Bad file location"),
-                            }))
+                            })
                         } else if file_size > file_size_actual {
-                            Some(json!(ErrorResponse {
+                            ResponseType::Err(ErrorResponse {
                                 error: format!("File read error, Bad file size"),
-                            }))
+                            })
                         } else if read_bytes > file_size_actual {
-                            Some(json!(ErrorResponse {
+                            ResponseType::Err(ErrorResponse {
                                 error: format!("File read error, File size does not match"),
-                            }))
+                            })
                         } else {
                             let bytes = bytes
                                 .skip(location)
@@ -323,43 +323,46 @@ impl ConnectionController {
                                 .filter_map(|a| a.ok())
                                 .collect_vec();
                             if streaming {
-                                Some(json!(builders::response::stream_file(
-                                    bytes.len(),
-                                    location,
-                                    file_size
-                                )))
+                                ResponseType::StreamFile(
+                                    builders::response::stream_file(
+                                        bytes.len(),
+                                        location,
+                                        file_size,
+                                    ),
+                                    ByteBuf::from(bytes),
+                                )
                             } else {
-                                Some(json!(builders::response::get_file(
+                                ResponseType::GetFile(builders::response::get_file(
                                     ByteBuf::from(bytes),
                                     file_size_actual,
-                                    location + read_bytes
-                                )))
+                                    location + read_bytes,
+                                ))
                             }
                         }
                     }
-                    Err(err) => Some(json!(ErrorResponse {
+                    Err(err) => ResponseType::Err(ErrorResponse {
                         error: format!("{:?}", err),
-                    })),
+                    }),
                 }
             } else {
                 Self::unknown_site_response()
             }
         } else {
             error!("Invalid GetFile Request {:?}", req);
-            None
+            ResponseType::InvalidRequest
         }
     }
 
-    fn handle_update(&mut self, req: ZeroNetRequest) -> Option<Value> {
+    fn handle_update(&mut self, req: ZeroNetRequest) -> ResponseType {
         if let Ok(res) = req.body::<Update>() {
             let site = &res.site;
             if self.sites_controller.sites.contains_key(site) {
                 let inner_path = &res.inner_path;
                 let content_modified = res.modified;
                 if !inner_path.ends_with("content.json") {
-                    return Some(json!(ErrorResponse {
+                    return ResponseType::Err(ErrorResponse {
                         error: "Only content.json update allowed".to_string(),
-                    }));
+                    });
                 }
                 let validate_content = {
                     let site = self.sites_controller.sites.get(site).unwrap();
@@ -383,31 +386,32 @@ impl ConnectionController {
                     }
                 };
                 if !validate_content {
-                    return Some(json!(OkResponse {
+                    return ResponseType::Ok(OkResponse {
                         ok: "File not changed".to_string(),
-                    }));
+                    });
                 }
                 let body = res.body;
                 if body.is_empty() {
                     unimplemented!()
                 }
-                let content = Content::from_buf(ByteBuf::from(body));
-                if let Ok(content) = content {
-                    let site = self.sites_controller.sites.get_mut(site).unwrap();
-                    Some(json!(OkResponse {
+                let content = Content::from_buf(body);
+                //TODO!
+                if let Ok(_content) = content {
+                    let _site = self.sites_controller.sites.get_mut(site).unwrap();
+                    ResponseType::Ok(OkResponse {
                         ok: "File updated".to_string(),
-                    }))
+                    })
                 } else {
-                    Some(json!(ErrorResponse {
+                    ResponseType::Err(ErrorResponse {
                         error: "File invalid JSON".to_string(),
-                    }))
+                    })
                 }
             } else {
                 Self::unknown_site_response()
             }
         } else {
             error!("Invalid Update Request {:?}", req);
-            None
+            ResponseType::InvalidRequest
         }
     }
 }

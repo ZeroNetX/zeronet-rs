@@ -1,5 +1,5 @@
-use super::templates::*;
 use crate::{environment::ENV, io::utils::current_unix_epoch};
+use zeronet_protocol::templates::*;
 
 pub fn handshake<'a>() -> (&'a str, Handshake) {
     (
@@ -24,9 +24,9 @@ pub fn handshake<'a>() -> (&'a str, Handshake) {
 pub mod request {
     use std::collections::HashMap;
 
-    use super::super::templates::*;
     use serde_bytes::ByteBuf;
     use serde_json::Value;
+    use zeronet_protocol::templates::*;
 
     ///Peer requests
     pub fn get_file<'a>(
@@ -83,7 +83,7 @@ pub mod request {
     pub fn update_site<'a>(
         site: String,
         inner_path: String,
-        body: String,
+        body: ByteBuf,
         diffs: HashMap<String, Vec<Value>>,
         modified: usize,
     ) -> (&'a str, Update) {
@@ -145,9 +145,9 @@ pub mod request {
 }
 
 pub mod response {
-    use super::super::templates::*;
     use serde_bytes::ByteBuf;
     use std::collections::HashMap;
+    use zeronet_protocol::templates::*;
 
     ///Peer requests
     pub fn get_file(body: ByteBuf, size: usize, location: usize) -> GetFileResponse {
@@ -178,8 +178,8 @@ pub mod response {
         }
     }
 
-    pub fn update_site(ok: String) -> UpdateFileResponse {
-        UpdateFileResponse { ok }
+    pub fn update_site(ok: String) -> UpdateResponse {
+        UpdateResponse { ok }
     }
 
     pub fn list_modified(modified_files: HashMap<String, usize>) -> ListModifiedResponse {
