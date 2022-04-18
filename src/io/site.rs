@@ -49,7 +49,7 @@ impl Site {
         self.save_content(None).await?;
         Ok(())
     }
-
+    #[async_recursion::async_recursion]
     async fn download_file_from_peer(
         &self,
         inner_path: String,
@@ -57,10 +57,11 @@ impl Site {
         peer: &mut Peer,
     ) -> Result<ByteBuf, Error> {
         let mut file_size = 0;
-        if let Some(file) = file {
+        if let Some(file) = &file {
             file_size = file.size;
         }
-        if file_size > 512 * 1024 {
+        let def_read_bytes = 512 * 1024;
+        if file_size > def_read_bytes {
             let mut bytes = ByteBuf::new();
             let mut downloaded = 0;
             while downloaded != file_size {
@@ -94,7 +95,22 @@ impl Site {
                     .as_str()
                     .into())
             } else {
-                Ok(message.unwrap().body)
+                let msg = message.unwrap();
+                let bytes = msg.body;
+                if bytes.len() == msg.size {
+                    Ok(bytes)
+                } else {
+                    //TODO: Optimize this by reusing downloaded buffer
+                    self.download_file_from_peer(
+                        inner_path,
+                        Some(ZFile {
+                            sha512: "".into(),
+                            size: msg.size,
+                        }),
+                        peer,
+                    )
+                    .await
+                }
             }
         }
     }

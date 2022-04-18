@@ -63,6 +63,7 @@ pub mod models {
     }
 }
 
+#[derive(Clone)]
 pub struct Site {
     address: Addr,
     pub peers: HashMap<String, Peer>,
