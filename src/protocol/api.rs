@@ -14,6 +14,7 @@ pub trait Request {
         inner_path: String,
         file_size: usize,
         location: usize,
+        read_bytes: Option<usize>,
     ) -> Result<GetFileResponse, Error>;
     async fn stream_file(
         &mut self,

@@ -65,7 +65,13 @@ impl Site {
             let mut downloaded = 0;
             while downloaded != file_size {
                 let message = Protocol::new(peer.connection_mut().unwrap())
-                    .get_file(self.address(), inner_path.clone(), file_size, downloaded)
+                    .get_file(
+                        self.address(),
+                        inner_path.clone(),
+                        file_size,
+                        downloaded,
+                        Some(def_read_bytes),
+                    )
                     .await;
                 if let Err(e) = &message {
                     return Err(format!("Error Downloading File from Peer, Error : {:?}", e)
@@ -81,7 +87,7 @@ impl Site {
             Ok(bytes)
         } else {
             let message = Protocol::new(peer.connection_mut().unwrap())
-                .get_file(self.address(), inner_path.clone(), file_size, 0)
+                .get_file(self.address(), inner_path.clone(), file_size, 0, None)
                 .await;
             if let Err(e) = &message {
                 Err(format!("Error Downloading File from Peer, Error : {:?}", e)

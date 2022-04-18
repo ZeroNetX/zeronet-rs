@@ -41,8 +41,9 @@ impl<'a> Request for Protocol<'a> {
         inner_path: String,
         file_size: usize,
         location: usize,
+        read_bytes: Option<usize>,
     ) -> Result<GetFileResponse, Error> {
-        let builder = get_file(site, inner_path, file_size, location, None); //TODO! Pass read_bytes to builder
+        let builder = get_file(site, inner_path, file_size, location, read_bytes);
         let res = self
             .0
             .request(builder.0, RequestType::GetFile(builder.1))
