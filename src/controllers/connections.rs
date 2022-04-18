@@ -66,10 +66,15 @@ impl ConnectionController {
                     tokio::spawn(async move {
                         let _ = Self::handle_connection(stream.0, req_tx, &mut res_rx).await;
                     });
-                    let msg = req_rx.recv().await;
-                    if let Some(req) = msg {
-                        let res = self.handle_request(req).await;
-                        let _ = res_tx.send(res).await;
+                    loop {
+                        let msg = req_rx.recv().await;
+                        if let Some(req) = msg {
+                            let res = self.handle_request(req).await;
+                            let _ = res_tx.send(res).await;
+                        } else {
+                            println!("Connection closed");
+                            break;
+                        }
                     }
                 } else {
                     error!("Error : {}", stream.0.peer_addr().unwrap_err());
@@ -123,33 +128,10 @@ impl ConnectionController {
                             let time = Instant::now();
                             //TODO! Optimisation
                             //? For Unknown Sites, send direct Error Response instead for channel roundtrip
-                            if cmd == "update" {
-                                let body = request.body::<Update>();
-                                if let Ok(res) = body {
-                                    let is_body_empty = res.body.is_empty();
-                                    let site = res.site;
-                                    if is_body_empty {
-                                        let res = api::Request::get_file(
-                                            &mut protocol,
-                                            site,
-                                            res.inner_path,
-                                            0,
-                                            0,
-                                        )
-                                        .await;
-                                        if let Ok(res) = res {
-                                            let _bytes = res.body;
-                                        }
-                                    }
-                                } else {
-                                    error!(
-                                        "Error Parsing Request Body: \nTo : {} : {:#?}",
-                                        peer_addr,
-                                        body.unwrap_err()
-                                    );
-                                }
+                            let res = req_tx.send(request.clone()).await;
+                            if res.is_err() {
+                                print!("Channel closed");
                             }
-                            let _ = req_tx.send(request.clone()).await;
                             let res = res_rx.recv().await;
                             let took = time.elapsed();
                             debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
@@ -171,7 +153,7 @@ impl ConnectionController {
                         }
                     }
                 } else {
-                    print!(".");
+                    print!("."); //("{}", request.unwrap_err());
                     break;
                 }
             }
@@ -409,7 +391,10 @@ impl ConnectionController {
                 Self::unknown_site_response()
             }
         } else {
-            error!("Invalid Update Request {:?}", req);
+            error!(
+                "Error Parsing Request Body: Invalid Update Request {:?}",
+                req
+            );
             ResponseType::InvalidRequest
         }
     }
