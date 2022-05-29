@@ -102,7 +102,7 @@ async fn main() -> Result<(), Error> {
         let _ = controller
             .extend_sites_from_sitedata(site_storage.clone())
             .await;
-        let mut con = ConnectionController::new(controller).await;
+        let mut con = ConnectionController::new(controller).await?;
         let _ = con.run().await;
     }
     Ok(())

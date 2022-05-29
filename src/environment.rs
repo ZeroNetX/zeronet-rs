@@ -245,7 +245,15 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fs::create_dir_all(log_path_str).unwrap();
         PathBuf::from_str(log_path_str).unwrap()
     };
-    let fileserver_ip = matches.value_of("FILESERVER_IP").unwrap().into();
+    let fileserver_ip = if let Some(ip) = matches.value_of("FILESERVER_IP") {
+        if ip == "*" {
+            "127.0.0.1".into()
+        } else {
+            ip.into()
+        }
+    } else {
+        unreachable!()
+    };
     let fileserver_port = if let Some(port) = matches.value_of("FILESERVER_PORT") {
         if port.contains("10000-40000") {
             let mut rng = rand::thread_rng();

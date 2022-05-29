@@ -35,16 +35,16 @@ pub struct ConnectionController {
 }
 
 impl ConnectionController {
-    pub async fn new(sites_controller: SitesController) -> Self {
+    pub async fn new(sites_controller: SitesController) -> Result<Self, Error> {
         let ser_addr = format!("{}:{}", ENV.fileserver_ip, ENV.fileserver_port);
         println!("Listening on {}", ser_addr);
-        let listener = TcpListener::bind(ser_addr).await.unwrap();
-        Self {
+        let listener = TcpListener::bind(ser_addr).await?;
+        Ok(Self {
             listener,
             sites_controller,
             conn_len: 0,
             connections: HashMap::new(),
-        }
+        })
     }
 
     pub async fn run(&mut self) -> Result<(), Error> {
