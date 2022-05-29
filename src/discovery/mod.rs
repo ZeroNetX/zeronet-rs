@@ -1,5 +1,6 @@
 pub mod tracker;
 use futures::future::join_all;
+use log::*;
 use zeronet_protocol::PeerAddr;
 
 use crate::{
@@ -14,7 +15,7 @@ use self::tracker::IpPort;
 impl Discovery for Site {
     //TODO? :: Make this to return stream of peers, instead of full result at once.
     async fn discover(&self) -> Result<Vec<Peer>, Error> {
-        println!("Discovering peers");
+        info!("Discovering peers");
         let mut res_all = vec![];
         let mut futures = vec![];
         for tracker_addr in (*ENV).trackers.clone() {
@@ -26,7 +27,7 @@ impl Discovery for Site {
         let results = join_all(futures).await;
         for res in results {
             if let Err(e) = &res {
-                println!("Error : {:?}", e);
+                error!("Error : {:?}", e);
             } else {
                 let mut _res: Vec<Peer> = res
                     .unwrap()

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::*;
 use rusqlite::{params, types::Value, Connection};
 use serde_json::Map;
 use tokio::fs;
@@ -17,13 +18,13 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
     let site_data;
     if use_master_seed {
         site_data = user.get_new_site_data();
-        println!("\n");
-        println!(
+        info!("\n");
+        info!(
             "Site Private Key : {:?} <<< Store this to Safe Place",
             site_data.get_privkey().unwrap()
         );
-        println!("Site Address     : {:?}", site_data.address);
-        println!("\n");
+        info!("Site Address     : {:?}", site_data.address);
+        info!("\n");
     } else {
         unimplemented!();
     }
@@ -36,17 +37,17 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
 pub async fn find_peers(site: &mut Site) -> Result<(), Error> {
     let peers = site.discover().await?;
     for peer in &peers {
-        println!("{:?}", peer);
+        info!("{:?}", peer);
     }
     let mut connections = vec![];
     for mut peer in peers {
         let res = peer.connect();
         if let Err(e) = &res {
-            println!("Error : {:?}", e);
+            error!("Error : {:?}", e);
             let peer = peer.clone().address().to_string();
-            println!("{}", peer);
+            error!("{}", peer);
         } else {
-            println!("Connection Successful");
+            info!("Connection Successful");
             connections.push(peer);
         }
     }
@@ -96,14 +97,14 @@ pub async fn db_query(conn: &mut Connection, query: &str) -> Result<(), Error> {
         })
         .unwrap();
     for row in res {
-        println!("{:#?}", row.unwrap());
+        info!("{:#?}", row.unwrap());
     }
     Ok(())
 }
 
 pub async fn download_site(site: &mut Site) -> Result<(), Error> {
     add_peers_to_site(site).await?;
-    println!("Downloading Site");
+    info!("Downloading Site");
     site.init_download().await?;
     Ok(())
 }
@@ -112,7 +113,7 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
     site.load_content().await?;
     let changes = site.check_site_integrity().await?;
     if changes.is_empty() {
-        println!("No changes to sign");
+        info!("No changes to sign");
     } else {
         let content = {
             let mut content = site.content(None).unwrap();
@@ -132,7 +133,7 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
             site.sign_content(None, &private_key).await?;
             site.save_content(None).await?;
         } else {
-            println!("Site Not Signed");
+            warn!("Site Not Signed");
         }
     }
     Ok(())
@@ -195,13 +196,13 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
         files_res || includes_res || users_res
     };
     if !download {
-        println!("Inner Path Not Exists in content.json");
+        info!("Inner Path Not Exists in content.json");
     } else {
         let result = site.need_file(inner_path.clone(), None, None).await;
         if let Err(e) = &result {
-            println!("Error : {:?}", e);
+            error!("Error : {:?}", e);
         } else {
-            println!("File Downloaded : {:?}", inner_path);
+            info!("File Downloaded : {:?}", inner_path);
         }
     }
     Ok(())
@@ -212,7 +213,7 @@ pub async fn peer_ping(addr: &str) -> Result<(), Error> {
     let res = peer.connect();
     if res.is_ok() {
         let res = Protocol::new(peer.connection_mut().unwrap()).ping().await?;
-        println!("Ping Result : {:?} from Peer : {:?}", res, addr);
+        info!("Ping Result : {:?} from Peer : {:?}", res, addr);
         return Ok(());
     }
     Err(Error::Err("Peer Not Found".into()))
@@ -223,7 +224,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
     let mut peers_cons = vec![];
     let peers = site.fetch_peers().await?;
-    println!("Found Peers : {:?}", peers);
+    info!("Found Peers : {:?}", peers);
     for peer in peers {
         let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
         let res = peer.connect();
@@ -233,7 +234,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
     }
     for mut con in peers_cons {
         let res = Protocol::new(con.connection_mut().unwrap()).ping().await?;
-        println!("Ping Result : {:?} from Peer : {:?}", res, con.address());
+        info!("Ping Result : {:?} from Peer : {:?}", res, con.address());
     }
     Ok(())
 }
@@ -242,9 +243,9 @@ pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
     add_peers_to_site(site).await?;
     site.load_content().await?;
     let modified = site.content(None).unwrap().modified;
-    println!("{:?}", modified);
+    info!("{:?}", modified);
     let changes = site.fetch_changes(1421043090).await?;
-    println!("{:#?}", changes);
+    info!("{:#?}", changes);
     Ok(())
 }
 
@@ -252,9 +253,9 @@ pub async fn check_site_integrity(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
     let res = site.verify_files(false).await?;
     if res {
-        println!("Site {} verified", site.address());
+        info!("Site {} verified", site.address());
     } else {
-        println!("Site {} verification failed", site.address());
+        warn!("Site {} verification failed", site.address());
     }
     Ok(())
 }
@@ -271,12 +272,12 @@ pub async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
             .handshake()
             .await;
         if let Err(e) = res {
-            println!("Error : {:?}", e);
+            error!("Error : {:?}", e);
             let peer = peer.clone().address().to_string();
-            println!("{}", peer);
+            error!("{}", peer);
         } else {
             let response = res?;
-            // println!("Ping Result : {:?}", response);
+            debug!("Ping Result : {:?}", response);
             site.peers.insert(response.peer_id.clone(), peer);
         }
     }

@@ -12,6 +12,8 @@ pub mod plugins;
 pub mod protocol;
 pub mod utils;
 
+use log::*;
+
 use crate::{
     common::*,
     controllers::{connections::ConnectionController, sites::SitesController},
@@ -22,6 +24,7 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    pretty_env_logger::init();
     let site_storage = &*SITE_STORAGE;
     let user_storage = &*USER_STORAGE;
     let mut db_manager = DbManager::new();
@@ -73,25 +76,24 @@ async fn main() -> Result<(), Error> {
                 "sitePeerExchange" => peer_exchange(&mut site).await?,
                 "siteFetchChanges" => fetch_changes(&mut site).await?,
                 _ => {
-                    println!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {}", cmd);
                 }
             }
         } else if let Some(mut peer_args) = _args.values_of("peer") {
             let peer = peer_args.next().unwrap();
-            println!("{:?}", peer);
+            info!("{:?}", peer);
             match cmd {
                 "peerPing" => peer_ping(peer).await?,
                 _ => {
-                    println!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {}", cmd);
                 }
             }
         } else {
             match cmd {
                 "siteCreate" => site_create(&mut user, true).await?,
-                "getConfig" => println!("{}", serde_json::to_string_pretty(&client_info())?),
+                "getConfig" => info!("{}", serde_json::to_string_pretty(&client_info())?),
                 _ => {
-                    println!("Unknown command: {}", cmd);
-                    println!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {}", cmd);
                 }
             }
         }

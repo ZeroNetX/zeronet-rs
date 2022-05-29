@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use log::{debug, error};
+use log::*;
 use serde_bytes::ByteBuf;
 use std::io::Read;
 use std::time::Duration;
@@ -37,7 +37,7 @@ pub struct ConnectionController {
 impl ConnectionController {
     pub async fn new(sites_controller: SitesController) -> Result<Self, Error> {
         let ser_addr = format!("{}:{}", ENV.fileserver_ip, ENV.fileserver_port);
-        println!("Listening on {}", ser_addr);
+        info!("Listening on {}", ser_addr);
         let listener = TcpListener::bind(ser_addr).await?;
         Ok(Self {
             listener,
@@ -72,7 +72,7 @@ impl ConnectionController {
                             let res = self.handle_request(req).await;
                             let _ = res_tx.send(res).await;
                         } else {
-                            println!("Connection closed");
+                            info!("Connection closed");
                             break;
                         }
                     }
@@ -118,7 +118,7 @@ impl ConnectionController {
                                 );
                             }
                         }
-                        cmd => {
+                        _cmd => {
                             debug!(
                                 "\nFrom : {} : {} : {}",
                                 peer_addr,
@@ -130,7 +130,7 @@ impl ConnectionController {
                             //? For Unknown Sites, send direct Error Response instead for channel roundtrip
                             let res = req_tx.send(request.clone()).await;
                             if res.is_err() {
-                                print!("Channel closed");
+                                error!("Channel closed");
                             }
                             let res = res_rx.recv().await;
                             let took = time.elapsed();
@@ -153,7 +153,7 @@ impl ConnectionController {
                         }
                     }
                 } else {
-                    print!("."); //("{}", request.unwrap_err());
+                    error!("."); //("{}", request.unwrap_err());
                     break;
                 }
             }
@@ -170,7 +170,7 @@ impl ConnectionController {
             "streamFile" => self.handle_get_file(req, true),
             "update" => self.handle_update(req),
             _ => {
-                println!("Unknown cmd {}", req.cmd);
+                warn!("Unknown cmd {}", req.cmd);
                 ResponseType::UnknownCmd
             }
         }

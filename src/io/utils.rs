@@ -1,4 +1,4 @@
-use log::error;
+use log::*;
 use serde_json::Value;
 use sha2::{Digest, Sha512};
 use std::{
@@ -59,14 +59,14 @@ pub async fn check_file_integrity(
 
 //TODO!: Rename this to import while depreciating legacy storage
 pub fn load_users_file() -> HashMap<String, User> {
-    println!("Loading users file");
+    info!("Loading users.json file");
     let users_file = ENV.data_path.join("users.json");
     let mut users = HashMap::<String, User>::new();
     if users_file.exists() {
         let users_file_str = std::fs::read_to_string(&users_file).unwrap();
         let users_store: HashMap<String, Value> = serde_json::from_str(&users_file_str).unwrap();
         for (username, user_obj) in users_store {
-            println!("Loading user: {}", username);
+            info!("Loading user: {}", username);
             if let Value::Object(user_map) = &user_obj {
                 let mut user = if let Value::String(master_seed) = &user_map["master_seed"] {
                     User::from_seed(master_seed.clone())
@@ -169,7 +169,7 @@ pub fn load_users_file() -> HashMap<String, User> {
 
 //TODO!: Rename this to import while depreciating legacy storage
 pub fn load_sites_file() -> HashMap<String, SiteStorage> {
-    println!("Loading sites.json file");
+    info!("Loading sites.json file");
     let mut sites_file = HashMap::new();
     let path = ENV.data_path.join("sites.json");
     if let Ok(mut file) = std::fs::File::open(&path) {

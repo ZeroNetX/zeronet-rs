@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use log::error;
+use log::*;
 
 use crate::{
     core::site::{models::SiteStorage, Site},
@@ -59,7 +59,7 @@ impl SitesController {
                     );
                 }
             } else {
-                println!("Site Dir with Address: {} not found", address);
+                warn!("Site Dir with Address: {} not found", address);
             }
         }
         self.update_sites_changed();

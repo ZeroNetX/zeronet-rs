@@ -81,7 +81,7 @@ impl Site {
                 } else {
                     let bytes_downloaded = message.unwrap().body;
                     downloaded += bytes_downloaded.len();
-                    println!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
+                    debug!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
                     bytes.extend_from_slice(&bytes_downloaded);
                 }
             }
@@ -283,7 +283,7 @@ impl Site {
         let mut res = join_all(tasks).await;
         let errs = res.drain_filter(|res| res.is_err()).collect::<Vec<_>>();
         for err in &errs {
-            println!("{:?}", err);
+            error!("{:?}", err);
         }
         if !errs.is_empty() {
             return Err(Error::Err("Site integrity check failed".into()));

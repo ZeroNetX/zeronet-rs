@@ -59,7 +59,6 @@ impl From<rmp_serde::decode::Error> for Error {
 
 impl From<zeronet_protocol::Error> for Error {
     fn from(error: zeronet_protocol::Error) -> Error {
-        println!("{:?}", error);
         Error::MissingError
     }
 }
