@@ -24,6 +24,7 @@ use crate::{
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    //TODO! Replace with file based logger with public release.
     pretty_env_logger::init();
     let site_storage = &*SITE_STORAGE;
     let user_storage = &*USER_STORAGE;

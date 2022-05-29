@@ -4,7 +4,9 @@ use sha2::{Digest, Sha512};
 use std::{
     collections::HashMap,
     io::{Read, Write},
+    net::{IpAddr, Ipv6Addr},
     path::{Path, PathBuf},
+    str::FromStr,
     time::SystemTime,
 };
 use tokio::{fs::File, io::AsyncReadExt};
@@ -55,6 +57,14 @@ pub async fn check_file_integrity(
         return Ok((false, inner_path, hash));
     }
     Ok((true, inner_path, hash))
+}
+
+const IP_V6_FOR_TEST: &str = "2607:f8b0:4006:81e::200e";
+
+pub fn ipv6_supported() -> bool {
+    let addr = IpAddr::from(Ipv6Addr::from_str(IP_V6_FOR_TEST).unwrap());
+    //TODO! Replace with better testing mechanism
+    ping::ping(addr, None, None, None, None, None).is_ok()
 }
 
 //TODO!: Rename this to import while depreciating legacy storage
