@@ -317,8 +317,8 @@ impl DbManager {
         conn: &Connection,
     ) {
         for to_table in to_table_list {
-            let node = to_table.node.clone();
             let table = to_table.table.clone();
+            let node = to_table.node.clone().unwrap_or(table.clone());
             let key_col = to_table.key_col.clone();
             let value_col = to_table.val_col.clone();
             let import_col = to_table.import_cols.clone();
@@ -569,6 +569,7 @@ impl DbManager {
         let res = execute_query();
 
         if let Err(code) = res {
+            //TODO!: We may receive non existing columns in the table as input, so we need to handle such cases
             error!(
                 "Db command execution failed, query: {}, code: {}",
                 query, code

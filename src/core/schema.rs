@@ -28,7 +28,7 @@ pub struct FileMap {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ToTable {
-    pub node: String,
+    pub node: Option<String>,
     pub table: String,
     pub key_col: Option<String>,
     pub val_col: Option<String>,
