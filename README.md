@@ -1,4 +1,6 @@
 # ZeroNetX
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs?ref=badge_shield)
+
 Rust Implementation of ZeroNet Protocol
 
 Currently This Repo is open to Code Reviews/Security Audit/Best Code Practice Suggestions. You can freely review and suggest your opinions to us.
@@ -45,3 +47,7 @@ You may need to give exec permission on Linux/Mac OS
 > chmod +x zeronet
 
 and rerun the cmd
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs?ref=badge_large)
