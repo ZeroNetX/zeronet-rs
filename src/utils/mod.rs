@@ -1,4 +1,5 @@
 pub mod diff;
+pub mod msgpack;
 
 use std::default::Default;
 

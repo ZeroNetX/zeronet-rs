@@ -1,19 +1,18 @@
 use std::collections::HashMap;
 
+use decentnet_protocol::{builders::response::*, interface::ResponseImpl, templates::*};
 use serde_bytes::ByteBuf;
-use zeronet_protocol::{message::ResponseType, templates::*};
+use zeronet_protocol::message::ResponseType;
 
 use crate::{
     core::error::Error,
-    protocol::{
-        api::Response as ZeroNetResponse,
-        builders::{response::*, *},
-        Protocol,
-    },
+    net::{handshake, Protocol},
 };
 
 #[async_trait::async_trait]
-impl<'a> ZeroNetResponse for Protocol<'a> {
+impl<'a> ResponseImpl for Protocol<'a> {
+    type Error = Error;
+
     async fn handshake(&mut self, id: usize) -> Result<bool, Error> {
         let builder = handshake();
         self.0
@@ -86,7 +85,9 @@ impl<'a> ZeroNetResponse for Protocol<'a> {
 
     async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error> {
         let builder = update_site(msg.into());
-        self.0.respond(id, ResponseType::Update(builder)).await?;
+        self.0
+            .respond(id, ResponseType::UpdateSite(builder))
+            .await?;
         Ok(true)
     }
 }

@@ -1,18 +1,17 @@
+use std::{collections::HashMap, fs::File, io::Read, time::Duration};
+
 use itertools::Itertools;
 use log::*;
 use serde_bytes::ByteBuf;
-use std::io::Read;
-use std::time::Duration;
-use std::{collections::HashMap, fs::File};
 use time::Instant;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
 };
 
+use decentnet_protocol::{builders, interface::ResponseImpl, templates::*};
 use zeronet_protocol::{
     message::{Request as ZeroNetRequest, ResponseType},
-    templates::*,
     PeerAddr, ZeroConnection,
 };
 use zerucontent::Content;
@@ -20,10 +19,7 @@ use zerucontent::Content;
 use crate::{
     core::{error::Error, io::SiteIO, peer::Peer},
     environment::ENV,
-    protocol::{
-        api::{self, Response},
-        builders, Protocol,
-    },
+    net::Protocol,
     SitesController,
 };
 

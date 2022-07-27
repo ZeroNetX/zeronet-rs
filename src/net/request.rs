@@ -1,23 +1,22 @@
 use std::collections::HashMap;
 
-use crate::{
-    core::error::Error,
-    protocol::{
-        api::Request,
-        builders::{request::*, *},
-        Protocol,
-    },
-};
-
 use serde_bytes::ByteBuf;
 use serde_json::Value;
-use zeronet_protocol::{message::RequestType, templates::*};
+
+use decentnet_protocol::{builders::request::*, interface::RequestImpl, templates::*};
+use zeronet_protocol::message::RequestType;
+
+use crate::{
+    core::error::Error,
+    net::{handshake, Protocol},
+};
 
 ///https://docs.zeronet.dev/1DeveLopDZL1cHfKi8UXHh2UBEhzH6HhMp/help_zeronet/network_protocol/
 #[async_trait::async_trait]
-impl<'a> Request for Protocol<'a> {
+impl<'a> RequestImpl for Protocol<'a> {
+    type Error = Error;
     ///#handshake
-    async fn handshake(&mut self) -> Result<Handshake, Error> {
+    async fn handshake(&mut self) -> Result<Handshake, Self::Error> {
         let builder = handshake();
         let res = self
             .0
@@ -28,7 +27,7 @@ impl<'a> Request for Protocol<'a> {
     }
 
     ///#ping
-    async fn ping(&mut self) -> Result<bool, Error> {
+    async fn ping(&mut self) -> Result<bool, Self::Error> {
         let res = self.0.request("ping", RequestType::Ping(Ping())).await?;
         let res: PingResponse = res.body()?;
         Ok(res.body == "Pong!")
@@ -42,7 +41,7 @@ impl<'a> Request for Protocol<'a> {
         file_size: usize,
         location: usize,
         read_bytes: Option<usize>,
-    ) -> Result<GetFileResponse, Error> {
+    ) -> Result<GetFileResponse, Self::Error> {
         let builder = get_file(site, inner_path, file_size, location, read_bytes);
         let res = self
             .0
@@ -73,7 +72,7 @@ impl<'a> Request for Protocol<'a> {
         &mut self,
         site: String,
         since: usize,
-    ) -> Result<ListModifiedResponse, Error> {
+    ) -> Result<ListModifiedResponse, Self::Error> {
         let builder = list_modified(site, since);
         let res = self
             .0
@@ -101,7 +100,7 @@ impl<'a> Request for Protocol<'a> {
         body: ByteBuf,
         diffs: HashMap<String, Vec<Value>>,
         modified: usize,
-    ) -> Result<UpdateResponse, Error> {
+    ) -> Result<UpdateSiteResponse, Error> {
         let builder = update_site(site, inner_path, body, diffs, modified);
         let res = self
             .0
@@ -116,11 +115,10 @@ impl<'a> Request for Protocol<'a> {
 
 #[cfg(test)]
 mod tests {
+    use decentnet_protocol::interface::RequestImpl;
     use zeronet_protocol::PeerAddr;
 
-    use crate::{core::peer::Peer, protocol::api::Request};
-
-    use super::Protocol;
+    use crate::{core::peer::Peer, net::Protocol};
 
     #[tokio::test]
     async fn test_protocol() {

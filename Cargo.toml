@@ -52,6 +52,10 @@ path = "./zeronet_protocol"
 [dependencies.zerucontent]
 path = "./zerucontent"
 
+[dependencies.decentnet_protocol]
+path = "./decentnet_protocol"
+features = ["full"]
+
 [features]
 blockstorage = []
 default = ["userio", "blockstorage"]

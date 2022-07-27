@@ -4,13 +4,15 @@ use log::*;
 use rusqlite::{params, types::Value, Connection};
 use serde_json::Map;
 use tokio::fs;
+
+use decentnet_protocol::interface::RequestImpl;
 use zeronet_protocol::PeerAddr;
 
 use crate::{
     core::{discovery::Discovery, error::Error, io::*, peer::*, site::*, user::*},
     environment::ENV,
     io::db::DbManager,
-    protocol::{api::Request, Protocol},
+    net::Protocol,
     utils::{self, to_json_value},
 };
 

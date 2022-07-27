@@ -12,6 +12,7 @@ use tokio::{
     io::AsyncWriteExt,
 };
 
+use decentnet_protocol::interface::RequestImpl;
 use zerucontent::{Content, File as ZFile};
 
 use crate::{
@@ -19,8 +20,8 @@ use crate::{
     discovery::tracker::IpPort,
     environment::ENV,
     io::utils::check_file_integrity,
+    net::Protocol,
     plugins::BlockStorage,
-    protocol::{api::Request, Protocol},
 };
 
 impl Site {
