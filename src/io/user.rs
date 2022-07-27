@@ -19,7 +19,7 @@ use crate::{
 #[cfg(feature = "userio")]
 #[async_trait::async_trait]
 impl UserIO for User {
-    type IOType = User;
+    type IOType = HashMap<String, User>;
 
     async fn load() -> Result<Self::IOType, Error> {
         let start_time = SystemTime::now();
@@ -29,18 +29,18 @@ impl UserIO for User {
             let user = User::new();
             let content = &format!("{:#}", json!({ &user.master_address: user }));
             file.write_all(content.as_bytes()).await?;
-            Ok(user)
+            let mut users = HashMap::new();
+            users.insert(user.master_address.clone(), user);
+            Ok(users)
         } else {
             let mut file = File::open(&file_path).await?;
             let mut content = String::new();
             file.read_to_string(&mut content).await?;
-            let value: HashMap<String, User> = serde_json::from_str(&content)?;
-            let user_addr = value.keys().next().unwrap().clone();
-            let user = value[&user_addr].clone();
+            let users: HashMap<String, User> = serde_json::from_str(&content)?;
             let end_time = SystemTime::now();
             let duration = end_time.duration_since(start_time).unwrap();
             info!("Loaded user in {} seconds", duration.as_secs());
-            Ok(user)
+            Ok(users)
         }
     }
 
