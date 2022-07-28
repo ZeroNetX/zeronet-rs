@@ -153,7 +153,7 @@ fn get_matches() -> ArgMatches {
                 .help("Web interface bind address"),
             Arg::new("UI_PORT")
                 .long("ui_port")
-                .default_value("43110")
+                .default_value("42110")
                 .help("Web interface bind port"),
             // Arg::new("UI_RESTRICT")
             //     .long("ui_restrict")
