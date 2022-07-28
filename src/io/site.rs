@@ -370,7 +370,7 @@ impl Site {
 #[async_trait::async_trait]
 impl SiteIO for Site {
     fn site_path(&self) -> PathBuf {
-        self.data_path.join(self.address())
+        self.data_path.clone()
     }
 
     fn content_path(&self) -> PathBuf {
