@@ -14,6 +14,26 @@ pub mod models {
     use std::collections::{BTreeMap, HashMap};
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+    pub struct SiteInfo {
+        pub auth_address: String,
+        pub cert_user_id: String,
+        pub address: String,
+        pub address_short: String,
+        pub address_hash: String,
+        pub settings: SiteSettings,
+        pub content_updated: f64,
+        pub bad_files: usize,
+        pub size_limit: usize,
+        pub next_size_limit: usize,
+        pub peers: usize,
+        pub started_task_num: usize,
+        pub tasks: usize,
+        pub workers: usize,
+        pub content: serde_json::Value,
+        pub privatekey: bool,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     pub struct SiteStorage {
         pub keys: SiteKeys,
         pub stats: SiteStats,
@@ -81,6 +101,10 @@ impl Site {
             content: HashMap::new(),
             storage: SiteStorage::default(),
         })
+    }
+
+    pub fn addr(&self) -> Addr {
+        self.address.clone()
     }
 
     pub fn address(&self) -> String {

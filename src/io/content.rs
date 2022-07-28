@@ -70,8 +70,8 @@ impl ContentMod for Site {
             Ok(())
         } else {
             return Err(Error::Err(format!(
-                "Content verification failed for {}",
-                inner_path.unwrap()
+                "Content verification failed for Site : {}",
+                self.address()
             )));
         }
     }

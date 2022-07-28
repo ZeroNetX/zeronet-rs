@@ -68,9 +68,11 @@ pub struct Environment {
     pub log_path: PathBuf,
     pub fileserver_ip: String,
     pub fileserver_port: u16,
+    pub ui_ip: String,
+    pub ui_port: u16,
     // pub broadcast_port: usize,
     pub trackers: Vec<String>,
-    // pub homepage: String,
+    pub homepage: String,
     pub lang: String,
     // pub dist: String,
     pub use_block_storage: bool,
@@ -145,14 +147,14 @@ fn get_matches() -> ArgMatches {
                 .long("language")
                 .default_value("en")
                 .help("Web interface language"),
-            // Arg::new("UI_IP")
-            //     .long("ui_ip")
-            //     .default_value("127.0.0.1")
-            //     .help("Web interface bind address"),
-            // Arg::new("UI_PORT")
-            //     .long("ui_port")
-            //     .default_value("43110")
-            //     .help("Web interface bind port"),
+            Arg::new("UI_IP")
+                .long("ui_ip")
+                .default_value("127.0.0.1")
+                .help("Web interface bind address"),
+            Arg::new("UI_PORT")
+                .long("ui_port")
+                .default_value("42110")
+                .help("Web interface bind port"),
             // Arg::new("UI_RESTRICT")
             //     .long("ui_restrict")
             //     .help("Restrict web access"),
@@ -165,10 +167,10 @@ fn get_matches() -> ArgMatches {
             // Arg::new("OPEN_BROWSER")
             //     .long("open_browser")
             //     .help("Open homepage in web browser automatically"),
-            // Arg::new("HOMEPAGE")
-            //     .long("homepage")
-            //     .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
-            //     .help("Web interface Homepage"),
+            Arg::new("HOMEPAGE")
+                .long("homepage")
+                .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
+                .help("Web interface Homepage"),
             // // UPDATE SITE?
             // Arg::new("DIST_TYPE")
             //     .long("dist_type")
@@ -265,8 +267,8 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         10000 + rand::random::<u16>() % 10000
     };
     let use_block_storage = matches.is_present("USE_BLOCK_STORAGE");
-    // let ui_ip = matches.value_of("UI_IP").unwrap();
-    // let ui_port: usize = matches.value_of("UI_PORT").unwrap().parse()?;
+    let ui_ip = matches.value_of("UI_IP").unwrap();
+    let ui_port: u16 = matches.value_of("UI_PORT").unwrap().parse()?;
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
     let env = Environment {
         version: VERSION.clone(),
@@ -276,10 +278,10 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         log_path,
         fileserver_ip,
         fileserver_port,
-        // ui_ip: String::from(ui_ip),
-        // ui_port,
+        ui_ip: String::from(ui_ip),
+        ui_port,
         trackers: TRACKERS.iter().map(|s| String::from(*s)).collect(),
-        // homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
+        homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
         // dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
         use_block_storage,
