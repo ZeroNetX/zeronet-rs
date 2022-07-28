@@ -49,13 +49,13 @@ impl From<rmp_serde::decode::Error> for Error {
     }
 }
 
-// impl From<actix::MailboxError> for Error {
-//     fn from(error: actix::MailboxError) -> Error {
-//         match error {
-//             _ => Error::MailboxError,
-//         }
-//     }
-// }
+impl From<actix::MailboxError> for Error {
+    fn from(error: actix::MailboxError) -> Error {
+        match error {
+            _ => Error::MailboxError,
+        }
+    }
+}
 
 impl From<zeronet_protocol::Error> for Error {
     fn from(error: zeronet_protocol::Error) -> Error {

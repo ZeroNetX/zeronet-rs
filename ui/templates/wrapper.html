@@ -77,7 +77,7 @@ else if (window.opener && window.opener.location.toString()) {
 <!-- Site info -->
 <script id="script_init" nonce="{script_nonce}">
 iframe_src = "{file_url}{query_string}"
-console.log("Changing url from " + document.getElementById("inner-iframe").src + " to " + iframe_src)
+// console.log("Changing url from " + document.getElementById("inner-iframe").src + " to " + iframe_src)
 document.getElementById("inner-iframe").src = document.getElementById("inner-iframe").src  // Workaround for Firefox back button bug
 document.getElementById("inner-iframe").src = iframe_src
 address = "{address}"
@@ -97,7 +97,6 @@ if (typeof WebSocket === "undefined") {
 	document.body.appendChild(tag)
 }
 </script>
-<script type="text/javascript" src="/uimedia/all.js?rev={rev}&lang={lang}" nonce="{script_nonce}"></script>
-<script nonce="{script_nonce}">setTimeout(window.wrapper.onWrapperLoad, 1)</script>
+{websocket_scripts}
 </body>
 </html>

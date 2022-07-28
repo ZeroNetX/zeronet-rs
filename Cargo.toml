@@ -29,10 +29,16 @@ time = "0.3.9"
 tor-stream = "*"
 pretty_env_logger = "*"
 ping = "0.4.0"
+actix = "0.13"
+actix-web = "4.1.0"
+uuid =  { version = ">= 0.8", features = ["serde", "v4"] }
+actix-files = "0.6.2"
+futures-util = "0.3.21"
+html-escape = "0.2.11"
 
 [dependencies.rusqlite]
 features = ["serde_json", "bundled"]
-version = "0.27.0"
+version = "0.28.0"
 
 [dependencies.serde]
 features = ["derive"]

@@ -21,11 +21,10 @@ use crate::{
     io::db::DbManager,
 };
 
-#[tokio::main]
+#[actix_web::main]
 async fn main() -> Result<(), Error> {
     //TODO! Replace with file based logger with public release.
     pretty_env_logger::init();
-    let site_storage = &*SITE_STORAGE;
     let user_storage = &*USER_STORAGE;
     let mut db_manager = DbManager::new();
     let mut user = user_storage.values().next().unwrap().clone();
@@ -33,7 +32,7 @@ async fn main() -> Result<(), Error> {
     if let Some((cmd, _args)) = sub_cmd {
         if let Some(mut site_args) = _args.values_of("site") {
             let site_addr = site_args.next().unwrap();
-            let mut site = Site::new(site_addr, (*ENV).data_path.clone())?;
+            let mut site = Site::new(site_addr, ((*ENV).data_path.clone()).join(site_addr))?;
             match cmd {
                 "siteNeedFile" => {
                     let inner_path = site_args.next().unwrap();
@@ -97,15 +96,20 @@ async fn main() -> Result<(), Error> {
                 }
             }
         }
-    } else {
+    } else if false {
         let conn = DbManager::connect_db_from_path(&ENV.data_path.join("content.db"))?;
         db_manager.insert_connection("content_db", conn);
         let mut controller = SitesController::new(db_manager);
+        let site_storage = &*SITE_STORAGE;
         let _ = controller
             .extend_sites_from_sitedata(site_storage.clone())
             .await;
         let mut con = ConnectionController::new(controller).await?;
         let _ = con.run().await;
+    } else {
+        let user_controller_addr = controllers::users::run().unwrap();
+        let sites_controller_addr = controllers::sites::run().await.unwrap();
+        let _ = controllers::server::run(sites_controller_addr, user_controller_addr).await;
     }
     Ok(())
 }
