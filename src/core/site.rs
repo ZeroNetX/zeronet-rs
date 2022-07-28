@@ -83,6 +83,10 @@ impl Site {
         })
     }
 
+    pub fn addr(&self) -> Addr {
+        self.address.clone()
+    }
+
     pub fn address(&self) -> String {
         self.address.address.clone()
     }
