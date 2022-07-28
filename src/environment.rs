@@ -74,8 +74,9 @@ pub struct Environment {
     pub trackers: Vec<String>,
     pub homepage: String,
     pub lang: String,
-    // pub dist: String,
+    pub dist: String,
     pub use_block_storage: bool,
+    pub access_key: String,
 }
 
 fn get_matches() -> ArgMatches {
@@ -171,11 +172,14 @@ fn get_matches() -> ArgMatches {
                 .long("homepage")
                 .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
                 .help("Web interface Homepage"),
-            // // UPDATE SITE?
-            // Arg::new("DIST_TYPE")
-            //     .long("dist_type")
-            //     .default_value("source")
-            //     .help("Type of installed distribution"),
+            Arg::new("ACCESS_KEY")
+                .long("access_key")
+                .default_value("")
+                .help("Access key for Various API calls"),
+            Arg::new("DIST_TYPE")
+                .long("dist_type")
+                .default_value("DecentNet")
+                .help("Type of installed distribution"),
             // Arg::new("SIZE_LIMIT")
             //     .long("size_limit")
             //     .default_value("10")
@@ -283,8 +287,9 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         trackers: TRACKERS.iter().map(|s| String::from(*s)).collect(),
         homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
-        // dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
+        dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
         use_block_storage,
+        access_key: String::from(matches.value_of("ACCESS_KEY").unwrap()),
     };
     Ok(env)
 }

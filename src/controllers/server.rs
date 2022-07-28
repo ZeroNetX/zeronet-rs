@@ -23,6 +23,7 @@ use crate::{
     },
     core::{address::Address, error::Error},
     environment::ENV,
+    plugins::web,
 };
 
 pub struct ZeroServer {
@@ -42,8 +43,7 @@ fn build_app(
         Error = actix_web::Error,
     >,
 > {
-    App::new()
-        .app_data(Data::new(shared_data))
+    web::register_plugins(App::new().app_data(Data::new(shared_data)))
         .route("/", get().to(index))
         .route("/{address:1[^/]+}", get().to(serve_site))
         .route("/{address:1[^/]+}/{inner_path:.*}", get().to(serve_site))
