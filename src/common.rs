@@ -275,12 +275,11 @@ pub async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
             .handshake()
             .await;
         if let Err(e) = res {
-            error!("Error : {:?}", e);
             let peer = peer.clone().address().to_string();
-            error!("{}", peer);
+            error!("Error on Handshake: {:?} with Peer {:?}", e, peer);
         } else {
             let response = res?;
-            debug!("Ping Result : {:?}", response);
+            trace!("Peer Handshake Result : {:?}", response);
             site.peers.insert(response.peer_id.clone(), peer);
         }
     }

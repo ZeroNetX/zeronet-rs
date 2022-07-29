@@ -76,9 +76,9 @@ impl Site {
                     )
                     .await;
                 if let Err(e) = &message {
-                    return Err(format!("Error Downloading File from Peer, Error : {:?}", e)
-                        .as_str()
-                        .into());
+                    let err = format!("Error Downloading File from Peer, Error : {:?}", e);
+                    error!("File Download Error: {}", err);
+                    return Err(err.as_str().into());
                 } else {
                     let bytes_downloaded = message.unwrap().body;
                     downloaded += bytes_downloaded.len();
@@ -92,9 +92,9 @@ impl Site {
                 .get_file(self.address(), inner_path.clone(), file_size, 0, None)
                 .await;
             if let Err(e) = &message {
-                Err(format!("Error Downloading File from Peer, Error : {:?}", e)
-                    .as_str()
-                    .into())
+                let err = format!("Error Downloading File from Peer, Error : {:?}", e);
+                error!("File Download Error: {}", err);
+                Err(err.as_str().into())
             } else {
                 let msg = message.unwrap();
                 let bytes = msg.body;
