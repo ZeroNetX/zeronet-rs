@@ -1,5 +1,3 @@
-use self::models::SiteStorage;
-use super::{address::Address as Addr, error::Error, peer::Peer};
 use log::error;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -9,18 +7,22 @@ use std::{
 };
 use zerucontent::Content;
 
+use self::models::SiteStorage;
+use super::{address::Address as Addr, error::Error, peer::Peer};
+
 pub mod models {
     use serde::{Deserialize, Serialize};
     use std::collections::{BTreeMap, HashMap};
 
+    use crate::utils::is_default;
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     pub struct SiteInfo {
         pub auth_address: String,
-        pub cert_user_id: String,
+        pub cert_user_id: Option<String>,
         pub address: String,
         pub address_short: String,
         pub address_hash: String,
-        pub settings: SiteSettings,
+        pub settings: SiteStorage,
         pub content_updated: f64,
         pub bad_files: usize,
         pub size_limit: usize,
@@ -35,8 +37,11 @@ pub mod models {
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     pub struct SiteStorage {
+        #[serde(flatten)]
         pub keys: SiteKeys,
+        #[serde(flatten)]
         pub stats: SiteStats,
+        #[serde(flatten)]
         pub settings: SiteSettings,
         pub cache: SiteCache,
         pub plugin_storage: SitePluginStorage,
@@ -44,13 +49,17 @@ pub mod models {
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     pub struct SiteCache {
+        #[serde(default, skip_serializing_if = "is_default")]
         pub bad_files: BTreeMap<String, usize>,
+        #[serde(default, skip_serializing_if = "is_default")]
         pub hashfield: String,
+        #[serde(default, skip_serializing_if = "is_default")]
         pub piecefields: BTreeMap<String, String>,
     }
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     pub struct SitePluginStorage {
+        #[serde(default, skip_serializing_if = "is_default")]
         pub data: HashMap<String, serde_json::Value>,
     }
 
