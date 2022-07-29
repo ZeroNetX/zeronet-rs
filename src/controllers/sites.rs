@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use actix::{Actor, Addr};
 use futures::executor::block_on;
 use log::*;
+use rusqlite::{params, Connection};
+use serde_json::{Map, Value};
 
 use crate::{
     core::{
@@ -12,6 +14,7 @@ use crate::{
     },
     environment::{ENV, SITE_STORAGE},
     io::{db::DbManager, utils::current_unix_epoch},
+    utils::to_json_value,
 };
 
 pub async fn run() -> Result<Addr<SitesController>, Error> {
@@ -138,5 +141,41 @@ impl SitesController {
 
     fn update_sites_changed(&mut self) {
         self.sites_changed = current_unix_epoch();
+    }
+}
+
+impl SitesController {
+    pub async fn db_query(
+        conn: &mut Connection,
+        query: &str,
+    ) -> Result<Vec<Map<String, Value>>, Error> {
+        let mut stmt = conn.prepare(query).unwrap();
+        let count = stmt.column_count();
+        let names = {
+            stmt.column_names()
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+        };
+        let res = stmt
+            .query_map(params![], |row| {
+                let mut data_map = Map::new();
+                let mut i = 0;
+                loop {
+                    while let Ok(value) = row.get::<_, rusqlite::types::Value>(i) {
+                        let name = names.get(i).unwrap().to_string();
+                        i += 1;
+                        let value = to_json_value(&value);
+                        data_map.insert(name, value);
+                    }
+                    if i == count {
+                        break;
+                    }
+                }
+                Ok(data_map)
+            })
+            .unwrap();
+        let res = res.filter_map(|e| e.ok()).collect::<Vec<_>>();
+        Ok(res)
     }
 }

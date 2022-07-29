@@ -1,19 +1,18 @@
 use std::collections::HashMap;
 
 use log::*;
-use rusqlite::{params, types::Value, Connection};
-use serde_json::Map;
 use tokio::fs;
 
 use decentnet_protocol::interface::RequestImpl;
 use zeronet_protocol::PeerAddr;
 
 use crate::{
+    controllers::sites::SitesController,
     core::{discovery::Discovery, error::Error, io::*, peer::*, site::*, user::*},
     environment::ENV,
     io::db::DbManager,
     net::Protocol,
-    utils::{self, to_json_value},
+    utils,
 };
 
 pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
@@ -71,36 +70,18 @@ pub async fn rebuild_db(site: &mut Site, db_manager: &mut DbManager) -> Result<(
     Ok(())
 }
 
-pub async fn db_query(conn: &mut Connection, query: &str) -> Result<(), Error> {
-    let mut stmt = conn.prepare(query).unwrap();
-    let count = stmt.column_count();
-    let names = {
-        stmt.column_names()
-            .iter()
-            .map(|s| s.to_string())
-            .collect::<Vec<String>>()
-    };
-    let res = stmt
-        // .query(params![]).unwrap();
-        .query_map(params![], |row| {
-            let mut data_map = Map::new();
-            let mut i = 0;
-            loop {
-                while let Ok(value) = row.get::<_, Value>(i) {
-                    let name = names.get(i).unwrap().to_string();
-                    i += 1;
-                    let value = to_json_value(&value);
-                    data_map.insert(name, value);
-                }
-                if i == count {
-                    break;
-                }
-            }
-            Ok(data_map)
-        })
-        .unwrap();
+pub async fn db_query(
+    site: &mut Site,
+    db_manager: &mut DbManager,
+    query: &str,
+) -> Result<(), Error> {
+    let schema = db_manager.load_schema(&site.address()).unwrap();
+    db_manager.insert_schema(&site.address(), schema);
+    db_manager.connect_db(&site.address())?;
+    let conn = db_manager.get_db(&site.address()).unwrap();
+    let res = SitesController::db_query(conn, query).await?;
     for row in res {
-        info!("{:#?}", row.unwrap());
+        info!("{:#?}", row);
     }
     Ok(())
 }
