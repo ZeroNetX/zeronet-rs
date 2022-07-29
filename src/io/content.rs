@@ -1,5 +1,7 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
+use log::*;
+use serde_json::{json, Map, Value};
 use tokio::{
     fs::{self, File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
@@ -91,5 +93,121 @@ impl ContentMod for Site {
             .await?;
         file.write_all(content_json.as_bytes()).await?;
         Ok(())
+    }
+}
+
+impl Site {
+    pub fn get_file_rules(&self, inner_path: &str) -> Option<Value> {
+        let mut path = String::new();
+        if !inner_path.ends_with("content.json") {
+            let file_info = self.get_file_info(inner_path, false);
+            if let Some(file_info) = file_info {
+                let inner_path = &file_info["inner_path"].as_str();
+                if let Some(inner_path) = inner_path {
+                    path = inner_path.to_string();
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            };
+        };
+        let inner_path = if path.is_empty() { inner_path } else { &path };
+        if inner_path.ends_with("content.json") {
+            if let Some(content) = self.content(Some(&inner_path)) {
+                if inner_path == "content.json" {
+                    let mut rules = HashMap::<_, Value>::new();
+                    let value = json!(content.signs.keys().cloned().collect::<String>());
+                    rules.insert("signers".to_string(), value);
+                    return Some(json!(rules));
+                } else {
+                    let mut dirs = inner_path.split("/").collect::<Vec<_>>();
+                    let mut inner_path_parts = vec![];
+                    inner_path_parts.insert(0, dirs.pop().unwrap());
+                    inner_path_parts.insert(0, dirs.pop().unwrap());
+                    loop {
+                        let content_inner_path = dirs.join("/");
+                        if let Some(parent_content) = self.content(Some(&content_inner_path)) {
+                            if !parent_content.includes.is_empty() {
+                                let includes = parent_content
+                                    .includes
+                                    .get(&inner_path_parts.join("/"))
+                                    .unwrap();
+                                return Some(json!(includes));
+                            } else if !parent_content.user_contents.is_some() {
+                                error!("Handle User Content Rules for {}", content_inner_path);
+                                return None;
+                            }
+                        } else {
+                            if dirs.is_empty() {
+                                break;
+                            } else {
+                                inner_path_parts.insert(0, dirs.pop().unwrap());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn get_file_info(&self, inner_path: &str, new_file: bool) -> Option<Map<String, Value>> {
+        let mut path = inner_path.split("/").collect::<Vec<&str>>();
+        let mut file_name = path.pop().unwrap();
+        // let site_path = self.site_path();
+        let info_map = loop {
+            let content_inner_path_dir = path.join("/").clone();
+            let content_inner_path = if content_inner_path_dir.is_empty() {
+                "content.json".into()
+            } else {
+                content_inner_path_dir + "/content.json"
+            };
+            let file_path = self.site_path().join(&content_inner_path);
+            let content = self.content(Some(&inner_path));
+            if file_path.is_file() && content.is_some() {
+                let content = content.unwrap();
+                let mut map = Map::new();
+                map["content_inner_path"] = Value::String(content_inner_path);
+                map["relative_path"] = Value::String(file_name.into());
+                map["optional"] = Value::Null;
+                if new_file {
+                    break Some(map);
+                }
+                if !content.files.is_empty() && content.files.contains_key(file_name) {
+                    map["optional"] = Value::Bool(false);
+                    let file = content.files.get(file_name).unwrap();
+                    map["size"] = json!(file.size);
+                    map["sha512"] = json!(file.sha512);
+                    break Some(map);
+                }
+                if !content.files_optional.is_empty()
+                    && content.files_optional.contains_key(file_name)
+                {
+                    map["optional"] = Value::Bool(true);
+                    let file = content.files_optional.get(file_name).unwrap();
+                    map["size"] = json!(file.size);
+                    map["sha512"] = json!(file.sha512);
+                    break Some(map);
+                }
+                if content.user_contents.is_some() {
+                    if let Value::Object(mut user_contents) = json!(content.user_contents.unwrap())
+                    {
+                        map.append(&mut user_contents);
+                    } else {
+                        error!("add user_contents to map");
+                        unreachable!();
+                    }
+                    break Some(map);
+                }
+            } else {
+                debug!("Add {} to BadFiles", file_path.display());
+            }
+            if path.is_empty() {
+                break None;
+            }
+            file_name = path.pop().unwrap();
+        };
+        info_map
     }
 }
