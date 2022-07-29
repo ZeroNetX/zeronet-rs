@@ -71,7 +71,10 @@ impl SitesController {
             if wrapper_key.len() > 0 {
                 self.nonce.insert(wrapper_key.to_string(), address.clone());
             }
-
+            if let Some(schema) = self.db_manager.load_schema(&site.address()) {
+                self.db_manager.insert_schema(&site.address(), schema);
+                self.db_manager.connect_db(&site.address())?;
+            }
             let addr = site.start();
             // TODO: Decide whether to spawn actors in syncArbiter
             // let addr = SyncArbiter::start(1, || Site::new());

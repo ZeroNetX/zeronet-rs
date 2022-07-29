@@ -43,12 +43,13 @@ fn build_app(
         Error = actix_web::Error,
     >,
 > {
-    web::register_plugins(App::new().app_data(Data::new(shared_data)))
+    let app = web::register_plugins(App::new().app_data(Data::new(shared_data)))
         .route("/", get().to(index))
         .route("/{address:1[^/]+}", get().to(serve_site))
         .route("/{address:1[^/]+}/{inner_path:.*}", get().to(serve_site))
         .route("/uimedia/{inner_path:.*}", get().to(serve_uimedia))
-        .route("/{inner_path}", get().to(serve_uimedia))
+        .route("/{inner_path}", get().to(serve_uimedia));
+    web::register_site_plugins(app)
 }
 
 pub async fn run(

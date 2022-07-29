@@ -109,11 +109,14 @@ pub async fn serve_wrapper(
 
     let user_settings = data
         .user_controller
-        .send(UserSettings::default())
+        .send(UserSettings {
+            user_addr: String::from("current"),
+            site_addr: address_string.into(),
+            ..Default::default()
+        })
         .await
         .unwrap()
-        .unwrap()
-        .settings;
+        .unwrap(); //TODO: handle error
     let theme = if let Some(theme) = user_settings.get("theme") {
         match theme.as_str() {
             Some("dark") => "dark",
@@ -187,7 +190,7 @@ fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
         Ok(_) => {}
         Err(_) => return Err(()),
     };
-    let enable_web_socket = false; //TODO!: Add env var to control this
+    let enable_web_socket = true; //TODO!: Add env var to control this
     if enable_web_socket {
         string = string.replace("\n{websocket_scripts}", concat!(
             "\n<script type=\"text/javascript\" src=\"/uimedia/all.js?rev={rev}&lang={lang}\" nonce=\"{script_nonce}\"></script>",

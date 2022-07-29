@@ -43,6 +43,10 @@ impl UserController {
         self.users.get(master_address).cloned()
     }
 
+    pub fn get_user_mut(&mut self, master_address: &str) -> Option<&mut User> {
+        self.users.get_mut(master_address)
+    }
+
     pub fn get_users(&self) -> &HashMap<String, User> {
         &self.users
     }
