@@ -7,6 +7,3 @@
 [submodule "zerucontent"]
 	path = zerucontent
 	url = https://github.com/canewsin/zerucontent.git
-[submodule "json_filter_sorted"]
-	path = json_filter_sorted
-	url = https://github.com/canewsin/json_filter_sorted.git
