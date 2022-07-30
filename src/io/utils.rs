@@ -1,3 +1,4 @@
+use futures::executor::block_on;
 use log::*;
 use serde_json::Value;
 use sha2::{Digest, Sha512};
@@ -15,6 +16,7 @@ use zerucontent::File as ZFile;
 use crate::{
     core::{
         error::Error,
+        io::UserIO,
         site::models::SiteStorage,
         user::{
             models::{AuthPair, Cert, SiteData},
@@ -168,8 +170,14 @@ pub fn load_users_file() -> HashMap<String, User> {
     } else {
         let res = std::fs::File::create(users_file);
         if let Ok(mut file) = res {
-            //TODO: Create User and Add to users instead of just creating empty file
             let _ = file.write(b"{}");
+            let user = User::new();
+            let res = block_on(user.save());
+            if let Ok(_) = res {
+                users.insert(user.master_address.clone(), user);
+            } else {
+                error!("Failed to save user");
+            }
         } else {
             error!("Could not create Empty users.json file");
         }
