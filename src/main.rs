@@ -28,11 +28,11 @@ async fn main() -> Result<(), Error> {
     let user_storage = &*USER_STORAGE;
     let mut db_manager = DbManager::new();
     let mut user = user_storage.values().next().unwrap().clone();
-    let sub_cmd = (&*MATCHES).subcommand();
+    let sub_cmd = (*MATCHES).subcommand();
     if let Some((cmd, _args)) = sub_cmd {
         if let Some(mut site_args) = _args.values_of("site") {
             let site_addr = site_args.next().unwrap();
-            let mut site = Site::new(site_addr, ((*ENV).data_path.clone()).join(site_addr))?;
+            let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
             match cmd {
                 "siteNeedFile" => {
                     let inner_path = site_args.next().unwrap();
@@ -96,7 +96,7 @@ async fn main() -> Result<(), Error> {
         db_manager.insert_connection("content_db", conn);
         let mut controller = SitesController::new(db_manager);
         let site_storage = &*SITE_STORAGE;
-        let _ = controller
+        controller
             .extend_sites_from_sitedata(site_storage.clone())
             .await;
         let mut con = ConnectionController::new(controller).await?;

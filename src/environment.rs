@@ -42,7 +42,7 @@ lazy_static! {
             "siteFetchChanges".into(),
         ];
     pub static ref ENV: Environment = {
-        if let Ok(env) = get_env(&*MATCHES) {
+        if let Ok(env) = get_env(&MATCHES) {
             return env;
         };
         panic!("Could not get environment variables");
@@ -80,7 +80,7 @@ pub struct Environment {
 }
 
 fn get_matches() -> ArgMatches {
-    let sub_commands = (&*SUB_CMDS)
+    let sub_commands = (*SUB_CMDS)
         .iter()
         .map(|cmd| {
             Command::new(cmd)
@@ -311,7 +311,7 @@ pub fn client_info() -> serde_json::Value {
     json!({
         "platform": os,
         "fileserver_ip": *ENV.fileserver_ip,
-        "fileserver_port": (*ENV).fileserver_port,
+        "fileserver_port": ENV.fileserver_port,
         "version": *VERSION,
         "rev": *REV,
         "language": *ENV.lang,

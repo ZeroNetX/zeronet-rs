@@ -14,7 +14,6 @@ use crate::{
         io::SiteIO,
         site::{models::SiteInfo, Site},
     },
-    utils::to_json_value,
 };
 
 impl Actor for Site {
@@ -94,8 +93,7 @@ impl Handler<GetWrapperKey> for SitesController {
     fn handle(&mut self, msg: GetWrapperKey, _ctx: &mut Context<Self>) -> Self::Result {
         let nonces = self.nonce.to_owned();
         let s = nonces.iter().find(|(_, a)| {
-            let a = a.clone();
-            if &msg.address == a {
+            if &msg.address == *a {
                 return true;
             }
             false
@@ -110,9 +108,9 @@ impl Handler<GetWrapperKey> for SitesController {
 /// Message struct used to request a file from a site
 /// ```
 /// match result {
-/// 	Ok(true) => println!("File has been downloaded."),
-/// 	Ok(false) => println!("File has been queued for download."),
-/// 	Err(_) => println!("An error occured!"),
+///     Ok(true) => println!("File has been downloaded."),
+///     Ok(false) => println!("File has been queued for download."),
+///     Err(_) => println!("An error occured!"),
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Message)]
@@ -148,8 +146,7 @@ impl Handler<FileRulesRequest> for Site {
     type Result = Option<Value>;
 
     fn handle(&mut self, msg: FileRulesRequest, _ctx: &mut Context<Self>) -> Self::Result {
-        let rules = self.get_file_rules(&msg.inner_path);
-        rules
+        self.get_file_rules(&msg.inner_path)
     }
 }
 
@@ -182,14 +179,14 @@ impl Handler<SiteInfoRequest> for Site {
         }
         let mut content = self.content(None).unwrap().raw().clone();
         if let Value::Object(map) = &mut content {
-            for key in vec!["sign", "signs", "signers_sign"] {
-                if map.contains_key(key) {
-                    map.remove(key);
+            for key in &["sign", "signs", "signers_sign"] {
+                if map.contains_key(*key) {
+                    map.remove(*key);
                 }
             }
-            for key in vec!["files", "files_optional", "includes"] {
-                if map.contains_key(key) {
-                    map[key] = match &map[key] {
+            for key in &["files", "files_optional", "includes"] {
+                if map.contains_key(*key) {
+                    map[*key] = match &map[*key] {
                         Value::Object(content) => Value::Number(Number::from(content.len())),
                         _ => Value::Number(Number::from(0)),
                     };
@@ -199,9 +196,9 @@ impl Handler<SiteInfoRequest> for Site {
 
         Ok(SiteInfo {
             auth_address: String::from(""),
-            address_hash: (&self.addr().get_address_hash()).to_hex(),
+            address_hash: self.addr().get_address_hash().to_hex(),
             cert_user_id: None,
-            address: self.address().to_string(),
+            address: self.address(),
             address_short: self.addr().get_address_short(),
             settings: self.storage.clone(),
             content_updated: 0f64,

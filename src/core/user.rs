@@ -13,7 +13,7 @@ pub mod models {
     use serde::{Deserialize, Serialize};
     use std::collections::{BTreeMap, HashMap};
 
-    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+    #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
     pub struct AuthPair {
         pub auth_address: String,
         auth_privkey: String,
@@ -32,7 +32,7 @@ pub mod models {
         }
     }
 
-    #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
     pub struct Cert {
         auth_pair: AuthPair,
         pub auth_type: String,

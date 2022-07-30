@@ -25,13 +25,9 @@ pub fn handle_file_get(
             FileGetRequest::default()
         }
     };
-    let mut path = (&*ENV.data_path).to_path_buf().clone();
-    path.push(Path::new(&format!(
-        "{}/{}",
-        ws.address.to_string(),
-        msg.inner_path
-    )));
-    assert!(msg.format == "");
+    let mut path = (*ENV.data_path).to_path_buf();
+    path.push(Path::new(&format!("{}/{}", ws.address, msg.inner_path)));
+    assert!(msg.format.is_empty());
     assert!(msg.format != "base64");
     if !path.is_file() {
         let res = block_on(ws.site_addr.send(msg))?;

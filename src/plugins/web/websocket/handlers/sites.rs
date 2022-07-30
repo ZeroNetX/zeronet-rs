@@ -70,15 +70,15 @@ pub fn handle_db_query(
                 });
             }
             error!("{:?}", command);
-            return Err(Error {
+            Err(Error {
                 error: String::from("params are not implemented yet"),
-            });
+            })
         }
         _ => {
             error!("{:?}", command);
-            return Err(Error {
+            Err(Error {
                 error: String::from("Invalid params"),
-            });
+            })
         }
     }
 }

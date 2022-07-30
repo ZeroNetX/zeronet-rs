@@ -10,7 +10,7 @@ use crate::{
 
 pub fn run() -> Result<Addr<UserController>, Error> {
     info!("Starting User Controller.");
-    let users = (&*USER_STORAGE).clone();
+    let users = (*USER_STORAGE).clone();
     let user_controller = UserController::new(users);
     let user_controller_addr = user_controller.start();
     Ok(user_controller_addr)

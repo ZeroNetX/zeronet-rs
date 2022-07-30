@@ -29,7 +29,7 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
     } else {
         unimplemented!();
     }
-    let mut site = Site::new(&site_data.address, (*ENV).data_path.clone())?;
+    let mut site = Site::new(&site_data.address, ENV.data_path.clone())?;
     site.create(site_data.index.unwrap(), &site_data.get_privkey().unwrap())
         .await?;
     Ok(())

@@ -81,14 +81,13 @@ impl User {
         let users_file_content_new = serde_json::to_string_pretty(&json!(users))?;
         let users_file_bytes = read(&file_path).await?;
 
-        let result = Self::write_to_disk(
+        Self::write_to_disk(
             &file_path,
             users_file_content_new.as_bytes(),
             &users_file_bytes,
             true,
         )
-        .await;
-        result
+        .await
     }
 
     #[async_recursion::async_recursion]

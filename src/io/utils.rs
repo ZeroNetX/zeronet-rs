@@ -173,7 +173,7 @@ pub fn load_users_file() -> HashMap<String, User> {
             let _ = file.write(b"{}");
             let user = User::new();
             let res = block_on(user.save());
-            if let Ok(_) = res {
+            if res.is_ok() {
                 users.insert(user.master_address.clone(), user);
             } else {
                 error!("Failed to save user");

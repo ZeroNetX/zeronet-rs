@@ -22,7 +22,7 @@ pub async fn run() -> Result<Addr<SitesController>, Error> {
     let db_manager = DbManager::new();
     let mut site_controller = SitesController::new(db_manager);
     let site_storage = &*SITE_STORAGE;
-    let _ = site_controller
+    site_controller
         .extend_sites_from_sitedata(site_storage.clone())
         .await;
     let site_controller_addr = site_controller.start();
@@ -68,8 +68,8 @@ impl SitesController {
                 .keys
                 .wrapper_key
                 .clone();
-            if wrapper_key.len() > 0 {
-                self.nonce.insert(wrapper_key.to_string(), address.clone());
+            if !wrapper_key.is_empty() {
+                self.nonce.insert(wrapper_key, address.clone());
             }
             if let Some(schema) = self.db_manager.load_schema(&site.address()) {
                 self.db_manager.insert_schema(&site.address(), schema);
@@ -87,7 +87,7 @@ impl SitesController {
 
     pub fn get_by_key(&mut self, key: String) -> Result<(Address, Addr<Site>), Error> {
         if let Some(address) = self.nonce.get(&key) {
-            if let Some(addr) = self.sites_addr.get(&address) {
+            if let Some(addr) = self.sites_addr.get(address) {
                 return Ok((address.clone(), addr.clone()));
             }
         }

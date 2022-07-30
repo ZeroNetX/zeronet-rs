@@ -252,12 +252,12 @@ impl Site {
             }
             let content = self.content(None).unwrap();
             //TODO! Verify inner content also
-            let verified = content.verify((&self.address()).clone());
+            let verified = content.verify(self.address());
             if !verified {
-                return Err(Error::Err(format!(
+                Err(Error::Err(format!(
                     "Content verification failed for {}",
                     self.address()
-                )));
+                )))
             } else {
                 Ok(verified)
             }
@@ -331,7 +331,7 @@ impl Site {
     }
 
     pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
-        let addr = (&self.address()).clone();
+        let addr = self.address().clone();
         let mut peer = self.peers.values().next().unwrap().clone();
         let res = Protocol::new((peer.connection_mut()).unwrap())
             .pex(addr.clone())
@@ -347,7 +347,7 @@ impl Site {
     }
 
     pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
-        let addr = (&self.address()).clone();
+        let addr = self.address();
         let path = self.site_path().join(inner_path);
         let modified = self.content(None).unwrap().modified;
         let peer = self.peers.values_mut().next().unwrap();
@@ -394,7 +394,7 @@ impl SiteIO for Site {
 
     fn get_inner_path(&self, path: &str) -> Result<PathBuf, Error> {
         if !path.starts_with(self.data_path.to_str().unwrap()) {
-            return Err(Error::Err(format!("Path Not Allowed: {}", path)));
+            Err(Error::Err(format!("Path Not Allowed: {}", path)))
         } else {
             let path = PathBuf::from(path);
             if path.exists() {

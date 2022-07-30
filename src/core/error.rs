@@ -51,9 +51,7 @@ impl From<rmp_serde::decode::Error> for Error {
 
 impl From<actix::MailboxError> for Error {
     fn from(error: actix::MailboxError) -> Error {
-        match error {
-            _ => Error::MailboxError,
-        }
+        Error::MailboxError
     }
 }
 

@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 
-use crate::controllers::handlers::users::{UserRequest, UserSettings};
-use crate::core::user::User;
-
-use super::super::error::Error;
-use super::super::request::Command;
-use super::super::response::Message;
-use super::super::ZeruWebsocket;
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
+
+use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
+use crate::{
+    controllers::handlers::users::{UserRequest, UserSettings},
+    core::user::User,
+};
 
 pub fn get_current_user(ws: &ZeruWebsocket) -> Result<User, Error> {
     let user = block_on(ws.user_controller.send(UserRequest {
@@ -17,11 +16,9 @@ pub fn get_current_user(ws: &ZeruWebsocket) -> Result<User, Error> {
     }));
     match user {
         Ok(Some(u)) => Ok(u),
-        _ => {
-            return Err(Error {
-                error: String::from("User not found"),
-            })
-        }
+        _ => Err(Error {
+            error: String::from("User not found"),
+        }),
     }
 }
 
@@ -32,7 +29,7 @@ pub fn handle_user_get_settings(
 ) -> Result<Message, Error> {
     let result = block_on(ws.user_controller.send(UserSettings {
         user_addr: String::from("current"),
-        site_addr: (&ws.address).clone().address,
+        site_addr: ws.address.clone().address,
         ..Default::default()
     }))?;
     if result.is_none() {
@@ -42,7 +39,7 @@ pub fn handle_user_get_settings(
     }
     let settings = result.unwrap();
     let mut map = serde_json::Map::new();
-    for (key, value) in settings.to_owned() {
+    for (key, value) in settings {
         map.insert(key.to_string(), value);
     }
     command.respond(map)
@@ -57,7 +54,7 @@ pub fn handle_user_set_settings(
     // TODO: actually return user settings
     let user = get_current_user(ws)?;
     let mut map = HashMap::new();
-    for (key, value) in user.settings.to_owned() {
+    for (key, value) in user.settings {
         map.insert(key.to_string(), value);
     }
 
@@ -67,7 +64,7 @@ pub fn handle_user_set_settings(
     let result = block_on(ws.user_controller.send(UserSettings {
         set: true,
         user_addr: String::from("current"),
-        site_addr: (&ws.address).clone().address,
+        site_addr: ws.address.clone().address,
         settings: Some(content_map),
     }))?;
     if result.is_none() {

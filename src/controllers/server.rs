@@ -84,7 +84,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     let inner_path = req.match_info().query("inner_path");
     if inner_path == "favicon.ico" {
         return serve_uimedia(req).await;
-    } else if inner_path.len() > 0
+    } else if !inner_path.is_empty()
         && inner_path.contains('.')
         && !inner_path.ends_with(".html")
         && !inner_path.ends_with(".xhtml")
@@ -149,11 +149,11 @@ async fn serve_file(req: &HttpRequest, data: Data<ZeroServer>) -> Result<NamedFi
     file_path.push(&Path::new(&inner_path));
 
     // TODO: what if a file doesn't have an extension?
-    if file_path.is_dir() || !inner_path.contains(".") {
+    if file_path.is_dir() || !inner_path.contains('.') {
         file_path = file_path.join(PathBuf::from("index.html"));
         // TODO: should we edit inner_path here? or just create a new one?
         inner_path = format!("{}/index.html", &inner_path)
-            .trim_start_matches("/")
+            .trim_start_matches('/')
             .to_string();
     }
 
@@ -168,7 +168,7 @@ async fn serve_file(req: &HttpRequest, data: Data<ZeroServer>) -> Result<NamedFi
         let lookup = Lookup::Address(Address::from_str(address)?);
         let (_, addr) = data.site_controller.send(lookup).await??;
         let msg = FileGetRequest {
-            inner_path: String::from(inner_path),
+            inner_path,
             format: String::new(),
             timeout: 0f64,
             required: true,

@@ -88,72 +88,68 @@ impl ConnectionController {
         let stream = stream.into_std().unwrap();
         let mut connection =
             ZeroConnection::new(Box::new(stream.try_clone().unwrap()), Box::new(stream))?;
-        let _ = {
-            loop {
-                let request = connection.recv().await;
-                if let Ok(request) = request {
-                    let mut protocol = Protocol::new(&mut connection);
-                    match request.cmd.as_str() {
-                        "handshake" => {
-                            let res = protocol.handshake(request.req_id).await;
-                            if res.is_err() {
-                                error!(
-                                    "Error Sending Response: \nTo : {} : {:#?}",
-                                    peer_addr,
-                                    res.unwrap_err()
-                                );
-                            }
-                        }
-                        "ping" => {
-                            let res = protocol.ping(request.req_id).await;
-                            if res.is_err() {
-                                error!(
-                                    "Error Sending Response: \nTo : {} : {:#?}",
-                                    peer_addr,
-                                    res.unwrap_err()
-                                );
-                            }
-                        }
-                        _cmd => {
-                            debug!(
-                                "\nFrom : {} : {} : {}",
+
+        loop {
+            let request = connection.recv().await;
+            if let Ok(request) = request {
+                let mut protocol = Protocol::new(&mut connection);
+                match request.cmd.as_str() {
+                    "handshake" => {
+                        let res = protocol.handshake(request.req_id).await;
+                        if res.is_err() {
+                            error!(
+                                "Error Sending Response: \nTo : {} : {:#?}",
                                 peer_addr,
-                                serde_json::to_string_pretty(&request.cmd).unwrap(),
-                                serde_json::to_value(request.req_id).unwrap()
+                                res.unwrap_err()
                             );
-                            let time = Instant::now();
-                            //TODO! Optimisation
-                            //? For Unknown Sites, send direct Error Response instead for channel roundtrip
-                            let res = req_tx.send(request.clone()).await;
-                            if res.is_err() {
-                                error!("Channel closed");
-                            }
-                            let res = res_rx.recv().await;
-                            let took = time.elapsed();
-                            debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
-                            if let Some(res) = res {
-                                let result = protocol.0.respond(request.req_id, res.clone()).await;
-                                if result.is_err() {
-                                    error!(
-                                        "Error Sending Response: \nTo : {} : {:#?}",
-                                        peer_addr.to_string(),
-                                        result.unwrap_err()
-                                    );
-                                } else {
-                                    debug!(
-                                        "Sent Response {}",
-                                        serde_json::to_string(&res).unwrap()
-                                    );
-                                }
+                        }
+                    }
+                    "ping" => {
+                        let res = protocol.ping(request.req_id).await;
+                        if res.is_err() {
+                            error!(
+                                "Error Sending Response: \nTo : {} : {:#?}",
+                                peer_addr,
+                                res.unwrap_err()
+                            );
+                        }
+                    }
+                    _cmd => {
+                        debug!(
+                            "\nFrom : {} : {} : {}",
+                            peer_addr,
+                            serde_json::to_string_pretty(&request.cmd).unwrap(),
+                            serde_json::to_value(request.req_id).unwrap()
+                        );
+                        let time = Instant::now();
+                        //TODO! Optimisation
+                        //? For Unknown Sites, send direct Error Response instead for channel roundtrip
+                        let res = req_tx.send(request.clone()).await;
+                        if res.is_err() {
+                            error!("Channel closed");
+                        }
+                        let res = res_rx.recv().await;
+                        let took = time.elapsed();
+                        debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
+                        if let Some(res) = res {
+                            let result = protocol.0.respond(request.req_id, res.clone()).await;
+                            if result.is_err() {
+                                error!(
+                                    "Error Sending Response: \nTo : {} : {:#?}",
+                                    peer_addr.to_string(),
+                                    result.unwrap_err()
+                                );
+                            } else {
+                                debug!("Sent Response {}", serde_json::to_string(&res).unwrap());
                             }
                         }
                     }
-                } else {
-                    error!("."); //("{}", request.unwrap_err());
-                    break;
                 }
+            } else {
+                error!("."); //("{}", request.unwrap_err());
+                break;
             }
-        };
+        }
 
         Ok(())
     }

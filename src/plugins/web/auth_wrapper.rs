@@ -25,9 +25,8 @@ pub async fn serve_auth_wrapper_key(
         nonces.insert(nonce.clone());
         trace!("Valid nonces ({}): {:?}", nonces.len(), nonces);
     }
-    let map = query.to_owned();
     let def = String::default();
-    let address_string = map.get("address").unwrap_or(&def);
+    let address_string = query.get("address").unwrap_or(&def);
     let address = match Address::from_str(address_string) {
         Ok(a) => a,
         Err(_) => {
@@ -35,28 +34,26 @@ pub async fn serve_auth_wrapper_key(
                 .body(format!("{} is a malformed ZeroNet address", address_string));
         }
     };
-    let access_key = map.get("access_key").unwrap_or(&def);
+    let access_key = query.get("access_key").unwrap_or(&def);
     match access_key.as_str() {
-        "" => {
-            return HttpResponse::Ok().body(format!(
-            "This API is restricted, use access_key param to Authenticate, get valid wrapper key"
-        ))
-        }
+        "" => return HttpResponse::Ok().body(
+            "This API is restricted, use access_key param to Authenticate, get valid wrapper key",
+        ),
         key => {
             if key != &*ENV.access_key {
-                return HttpResponse::Ok().body(format!("Provided access_key is not Valid"));
+                return HttpResponse::Ok().body("Provided access_key is not Valid");
             }
         }
     }
     trace!("Serving wrapper key for {}", address);
     let result = data
         .site_controller
-        .send(AddWrapperKey::new(address.clone(), nonce.clone()));
+        .send(AddWrapperKey::new(address, nonce.clone()));
     let result = block_on(result);
 
     match result {
         Ok(_) => match result {
-            Ok(_) => return HttpResponse::Ok().body(format!("wrapper_key={}", nonce)),
+            Ok(_) => HttpResponse::Ok().body(format!("wrapper_key={}", nonce)),
             Err(err) => {
                 error!("Bad request {}", err);
                 HttpResponse::BadRequest().finish()

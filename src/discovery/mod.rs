@@ -18,7 +18,7 @@ impl Discovery for Site {
         info!("Discovering peers");
         let mut res_all = vec![];
         let mut futures = vec![];
-        for tracker_addr in (*ENV).trackers.clone() {
+        for tracker_addr in ENV.trackers.clone() {
             let tracker_addr = make_addr(&tracker_addr).unwrap();
             let info_hash = get_info_hash(self.address().to_string());
             let res = announce(tracker_addr, info_hash, 0);

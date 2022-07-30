@@ -147,9 +147,9 @@ pub async fn serve_wrapper(
     let string = match render(
         &path,
         WrapperData {
-            file_url: format!("\\/{}\\/{}", address.to_string(), inner_path),
+            file_url: format!("\\/{}\\/{}", address, inner_path),
             file_inner_path: String::from(inner_path),
-            address: format!("{}", address.to_string()),
+            address: address.to_string(),
             title: content.title,
             body_style,
             meta_tags,
@@ -161,8 +161,8 @@ pub async fn serve_wrapper(
             permissions: String::from("[]"), //TODO!: Need to Replace with permissions from site settings
             show_loadingscreen: String::from("false"), //TODO! Handle this when websockets are implemented
             sandbox_permissions,
-            rev: format!("{}", (&*ENV).rev),
-            lang: format!("{}", (&*ENV).lang),
+            rev: format!("{}", ENV.rev),
+            lang: ENV.lang.to_string(),
             homepage: String::from(&*ENV.homepage),
             themeclass,
             script_nonce: String::from("script_nonce"), //TODO!: Need to Replace with real value
@@ -226,11 +226,11 @@ fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
     string = string.replace("{file_inner_path}", &data.file_inner_path);
     string = string.replace("{permissions}", &data.permissions);
     string = string.replace("{show_loadingscreen}", &data.show_loadingscreen);
-    string = string.replace("{server_url}", &server_url.as_str());
+    string = string.replace("{server_url}", server_url.as_str());
 
     // string = string.replace("{inner_path}", &data.inner_path);
     string = string.replace("{lang}", &data.lang);
-    return Ok(string);
+    Ok(string)
 }
 
 pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {

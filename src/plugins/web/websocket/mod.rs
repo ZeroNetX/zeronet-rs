@@ -50,11 +50,10 @@ pub async fn serve_websocket(
         site_controller: data.site_controller.clone(),
         user_controller: data.user_controller.clone(),
         site_addr: addr,
-        address: address,
+        address,
     };
 
-    let resp = ws::start(websocket, &req, stream);
-    resp
+    ws::start(websocket, &req, stream)
 }
 
 pub struct ZeruWebsocket {
@@ -90,7 +89,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                 if let Err(err) = self.handle_command(ctx, &command) {
                     error!("Error handling command: {:?}", err);
                     let _ = handle_error(ctx, command, format!("{:?}", err));
-                    return;
                 }
             }
             ws::Message::Binary(_) => {
@@ -111,7 +109,7 @@ pub struct WrapperCommand {
 #[derive(Serialize, Deserialize)]
 pub enum WrapperResponse {
     Empty,
-    ServerInfo(ServerInfo),
+    ServerInfo(Box<ServerInfo>),
     Text(String),
 }
 
@@ -180,7 +178,7 @@ fn handle_server_info(
             ipv4: true,
             ipv6: false,
         },
-        platform: String::from(env.dist),
+        platform: env.dist,
         fileserver_ip: env.fileserver_ip,
         fileserver_port: env.fileserver_port,
         tor_enabled: false,
@@ -246,15 +244,11 @@ impl ZeruWebsocket {
                     });
                 }
             }
-        } else if let CommandType::Admin(cmd) = &command.cmd {
-            match cmd {
-                _ => {
-                    error!("Unhandled Admin command: {:?}", command.cmd);
-                    return Err(Error {
-                        error: "Unhandled Admin command".to_string(),
-                    });
-                }
-            }
+        } else if let CommandType::Admin(_cmd) = &command.cmd {
+            error!("Unhandled Admin command: {:?}", command.cmd);
+            return Err(Error {
+                error: "Unhandled Admin command".to_string(),
+            });
         } else {
             return Err(Error {
                 error: "Unhandled Plugin command".to_string(),

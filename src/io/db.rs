@@ -292,7 +292,7 @@ impl DbManager {
             for table in to_json_table {
                 let key = format!(", {}", table);
                 json_statement.push_str(&key);
-                let value = json_content.get(&*table).unwrap();
+                let value = json_content.get(table).unwrap();
                 if let Value::String(value) = value {
                     let value = value.replace('\'', "''");
                     values.push_str(&format!(", '{}'", value));
@@ -304,7 +304,7 @@ impl DbManager {
         let json_statement = format!("INSERT INTO json ({}) VALUES ({})", json_statement, values);
         let select_statement = format!("SELECT json_id FROM json WHERE ({})", select_statement);
         Self::db_exec(conn, &json_statement);
-        let mut stmt = (&*conn).prepare(&select_statement).unwrap();
+        let mut stmt = (*conn).prepare(&select_statement).unwrap();
         let mut rows = stmt.query([]).unwrap();
         let a = rows.next().unwrap();
         a.unwrap().get(0).unwrap()
@@ -318,7 +318,7 @@ impl DbManager {
     ) {
         for to_table in to_table_list {
             let table = to_table.table.clone();
-            let node = to_table.node.clone().unwrap_or(table.clone());
+            let node = to_table.node.clone().unwrap_or_else(|| table.clone());
             let key_col = to_table.key_col.clone();
             let value_col = to_table.val_col.clone();
             let import_col = to_table.import_cols.clone();
