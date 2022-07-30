@@ -67,3 +67,16 @@ features = ["full"]
 blockstorage = []
 default = ["userio", "blockstorage"]
 userio = []
+
+[profile.beta]
+inherits = "release"
+opt-level = "s"
+strip = true
+lto = true
+
+[profile.stable]
+inherits = "release"
+opt-level = "z"
+strip = true
+lto = true
+panic = "abort"
