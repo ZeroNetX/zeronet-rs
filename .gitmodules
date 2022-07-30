@@ -7,3 +7,6 @@
 [submodule "zerucontent"]
 	path = zerucontent
 	url = https://github.com/canewsin/zerucontent.git
+[submodule "decentnet_protocol"]
+	path = decentnet_protocol
+	url = https://github.com/decentnetwork/decentnet_protocol.git
