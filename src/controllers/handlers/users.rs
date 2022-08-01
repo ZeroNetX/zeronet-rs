@@ -79,19 +79,11 @@ impl Handler<UserSiteData> for UserController {
 
     fn handle(&mut self, msg: UserSiteData, _: &mut Self::Context) -> Self::Result {
         let user = match msg.user_addr.as_str() {
-            "current" => Some(self.current()),
-            _ => self.get_user(&msg.user_addr),
+            "current" => Some(self.current_mut()),
+            _ => self.get_user_mut(&msg.user_addr),
         };
         if let Some(user) = user {
-            if let Some(data) = user.sites.get(&msg.site_addr) {
-                Some(data.clone())
-            } else {
-                error!(
-                    "Error getting User({}) Site({:?}) Data",
-                    &msg.user_addr, &msg.site_addr
-                );
-                None
-            }
+            Some(user.get_site_data(&msg.site_addr, true))
         } else {
             None
         }

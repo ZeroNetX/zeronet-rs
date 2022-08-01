@@ -6,7 +6,7 @@ use std::{collections::HashMap, env::current_dir, fs, path::PathBuf, str::FromSt
 
 use crate::{
     core::{error::Error, site::models::SiteStorage, user::User},
-    io::utils::{load_sites_file, load_users_file},
+    io::utils::{load_sites_file, load_trackers, load_users_file},
     utils::gen_peer_id,
 };
 
@@ -47,17 +47,10 @@ lazy_static! {
         };
         panic!("Could not get environment variables");
     };
+    pub static ref TRACKERS: Vec<String> = load_trackers();
     pub static ref VERSION: String = String::from("0.8.0");
     pub static ref REV: usize = 4800;
 }
-
-const TRACKERS: &[&str] = &[
-    "udp://abufinzio.monocul.us:6969/announce",
-    "udp://tracker.0x.tf:6969/announce",
-    "udp://tracker.zerobytes.xyz:1337/announce",
-    "udp://vibe.sleepyinternetfun.xyz:1738/announce",
-    "udp://www.torrent.eu.org:451/announce",
-];
 
 #[derive(Debug, Clone)]
 pub struct Environment {
@@ -284,7 +277,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fileserver_port,
         ui_ip: String::from(ui_ip),
         ui_port,
-        trackers: TRACKERS.iter().map(|s| String::from(*s)).collect(),
+        trackers: (*TRACKERS).iter().map(|s| String::from(&*s)).collect(),
         homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
         dist: String::from(matches.value_of("DIST_TYPE").unwrap()),

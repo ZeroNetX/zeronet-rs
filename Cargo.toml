@@ -36,6 +36,7 @@ actix-files = "0.6.2"
 futures-util = "0.3.21"
 html-escape = "0.2.11"
 actix-web-actors = "4.1.0"
+rayon = "1.5.3"
 
 [dependencies.rusqlite]
 features = ["serde_json", "bundled"]
@@ -53,7 +54,6 @@ version = "1.17.0"
 path = "./zeronet_cryptography"
 
 [dependencies.zeronet_protocol]
-features = ["tor", "i2p"]
 path = "./zeronet_protocol"
 
 [dependencies.zerucontent]
@@ -64,8 +64,8 @@ path = "./decentnet_protocol"
 features = ["full"]
 
 [features]
-blockstorage = []
 default = ["userio", "blockstorage"]
+blockstorage = []
 userio = []
 
 [profile.beta]

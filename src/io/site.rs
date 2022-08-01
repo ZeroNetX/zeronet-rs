@@ -326,6 +326,12 @@ impl Site {
         Ok(peers)
     }
 
+    pub fn add_peers(&mut self, peers: Vec<Peer>) {
+        for peer in peers {
+            self.add_peer(peer);
+        }
+    }
+
     pub fn add_peer(&mut self, peer: Peer) {
         self.peers.insert(peer.address().to_string(), peer);
     }

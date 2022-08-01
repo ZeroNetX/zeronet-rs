@@ -1,14 +1,20 @@
+use actix::Actor;
 use actix_web::{
     body::MessageBody,
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
-    web::{get, scope},
+    web::{get, scope, Data},
     App,
 };
 
-use self::{auth_wrapper::serve_auth_wrapper_key, websocket::serve_websocket};
+use self::{
+    auth_wrapper::serve_auth_wrapper_key,
+    websocket::{events::WebsocketController, serve_websocket},
+};
 
 mod auth_wrapper;
 mod websocket;
+
+pub use websocket::SiteAnnounce;
 
 pub fn register_plugins<
     T: ServiceFactory<
@@ -35,5 +41,7 @@ pub fn register_site_plugins<
 >(
     app: App<T>,
 ) -> App<T> {
-    app.service(scope("/ZeroNet-Internal").route("/Websocket", get().to(serve_websocket)))
+    let websocket_controller = WebsocketController { listeners: vec![] }.start();
+    app.app_data(Data::new(websocket_controller))
+        .service(scope("/ZeroNet-Internal").route("/Websocket", get().to(serve_websocket)))
 }

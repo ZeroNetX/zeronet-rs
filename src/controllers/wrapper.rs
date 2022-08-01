@@ -9,6 +9,7 @@ use actix_files::NamedFile;
 use actix_web::{HttpRequest, HttpResponse, Responder, Result};
 use log::*;
 use uuid::Uuid;
+use zerucontent::Content;
 
 use crate::{
     controllers::handlers::{
@@ -89,8 +90,22 @@ pub async fn serve_wrapper(
         }
     };
     let (_, site) = query.unwrap();
-    let content = site.send(SiteContent(None)).await.unwrap().unwrap();
-
+    let show_loadingscreen;
+    let content = site.send(SiteContent(None)).await.unwrap();
+    let title;
+    let content = if let Ok(content) = content {
+        show_loadingscreen = String::from("false");
+        title = content.title.to_string();
+        content
+    } else {
+        show_loadingscreen = String::from("true");
+        title = format!("Loading {}...", address.address);
+        // site.do_send(SiteAnnounce {
+        //     address: address.address.clone(),
+        // });
+        info!("Sending site announce to {}", address.address);
+        Content::default()
+    };
     let mut meta_tags = String::new();
     if !content.viewport.is_empty() {
         let mut meta = String::new();
@@ -106,7 +121,6 @@ pub async fn serve_wrapper(
         html_escape::encode_text_to_string(content.favicon, &mut meta);
         meta_tags.push_str(&format!("<link rel=\"icon\" href=\"{}\">", meta));
     }
-
     let user_settings = data
         .user_controller
         .send(UserSettings {
@@ -150,7 +164,7 @@ pub async fn serve_wrapper(
             file_url: format!("\\/{}\\/{}", address, inner_path),
             file_inner_path: String::from(inner_path),
             address: address.to_string(),
-            title: content.title,
+            title,
             body_style,
             meta_tags,
             query_string: format!("\\?wrapper_nonce\\={}", nonce.clone()),
@@ -159,7 +173,7 @@ pub async fn serve_wrapper(
             wrapper_nonce: nonce.clone(),
             postmessage_nonce_security,
             permissions: String::from("[]"), //TODO!: Need to Replace with permissions from site settings
-            show_loadingscreen: String::from("false"), //TODO! Handle this when websockets are implemented
+            show_loadingscreen,              //TODO! Handle this when websockets are implemented
             sandbox_permissions,
             rev: format!("{}", ENV.rev),
             lang: ENV.lang.to_string(),

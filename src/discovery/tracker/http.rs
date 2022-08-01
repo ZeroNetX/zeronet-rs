@@ -30,7 +30,7 @@ pub async fn http_announce(
     } else {
         format!("/announce")
     };
-    let mut base: String = format!("GET /{route}?info_hash=");
+    let mut base: String = "GET /announce?info_hash=".to_string();
     // appending each hex as a string
     for byte in &info_hash {
         base.push_str(&format!("%{:02x}", byte));
@@ -63,13 +63,20 @@ pub async fn http_announce(
             break;
         };
     }
+    if (count + 4) > buf.len() {
+        return Err(Error::new(ErrorKind::Other, "Invalid Response"));
+    }
     buf.drain(0..count + 4);
     if buf[0] != b'd' {
         buf.insert(0, b'd');
         buf.push(b'e');
     }
+    let parse = parse(&mut buf);
+    if parse.is_err() {
+        return Err(Error::new(ErrorKind::Other, "Parse Response Error"));
+    }
     // parse out ip port and return
-    let tree: Vec<Item> = parse(&mut buf);
+    let tree: Vec<Item> = parse.unwrap();
     match &tree[0] {
         Item::Dict(d) => {
             if let Some(e) = d.get("failure reason".as_bytes()) {

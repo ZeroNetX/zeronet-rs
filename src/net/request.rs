@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use serde_bytes::ByteBuf;
 use serde_json::Value;
 
-use decentnet_protocol::{builders::request::*, interface::RequestImpl, templates::*};
-use zeronet_protocol::message::RequestType;
+use decentnet_protocol::{
+    builders::request::*, interface::RequestImpl, message::RequestType, templates::*,
+};
 
 use crate::{
     core::error::Error,
@@ -22,14 +23,15 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::Handshake(builder.1))
             .await?;
-        let body: Handshake = res.body()?;
-        Ok(body)
+
+        Ok(res.body()?)
     }
 
     ///#ping
     async fn ping(&mut self) -> Result<bool, Self::Error> {
         let res = self.0.request("ping", RequestType::Ping(Ping())).await?;
         let res: PingResponse = res.body()?;
+
         Ok(res.body == "Pong!")
     }
 
@@ -47,8 +49,8 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::GetFile(builder.1))
             .await?;
-        let body: GetFileResponse = res.body()?;
-        Ok(body)
+
+        Ok(res.body()?)
     }
 
     ///#streamFile
@@ -63,8 +65,8 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::StreamFile(builder.1))
             .await?;
-        let body: StreamFileResponse = res.body()?;
-        Ok(body)
+
+        Ok(res.body()?)
     }
 
     ///#listModified
@@ -78,8 +80,8 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::ListModified(builder.1))
             .await?;
-        let body: ListModifiedResponse = res.body()?;
-        Ok(body)
+
+        Ok(res.body()?)
     }
 
     ///#pex
@@ -89,8 +91,8 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::Pex(builder.1))
             .await?;
-        let body: PexResponse = res.body()?;
-        Ok(body)
+
+        Ok(res.body()?)
     }
 
     async fn update(
@@ -106,6 +108,7 @@ impl<'a> RequestImpl for Protocol<'a> {
             .0
             .request(builder.0, RequestType::Update(builder.1))
             .await?;
+
         match res.body() {
             Ok(body) => Ok(body),
             Err(e) => Err(Error::Err(format!("{:?}", e))),
@@ -115,8 +118,7 @@ impl<'a> RequestImpl for Protocol<'a> {
 
 #[cfg(test)]
 mod tests {
-    use decentnet_protocol::interface::RequestImpl;
-    use zeronet_protocol::PeerAddr;
+    use decentnet_protocol::{address::PeerAddr, interface::RequestImpl};
 
     use crate::{core::peer::Peer, net::Protocol};
 

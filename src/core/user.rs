@@ -1,6 +1,7 @@
 use super::error::Error;
 #[cfg(feature = "userio")]
 use super::io::UserIO;
+use futures::executor::block_on;
 use log::*;
 use models::*;
 use num_bigint::BigUint;
@@ -16,6 +17,7 @@ pub mod models {
     #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
     pub struct AuthPair {
         pub auth_address: String,
+        #[serde(rename = "auth_privatekey")]
         auth_privkey: String,
     }
 
@@ -73,6 +75,7 @@ pub mod models {
         #[serde(skip_serializing_if = "Option::is_none")]
         cert_provider: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(flatten)]
         auth_pair: Option<AuthPair>,
         #[serde(skip_serializing_if = "Option::is_none")]
         privatekey: Option<String>,
@@ -237,14 +240,11 @@ impl User {
             self.get_site_keypair_from_seed(&self.master_seed, Some(address_id));
         let auth_pair = AuthPair::new(auth_pubkey, auth_privkey);
 
-        let site_data = SiteData::new(address.to_string())
-            .with_auth_pair(auth_pair.clone())
-            .with_index(address_id);
+        let site_data = SiteData::new(address.to_string()).with_auth_pair(auth_pair.clone());
         self.sites.insert(address.to_string(), site_data);
 
-        #[cfg(not(test))]
         #[cfg(feature = "userio")]
-        self.save();
+        block_on(self.save());
 
         debug!(
             "Added new site: {} in {}s",
@@ -275,9 +275,8 @@ impl User {
 
     fn delete_site_data(&mut self, address: &str) {
         if self.sites.remove(address).is_some() {
-            #[cfg(not(test))]
             #[cfg(feature = "userio")]
-            self.save();
+            block_on(self.save());
 
             debug!("Deleted site: {}", address);
         }
@@ -287,9 +286,8 @@ impl User {
         #[allow(clippy::let_and_return)]
         let site_data = self.get_site_data(address, true).set_settings(settings);
 
-        #[cfg(not(test))]
         #[cfg(feature = "userio")]
-        self.save();
+        block_on(self.save());
 
         site_data
     }
@@ -315,9 +313,8 @@ impl User {
         self.sites
             .insert(site_address.to_string(), site_data.clone());
 
-        #[cfg(not(test))]
         #[cfg(feature = "userio")]
-        self.save();
+        block_on(self.save());
         site_data
     }
     /// Get BIP32 address from site address
@@ -386,9 +383,8 @@ impl User {
         } else {
             self.certs.insert(domain.to_string(), cert_node);
 
-            #[cfg(not(test))]
             #[cfg(feature = "userio")]
-            self.save();
+            block_on(self.save());
 
             true
         }
@@ -409,9 +405,8 @@ impl User {
             site_data.delete_cert_provider();
         }
 
-        #[cfg(not(test))]
         #[cfg(feature = "userio")]
-        self.save();
+        block_on(self.save());
 
         site_data
     }

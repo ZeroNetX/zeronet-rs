@@ -61,9 +61,15 @@ impl From<zeronet_protocol::Error> for Error {
     }
 }
 
-impl From<zeronet_protocol::address::ParseError> for Error {
-    fn from(error: zeronet_protocol::address::ParseError) -> Error {
+impl From<decentnet_protocol::address::ParseError> for Error {
+    fn from(error: decentnet_protocol::address::ParseError) -> Error {
         Error::ParseError
+    }
+}
+
+impl From<decentnet_protocol::error::Error> for Error {
+    fn from(error: decentnet_protocol::error::Error) -> Error {
+        Error::Err(error.to_string())
     }
 }
 

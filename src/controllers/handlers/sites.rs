@@ -160,7 +160,10 @@ impl Handler<SiteContent> for Site {
     fn handle(&mut self, msg: SiteContent, _ctx: &mut Context<Self>) -> Self::Result {
         match msg.0 {
             Some(inner_path) => Ok(self.content(Some(&inner_path)).unwrap()),
-            None => Ok(self.content(None).unwrap()),
+            None => match self.content(None) {
+                Some(content) => Ok(content),
+                None => Err(Error::MissingError),
+            },
         }
     }
 }
@@ -177,7 +180,11 @@ impl Handler<SiteInfoRequest> for Site {
         if !self.content_exists() {
             let _ = self.init_download();
         }
-        let mut content = self.content(None).unwrap().raw().clone();
+        let mut content = self
+            .content(None)
+            .unwrap_or_else(|| Content::default())
+            .raw()
+            .clone();
         if let Value::Object(map) = &mut content {
             for key in &["sign", "signs", "signers_sign"] {
                 if map.contains_key(*key) {

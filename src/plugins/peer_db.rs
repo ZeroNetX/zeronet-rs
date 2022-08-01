@@ -1,5 +1,5 @@
+use decentnet_protocol::address::PeerAddr;
 use rusqlite::params;
-use zeronet_protocol::PeerAddr;
 
 use crate::{
     controllers::sites::SitesController,

@@ -1,11 +1,12 @@
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
+use serde::Serialize;
 use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::controllers::handlers::{
-    sites::{DBQueryRequest, SiteInfoRequest},
+    sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
     users::UserSiteData,
 };
 
@@ -90,4 +91,47 @@ pub fn handle_channel_join(
 ) -> Result<Message, Error> {
     debug!("Handling ChannelJoin request using dummy response");
     command.respond(String::from("ok"))
+}
+
+pub fn handle_site_list(
+    ws: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    trace!("Handling SiteList");
+    let sites = block_on(ws.site_controller.send(SiteInfoListRequest {}))
+        .unwrap()
+        .unwrap();
+    command.respond(sites)
+}
+
+pub fn handle_channel_join_all_site(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    warn!("Handling ChannelJoinAllsite request using dummy response");
+    command.respond(String::from("ok"))
+}
+
+#[derive(Serialize)]
+pub struct OptionalLimitStats {
+    pub limit: String,
+    pub used: isize,
+    pub free: isize,
+}
+
+pub fn _handle_optional_limit_stats(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    // TODO: replace dummy response with actual response
+    warn!("Handling OptionalLimitStats with dummy response");
+    let limit_stats = OptionalLimitStats {
+        limit: String::from("10%"),
+        used: 1000000,
+        free: 4000000,
+    };
+    command.respond(limit_stats)
 }

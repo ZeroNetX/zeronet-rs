@@ -14,6 +14,12 @@ pub enum Item {
     Dict(BTreeMap<Vec<u8>, Item>),
 }
 
+#[derive(Clone, Debug)]
+pub enum Error {
+    InvalidInt,
+    InvalidString,
+}
+
 impl Item {
     #[allow(dead_code)]
     pub fn get_int(&self) -> usize {

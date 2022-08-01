@@ -1,7 +1,10 @@
 pub mod error;
+pub mod events;
 mod handlers;
 pub mod request;
 pub mod response;
+
+pub use handlers::tracker::SiteAnnounce;
 
 use std::collections::HashMap;
 
@@ -10,26 +13,32 @@ use actix_web::{
     web::{Data, Payload, Query},
     HttpRequest, HttpResponse, Result,
 };
-use actix_web_actors::ws;
+use actix_web_actors::ws::{self, WsResponseBuilder};
 use log::*;
 use serde::{Deserialize, Serialize};
 
-use self::request::CommandType;
+use self::{
+    events::WebsocketController,
+    handlers::{files::*, sites::*, tracker::handle_announcer_stats, users::*},
+    request::CommandType,
+};
 use crate::{
     controllers::{
         handlers::sites::Lookup, server::ZeroServer, sites::SitesController, users::UserController,
     },
     core::{address::Address, site::Site},
     environment::{Environment, ENV},
+    plugins::web::websocket::events::RegisterWSClient,
 };
 use error::Error;
-use request::{Command, UiServerCommandType::*};
+use request::{AdminCommandType::*, Command, UiServerCommandType::*};
 use response::Message;
 
 pub async fn serve_websocket(
     req: HttpRequest,
     query: Query<HashMap<String, String>>,
     data: Data<ZeroServer>,
+    controller_data: Data<Addr<WebsocketController>>,
     stream: Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
     info!("Serving websocket");
@@ -52,8 +61,11 @@ pub async fn serve_websocket(
         site_addr: addr,
         address,
     };
-
-    ws::start(websocket, &req, stream)
+    let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
+        .start_with_addr()
+        .unwrap();
+    controller_data.do_send(RegisterWSClient { addr });
+    Ok(res)
 }
 
 pub struct ZeruWebsocket {
@@ -87,7 +99,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                     }
                 };
                 if let Err(err) = self.handle_command(ctx, &command) {
-                    error!("Error handling command: {:?}", err);
+                    debug!("Error handling command: {:?}", err);
                     let _ = handle_error(ctx, command, format!("{:?}", err));
                 }
             }
@@ -227,32 +239,41 @@ impl ZeruWebsocket {
             match cmd {
                 Ping => handle_ping(ctx, command),
                 ServerInfo => handle_server_info(self, ctx, command),
-                SiteInfo => handlers::sites::handle_site_info(self, ctx, command),
-                ChannelJoin => handlers::sites::handle_channel_join(self, ctx, command),
-                DbQuery => handlers::sites::handle_db_query(self, ctx, command),
-                FileGet => handlers::files::handle_file_get(self, ctx, command),
-                FileRules => handlers::files::handle_file_rules(self, ctx, command),
-                UserGetSettings => handlers::users::handle_user_get_settings(self, ctx, command),
-                UserSetSettings => handlers::users::handle_user_set_settings(self, ctx, command),
-                UserGetGlobalSettings => {
-                    handlers::users::handle_user_get_global_settings(self, ctx, command)
-                }
+                SiteInfo => handle_site_info(self, ctx, command),
+                ChannelJoin => handle_channel_join(self, ctx, command),
+                DbQuery => handle_db_query(self, ctx, command),
+                FileGet => handle_file_get(self, ctx, command),
+                FileRules => handle_file_rules(self, ctx, command),
+                UserGetSettings => handle_user_get_settings(self, ctx, command),
+                UserSetSettings => handle_user_set_settings(self, ctx, command),
+                UserGetGlobalSettings => handle_user_get_global_settings(self, ctx, command),
                 _ => {
-                    error!("Unhandled Ui command: {:?}", command.cmd);
+                    debug!("Unhandled Ui command: {:?}", command.cmd);
                     return Err(Error {
                         error: "Unhandled command".to_string(),
                     });
                 }
             }
-        } else if let CommandType::Admin(_cmd) = &command.cmd {
-            error!("Unhandled Admin command: {:?}", command.cmd);
-            return Err(Error {
-                error: "Unhandled Admin command".to_string(),
-            });
+        } else if let CommandType::Admin(cmd) = &command.cmd {
+            match cmd {
+                AnnouncerStats => handle_announcer_stats(self, ctx, command),
+                ChannelJoinAllsite => {
+                    handlers::sites::handle_channel_join_all_site(self, ctx, command)
+                }
+                SiteList => handlers::sites::handle_site_list(self, ctx, command),
+                _ => {
+                    debug!("Unhandled Admin command: {:?}", command.cmd);
+                    return Err(Error {
+                        error: "Unhandled Admin command".to_string(),
+                    });
+                }
+            }
         } else {
-            return Err(Error {
-                error: "Unhandled Plugin command".to_string(),
-            });
+            debug!("Unhandled Plugin command: {:?}", command.cmd);
+            command.respond("ok")
+            // return Err(Error {
+            //     error: "Unhandled Plugin command".to_string(),
+            // });
         };
 
         let j = serde_json::to_string(&response?)?;

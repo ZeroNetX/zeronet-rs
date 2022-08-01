@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use decentnet_protocol::{builders::response::*, interface::ResponseImpl, templates::*};
+use decentnet_protocol::{
+    builders::response::*, interface::ResponseImpl, message::ResponseType, templates::*,
+};
 use serde_bytes::ByteBuf;
-use zeronet_protocol::message::ResponseType;
 
 use crate::{
     core::error::Error,

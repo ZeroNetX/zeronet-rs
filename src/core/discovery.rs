@@ -1,4 +1,4 @@
-use zeronet_protocol::PeerAddr;
+use decentnet_protocol::address::PeerAddr;
 
 use crate::discovery::tracker::IpPort;
 

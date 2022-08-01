@@ -85,3 +85,12 @@ pub fn handle_user_get_global_settings(
     let user_settings = user.settings;
     command.respond(serde_json::to_string(&user_settings)?)
 }
+
+pub fn _handle_user_show_master_seed(
+    ws: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    let user = get_current_user(ws)?;
+    command.respond(user.get_master_seed())
+}

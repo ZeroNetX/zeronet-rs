@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use log::*;
-use tokio::fs;
+use tokio::{fs, io::AsyncWriteExt};
 
-use decentnet_protocol::interface::RequestImpl;
-use zeronet_protocol::PeerAddr;
+use decentnet_protocol::{address::PeerAddr, interface::RequestImpl};
 
 use crate::{
     controllers::sites::SitesController,
-    core::{discovery::Discovery, error::Error, io::*, peer::*, site::*, user::*},
+    core::{error::Error, io::*, peer::*, site::*, user::*},
     environment::ENV,
     io::db::DbManager,
     net::Protocol,
@@ -36,24 +36,9 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
 }
 
 pub async fn find_peers(site: &mut Site) -> Result<(), Error> {
-    let peers = site.discover().await?;
-    for peer in &peers {
-        info!("{:?}", peer);
-    }
-    let mut connections = vec![];
-    for mut peer in peers {
-        let res = peer.connect();
-        if let Err(e) = &res {
-            error!("Error : {:?}", e);
-            let peer = peer.clone().address().to_string();
-            error!("{}", peer);
-        } else {
-            info!("Connection Successful");
-            connections.push(peer);
-        }
-    }
-    let connectable_peers = connections.iter().map(|peer| peer.address().to_string());
-    save_peers(connectable_peers).await;
+    let connections = site.find_peers().await?;
+    let mut connectable_peers = connections.iter().map(|peer| peer.address().to_string());
+    save_peers(&mut connectable_peers).await;
     Ok(())
 }
 
@@ -245,46 +230,13 @@ pub async fn check_site_integrity(site: &mut Site) -> Result<(), Error> {
 }
 
 pub async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
-    let peers = load_peers().await;
-    let peers = peers
-        .iter()
-        .map(|peer| Peer::new(PeerAddr::parse(peer.to_string()).unwrap()))
-        .collect::<Vec<_>>();
-    for mut peer in peers {
-        peer.connect()?;
-        let res = Protocol::new(peer.connection_mut().unwrap())
-            .handshake()
-            .await;
-        if let Err(e) = res {
-            let peer = peer.clone().address().to_string();
-            error!("Error on Handshake: {:?} with Peer {:?}", e, peer);
-        } else {
-            let response = res?;
-            trace!("Peer Handshake Result : {:?}", response);
-            site.peers.insert(response.peer_id.clone(), peer);
-        }
-    }
+    let peers = site.find_peers().await.unwrap();
+    site.add_peers(peers);
     Ok(())
 }
 
-pub async fn save_peers(peers: impl Iterator<Item = String>) {
+pub async fn save_peers(peers: &mut impl Iterator<Item = String>) {
     let mut file = tokio::fs::File::create("data/peers.txt").await.unwrap();
-    for peer in peers {
-        tokio::io::AsyncWriteExt::write_all(&mut file, peer.as_bytes())
-            .await
-            .unwrap();
-    }
-}
-
-pub async fn load_peers() -> Vec<String> {
-    let mut file = tokio::fs::File::open("data/peers.txt").await.unwrap();
-    let mut buf = vec![];
-    tokio::io::AsyncReadExt::read_to_end(&mut file, &mut buf)
-        .await
-        .unwrap();
-    let mut peers = vec![];
-    for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
-        peers.push(String::from_utf8(peer.to_vec()).unwrap());
-    }
-    peers.drain_filter(|peer| !peer.is_empty()).collect()
+    let peers = peers.join("\n");
+    file.write(peers.as_bytes()).await.unwrap();
 }

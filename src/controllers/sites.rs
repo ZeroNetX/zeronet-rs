@@ -10,6 +10,7 @@ use crate::{
     core::{
         address::Address,
         error::Error,
+        io::SiteIO,
         site::{models::SiteStorage, Site},
     },
     environment::{ENV, SITE_STORAGE},
@@ -60,28 +61,30 @@ impl SitesController {
                 &address.address,
                 ENV.data_path.clone().join(&address.address),
             )?;
-            block_on(site.load_content())?;
-            let site_storage = &*SITE_STORAGE;
-            let wrapper_key = site_storage
-                .get(&address.address)
-                .unwrap()
-                .keys
-                .wrapper_key
-                .clone();
-            if !wrapper_key.is_empty() {
-                self.nonce.insert(wrapper_key, address.clone());
+            if !site.site_path().exists() {
+                info!("Site content does not exist. Downloading...");
+                let addr = site.start();
+                self.sites_addr.insert(address.clone(), addr.clone());
+                Ok((address, addr))
+            } else {
+                block_on(site.load_content())?;
+                if let Some(site_storage) = (&*SITE_STORAGE).get(&address.address) {
+                    let wrapper_key = site_storage.keys.wrapper_key.clone();
+                    if !wrapper_key.is_empty() {
+                        self.nonce.insert(wrapper_key, address.clone());
+                    }
+                }
+                if let Some(schema) = self.db_manager.load_schema(&site.address()) {
+                    self.db_manager.insert_schema(&site.address(), schema);
+                    self.db_manager.connect_db(&site.address())?;
+                }
+                let addr = site.start();
+                // TODO: Decide whether to spawn actors in syncArbiter
+                // let addr = SyncArbiter::start(1, || Site::new());
+                self.sites_addr.insert(address.clone(), addr.clone());
+                self.update_sites_changed();
+                Ok((address, addr))
             }
-            if let Some(schema) = self.db_manager.load_schema(&site.address()) {
-                self.db_manager.insert_schema(&site.address(), schema);
-                self.db_manager.connect_db(&site.address())?;
-            }
-            let addr = site.start();
-            // TODO: Decide whether to spawn actors in syncArbiter
-            // let addr = SyncArbiter::start(1, || Site::new());
-            self.sites_addr.insert(address.clone(), addr.clone());
-            self.update_sites_changed();
-
-            Ok((address, addr))
         }
     }
 

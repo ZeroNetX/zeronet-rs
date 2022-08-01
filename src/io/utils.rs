@@ -4,6 +4,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha512};
 use std::{
     collections::HashMap,
+    fs::read,
     io::{Read, Write},
     net::{IpAddr, Ipv6Addr},
     path::{Path, PathBuf},
@@ -291,4 +292,27 @@ pub fn load_sites_file() -> HashMap<String, SiteStorage> {
         }
     }
     sites_file
+}
+
+pub async fn load_peers() -> Vec<String> {
+    let mut file = File::open("data/peers.txt").await.unwrap();
+    let mut buf = vec![];
+    tokio::io::AsyncReadExt::read_to_end(&mut file, &mut buf)
+        .await
+        .unwrap();
+    let mut peers = vec![];
+    for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
+        peers.push(String::from_utf8(peer.to_vec()).unwrap());
+    }
+    peers.drain_filter(|peer| !peer.is_empty()).collect()
+}
+
+pub fn load_trackers() -> Vec<String> {
+    let mut file = Path::new("data/trackers.txt");
+    let buf = read(&mut file).unwrap();
+    let mut trackers = vec![];
+    for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
+        trackers.push(String::from_utf8(peer.to_vec()).unwrap());
+    }
+    trackers.drain_filter(|peer| !peer.is_empty()).collect()
 }

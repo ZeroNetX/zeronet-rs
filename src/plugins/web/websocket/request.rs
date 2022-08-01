@@ -114,6 +114,8 @@ pub enum PluginCommands {
     OptionalHelp,
     OptionalHelpRemove,
     OptionalHelpAll,
+
+    FilterIncludeList,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

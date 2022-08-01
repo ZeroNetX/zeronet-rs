@@ -1,12 +1,16 @@
 pub mod tracker;
 use futures::future::join_all;
 use log::*;
-use zeronet_protocol::PeerAddr;
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+
+use decentnet_protocol::{address::PeerAddr, interface::RequestImpl};
 
 use crate::{
     core::{discovery::Discovery, error::Error, peer::Peer, site::Site},
     discovery::tracker::{announce, get_info_hash, make_addr},
     environment::ENV,
+    io::utils::load_peers,
+    net::Protocol,
 };
 
 use self::tracker::IpPort;
@@ -31,7 +35,7 @@ impl Discovery for Site {
             } else {
                 let mut _res: Vec<Peer> = res
                     .unwrap()
-                    .drain_filter(|a| a.port > 0) //consider ips with no port
+                    .drain_filter(|a| a.port > 1) //consider ips with no port
                     .collect::<Vec<_>>()
                     .iter()
                     .map(|p: &IpPort| Peer::new(PeerAddr::parse(p.to_string()).unwrap()))
@@ -40,5 +44,56 @@ impl Discovery for Site {
             }
         }
         Ok(res_all)
+    }
+}
+
+impl Site {
+    pub async fn find_peers(&mut self) -> Result<Vec<Peer>, Error> {
+        let peers = self.discover().await?;
+        let peers_from_file = load_peers()
+            .await
+            .iter()
+            .map(|peer| Peer::new(PeerAddr::parse(peer.to_string()).unwrap()))
+            .collect::<Vec<_>>();
+        let mut peers = peers
+            .into_iter()
+            .chain(peers_from_file.into_iter())
+            .collect::<Vec<_>>();
+        let mut connections = peers
+            .par_iter_mut()
+            .filter_map(|peer| {
+                let res = peer.connect();
+                if let Err(e) = &res {
+                    error!("Error : {:?}", e);
+                    let peer = peer.clone().address().to_string();
+                    error!("{}", peer);
+                    return None;
+                } else {
+                    info!("Connection Successful to {:?}", peer);
+                    return Some(peer);
+                }
+            })
+            .collect::<Vec<_>>();
+        let valid_connections = connections
+            .iter_mut()
+            .map(|peer| async {
+                let res = Protocol::new((*peer).connection_mut().unwrap())
+                    .handshake()
+                    .await;
+                if let Err(e) = res {
+                    let peer = &peer.address().to_string();
+                    error!("Error on Handshake: {:?} with Peer {:?}", e, peer);
+                    None
+                } else {
+                    Some((*peer).clone())
+                }
+            })
+            .collect::<Vec<_>>();
+        let valid_connections = join_all(valid_connections)
+            .await
+            .into_iter()
+            .filter_map(|res| res)
+            .collect::<Vec<_>>();
+        Ok(valid_connections)
     }
 }

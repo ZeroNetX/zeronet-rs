@@ -1,9 +1,10 @@
 use std::fmt::Debug;
 
 use super::error::Error;
+use decentnet_protocol::address::PeerAddr as PeerAddress;
 use log::*;
 use time::{Duration, OffsetDateTime};
-use zeronet_protocol::{PeerAddr as PeerAddress, ZeroConnection};
+use zeronet_protocol::ZeroConnection;
 
 #[derive(Clone)]
 pub struct Peer {

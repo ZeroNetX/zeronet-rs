@@ -29,6 +29,10 @@ impl UserController {
         self.users.values().next().unwrap().clone()
     }
 
+    pub fn current_mut(&mut self) -> &mut User {
+        self.users.values_mut().next().unwrap()
+    }
+
     pub fn create_user(&mut self) -> User {
         let user = User::new();
         self.add_user(user.clone());
