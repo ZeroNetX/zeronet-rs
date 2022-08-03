@@ -15,7 +15,7 @@ use log::*;
 
 use crate::{
     common::*,
-    controllers::{connections::ConnectionController, sites::SitesController},
+    controllers::{connections::ConnectionController, sites::SitesController, *},
     core::{error::Error, site::Site},
     environment::*,
     io::db::DbManager,
@@ -102,9 +102,9 @@ async fn main() -> Result<(), Error> {
         let mut con = ConnectionController::new(controller).await?;
         let _ = con.run().await;
     } else {
-        let user_controller_addr = controllers::users::run().unwrap();
-        let sites_controller_addr = controllers::sites::run().await.unwrap();
-        let _ = controllers::server::run(sites_controller_addr, user_controller_addr).await;
+        let user_controller_addr = users::run().unwrap();
+        let sites_controller_addr = sites::run().await.unwrap();
+        let _ = server::run(sites_controller_addr, user_controller_addr).await;
     }
     Ok(())
 }
