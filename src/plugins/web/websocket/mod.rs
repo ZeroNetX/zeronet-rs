@@ -4,6 +4,7 @@ mod handlers;
 pub mod request;
 pub mod response;
 
+use futures::executor::block_on;
 pub use handlers::tracker::SiteAnnounce;
 
 use std::collections::HashMap;
