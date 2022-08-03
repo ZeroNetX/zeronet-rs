@@ -18,7 +18,6 @@ use crate::{
     },
     core::{address::Address, error::Error},
     environment::ENV,
-    plugins::web::SiteAnnounce,
 };
 
 use super::server::ZeroServer;
@@ -88,19 +87,15 @@ pub async fn serve_wrapper(
     };
     let (_, site) = query.expect("MailBox Closed");
     let show_loadingscreen;
-    let content = site.send(SiteContent(None)).await.expect("MailBox Closed");
+    let content = site.send(SiteContent(None)).await;
     let title;
-    let content = if let Ok(content) = content {
+    let content = if let Ok(Ok(content)) = content {
         show_loadingscreen = String::from("false");
         title = content.title.to_string();
         content
     } else {
         show_loadingscreen = String::from("true");
         title = format!("Loading {}...", address.address);
-        // site.do_send(SiteAnnounce {
-        //     address: address.address.clone(),
-        // });
-        info!("Sending site announce to {}", address.address);
         Content::default()
     };
     let mut meta_tags = String::new();
