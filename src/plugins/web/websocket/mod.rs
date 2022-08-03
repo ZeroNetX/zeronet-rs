@@ -229,6 +229,16 @@ fn handle_error(
 }
 
 impl ZeruWebsocket {
+    fn is_admin_site(&mut self) -> Result<bool, Error> {
+        let site = block_on(self.site_addr.send(SiteInfoRequest {}))??;
+        let res = site
+            .settings
+            .settings
+            .permissions
+            .contains(&("ADMIN".to_string()));
+        Ok(res)
+    }
+
     fn handle_command(
         &mut self,
         ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
