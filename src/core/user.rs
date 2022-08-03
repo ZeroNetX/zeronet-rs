@@ -445,44 +445,6 @@ impl User {
         // We don't need the whole index
         (auth_index % BigUint::from(100000000u32)).to_u32_digits()[0]
     }
-
-    // pub fn save(&self) {
-    //     let start_time = SystemTime::now();
-    //     let file_path = ENV.data_path.join("users.json");
-    //     let save_user = || -> Result<bool, Error> {
-    //         let file = File::open(&file_path)?;
-    //         let reader = BufReader::new(file);
-    //         let mut users: HashMap<String, serde_json::Value> = serde_json::from_reader(reader)?;
-    //         if users.contains_key(&self.master_address) == false {
-    //             users.insert(self.master_address.clone(), json!({})); // Create if not exist
-    //         }
-    //         let user = users.get_mut(&self.master_address).unwrap();
-    //         user["master_seed"] = json!(self.master_seed);
-    //         user["sites"] = json!(self.sites);
-    //         user["certs"] = json!(self.certs);
-    //         user["settings"] = json!(self.settings);
-    //         let users_file_content_new = serde_json::to_string_pretty(&json!(users))?;
-    //         let users_file_bytes = fs::read(&file_path)?;
-    //         let result = atomic_write(
-    //             &file_path,
-    //             users_file_content_new.as_bytes(),
-    //             &users_file_bytes,
-    //             true,
-    //         );
-    //         result
-    //     };
-    //     if let Err(err_msg) = save_user() {
-    //         error!("Couldn't save user: {:?}", err_msg);
-    //     } else {
-    //         debug!(
-    //             "Saved in {}s",
-    //             SystemTime::now()
-    //                 .duration_since(start_time)
-    //                 .unwrap()
-    //                 .as_secs_f32()
-    //         );
-    //     }
-    // }
 }
 
 #[cfg(test)]
