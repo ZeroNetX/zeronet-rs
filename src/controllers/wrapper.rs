@@ -89,9 +89,9 @@ pub async fn serve_wrapper(
             return HttpResponse::BadRequest().finish();
         }
     };
-    let (_, site) = query.unwrap();
+    let (_, site) = query.expect("MailBox Closed");
     let show_loadingscreen;
-    let content = site.send(SiteContent(None)).await.unwrap();
+    let content = site.send(SiteContent(None)).await.expect("MailBox Closed");
     let title;
     let content = if let Ok(content) = content {
         show_loadingscreen = String::from("false");
