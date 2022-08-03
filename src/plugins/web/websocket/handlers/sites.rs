@@ -118,8 +118,18 @@ pub fn handle_site_list(
     _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
-    trace!("Handling SiteList");
-    let sites = block_on(ws.site_controller.send(SiteInfoListRequest {}))
+    trace!("Handling SiteList : {:?}", command.params);
+    let connecting = if let Value::Object(map) = &command.params {
+        let res = if let Some(Value::Bool(value)) = map.get("connecting_sites") {
+            value.clone()
+        } else {
+            false
+        };
+        res
+    } else {
+        false
+    };
+    let sites = block_on(ws.site_controller.send(SiteInfoListRequest { connecting }))
         .unwrap()
         .unwrap();
     command.respond(sites)
@@ -130,7 +140,7 @@ pub fn handle_channel_join_all_site(
     _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
-    warn!("Handling ChannelJoinAllsite request using dummy response");
+    debug!("Handling ChannelJoinAllsite request using dummy response");
     command.respond(String::from("ok"))
 }
 
