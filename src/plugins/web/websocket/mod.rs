@@ -257,10 +257,9 @@ impl ZeruWebsocket {
         } else if let CommandType::Admin(cmd) = &command.cmd {
             match cmd {
                 AnnouncerStats => handle_announcer_stats(self, ctx, command),
-                ChannelJoinAllsite => {
-                    handlers::sites::handle_channel_join_all_site(self, ctx, command)
-                }
-                SiteList => handlers::sites::handle_site_list(self, ctx, command),
+                ChannelJoinAllsite => handle_channel_join_all_site(self, ctx, command),
+                SiteList => handle_site_list(self, ctx, command),
+                UserSetGlobalSettings => handle_user_set_global_settings(self, ctx, command),
                 _ => {
                     debug!("Unhandled Admin command: {:?}", command.cmd);
                     return Err(Error {

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
+use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
@@ -66,6 +67,7 @@ pub fn handle_user_set_settings(
         user_addr: String::from("current"),
         site_addr: ws.address.clone().address,
         settings: Some(content_map),
+        ..Default::default()
     }))?;
     if result.is_none() {
         return Err(Error {
@@ -84,6 +86,38 @@ pub fn handle_user_get_global_settings(
     let user = get_current_user(ws)?;
     let user_settings = user.settings;
     command.respond(serde_json::to_string(&user_settings)?)
+}
+
+pub fn handle_user_set_global_settings(
+    ws: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    if let Value::Array(value) = command.params.clone() {
+        let content_map = value.first();
+        if let Some(Value::String(content_map)) = content_map {
+            println!("{}", content_map);
+            let settings = serde_json::from_str(content_map)?;
+            let mut content_map = HashMap::new();
+            content_map.insert(ws.address.clone(), settings);
+            let _ = block_on(ws.user_controller.send(UserSettings {
+                set: true,
+                global: true,
+                user_addr: String::from("current"),
+                settings: Some(content_map),
+                ..Default::default()
+            }))?;
+            command.respond("ok")
+        } else {
+            command.respond(Error {
+                error: String::from("Invalid settings"),
+            })
+        }
+    } else {
+        Err(Error {
+            error: String::from("Invalid User Settings"),
+        })
+    }
 }
 
 pub fn _handle_user_show_master_seed(

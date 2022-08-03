@@ -37,6 +37,7 @@ impl Handler<UserRequest> for UserController {
 #[rtype(result = "Option<HashMap<String, Value>>")]
 pub struct UserSettings {
     pub set: bool,
+    pub global: bool,
     pub user_addr: String,
     pub site_addr: String,
     pub settings: Option<HashMap<Address, HashMap<String, serde_json::Value>>>,
@@ -54,12 +55,18 @@ impl Handler<UserSettings> for UserController {
             _ => self.get_user_mut(&msg.user_addr),
         };
         if let Some(user) = user {
-            if msg.set {
-                let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
-                user.settings = msg.settings.unwrap().get(&site_addr).unwrap().clone();
+            if msg.global {
+                let setting = msg.settings.unwrap();
+                user.settings = setting.values().next().unwrap().clone();
                 None
             } else {
-                Some(user.settings.clone())
+                if msg.set {
+                    let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
+                    user.settings = msg.settings.unwrap().get(&site_addr).unwrap().clone();
+                    None
+                } else {
+                    Some(user.settings.clone())
+                }
             }
         } else {
             None
