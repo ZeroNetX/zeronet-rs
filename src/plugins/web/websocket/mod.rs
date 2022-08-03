@@ -270,6 +270,11 @@ impl ZeruWebsocket {
                 }
             }
         } else if let CommandType::Admin(cmd) = &command.cmd {
+            if !self.is_admin_site()? {
+                return Err(Error {
+                    error: format!("You don't have permission to run {:?}", cmd),
+                });
+            }
             match cmd {
                 AnnouncerStats => handle_announcer_stats(self, ctx, command),
                 ChannelJoinAllsite => handle_channel_join_all_site(self, ctx, command),
