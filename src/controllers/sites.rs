@@ -61,10 +61,9 @@ impl SitesController {
                 "Spinning up actor for site zero://{}",
                 address.get_address_short()
             );
-            let mut site = Site::new(
-                &address.address,
-                ENV.data_path.clone().join(&address.address),
-            )?;
+            let address_str = address.address.clone();
+            let mut site = Site::new(&address_str, ENV.data_path.clone().join(&address_str))?;
+            site.modify_storage(self.sites.get(&address_str).unwrap().storage.clone());
             if !site.site_path().exists() {
                 info!("Site content does not exist. Downloading...");
                 let addr = site.start();
