@@ -18,6 +18,7 @@ use crate::{
     },
     core::{address::Address, error::Error},
     environment::ENV,
+    plugins::web::SiteAnnounce,
 };
 
 use super::server::ZeroServer;
@@ -77,12 +78,8 @@ pub async fn serve_wrapper(
     if result.await.is_err() {
         error!("Error sending wrapper key to site manager");
     }
-
-    let query = match data
-        .site_controller
-        .send(Lookup::Address(address.clone()))
-        .await
-    {
+    let site_controller = data.site_controller.clone();
+    let query = match site_controller.send(Lookup::Address(address.clone())).await {
         Ok(v) => v,
         Err(err) => {
             error!("{:?}", err);

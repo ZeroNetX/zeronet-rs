@@ -12,7 +12,6 @@ use crate::{
     core::{
         address::Address,
         error::Error,
-        io::SiteIO,
         site::{models::SiteInfo, Site},
     },
 };

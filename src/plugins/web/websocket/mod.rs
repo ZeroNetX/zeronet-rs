@@ -24,7 +24,10 @@ use self::{
 };
 use crate::{
     controllers::{
-        handlers::sites::Lookup, server::ZeroServer, sites::SitesController, users::UserController,
+        handlers::sites::{Lookup, SiteInfoRequest},
+        server::ZeroServer,
+        sites::SitesController,
+        users::UserController,
     },
     core::{address::Address, site::Site},
     environment::{Environment, ENV},
@@ -164,7 +167,7 @@ pub struct ServerInfo {
     plugins_rev: HashMap<String, usize>,
     multiuser: bool,
     master_address: String,
-    // user_settings
+    user_settings: HashMap<String, serde_json::Value>,
 }
 
 fn handle_ping(
@@ -181,7 +184,8 @@ fn handle_server_info(
     _: &mut ws::WebsocketContext<ZeruWebsocket>,
     req: &Command,
 ) -> Result<Message, Error> {
-    debug!("Handling ServerInfo request using dummy response");
+    trace!("Handling ServerInfo request");
+    //TODO!: Replace Defaults with actual values
     let user = handlers::users::get_current_user(ws)?;
     let env: Environment = (*ENV).clone();
     let server_info = ServerInfo {
@@ -208,7 +212,7 @@ fn handle_server_info(
         plugins_rev: HashMap::new(),
         multiuser: false,
         master_address: user.master_address,
-        // user_settings:
+        user_settings: user.settings,
     };
     req.respond(server_info)
 }

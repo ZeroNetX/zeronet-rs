@@ -1,3 +1,4 @@
+use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;

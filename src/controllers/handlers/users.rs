@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use actix::{Actor, Context, Handler, Message};
-use log::*;
 use serde_json::Value;
 
 use crate::{
