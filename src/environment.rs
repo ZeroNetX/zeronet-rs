@@ -70,6 +70,8 @@ pub struct Environment {
     pub dist: String,
     pub use_block_storage: bool,
     pub access_key: String,
+    pub size_limit: usize,
+    pub file_size_limit: usize,
 }
 
 fn get_matches() -> ArgMatches {
@@ -173,14 +175,14 @@ fn get_matches() -> ArgMatches {
                 .long("dist_type")
                 .default_value("DecentNet")
                 .help("Type of installed distribution"),
-            // Arg::new("SIZE_LIMIT")
-            //     .long("size_limit")
-            //     .default_value("10")
-            //     .help("Default site size limit in MB"),
-            // Arg::new("FILE_SIZE_LIMIT")
-            //     .long("file_size_limit")
-            //     .default_value("10")
-            //     .help("Maximum per file size limit"),
+            Arg::new("SIZE_LIMIT")
+                .long("size_limit")
+                .default_value("10")
+                .help("Default site size limit in MB"),
+            Arg::new("FILE_SIZE_LIMIT")
+                .long("file_size_limit")
+                .default_value("10")
+                .help("Maximum per file size limit"),
             // Arg::new("CONNECTED_LIMIT")
             //     .long("connected_limit")
             //     .default_value("8")
@@ -283,6 +285,8 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
         use_block_storage,
         access_key: String::from(matches.value_of("ACCESS_KEY").unwrap()),
+        size_limit: matches.value_of("SIZE_LIMIT").unwrap().parse()?,
+        file_size_limit: matches.value_of("FILE_SIZE_LIMIT").unwrap().parse()?,
     };
     Ok(env)
 }

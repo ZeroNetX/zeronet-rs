@@ -14,6 +14,7 @@ use crate::{
         error::Error,
         site::{models::SiteInfo, Site},
     },
+    environment::ENV,
 };
 
 impl Actor for Site {
@@ -200,6 +201,15 @@ impl Handler<SiteInfoRequest> for Site {
                 }
             }
         }
+        let size_limit = self.storage.settings.size_limit;
+        let size_limit = if size_limit == 0 {
+            ENV.size_limit
+        } else {
+            size_limit
+        };
+        let next_size_limit = size_limit; //TODO!: Need to modify next_size_limit
+        let mut storage = self.storage.clone();
+        storage.settings.size_limit = size_limit;
 
         Ok(SiteInfo {
             auth_address: String::from(""),
@@ -207,11 +217,11 @@ impl Handler<SiteInfoRequest> for Site {
             cert_user_id: None,
             address: self.address(),
             address_short: self.addr().get_address_short(),
-            settings: self.storage.clone(),
+            settings: storage.clone(),
             content_updated: 0f64,
-            bad_files: self.storage.cache.bad_files.len(),
-            size_limit: self.storage.settings.size_limit,
-            next_size_limit: self.storage.settings.size_limit * 2,
+            bad_files: storage.cache.bad_files.len(),
+            size_limit,
+            next_size_limit,
             peers: self.peers.len() + 1,
             started_task_num: 0,
             tasks: 0,
@@ -224,7 +234,9 @@ impl Handler<SiteInfoRequest> for Site {
 
 #[derive(Message)]
 #[rtype(result = "Result<Vec<SiteInfo>, Error>")]
-pub struct SiteInfoListRequest {}
+pub struct SiteInfoListRequest {
+    pub connecting: bool,
+}
 
 impl Handler<SiteInfoListRequest> for SitesController {
     type Result = ResponseActFuture<Self, Result<Vec<SiteInfo>, Error>>;
