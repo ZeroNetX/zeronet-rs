@@ -25,7 +25,7 @@ pub async fn http_announce(
 ) -> Result<Vec<IpPort>, Error> {
     let mut get: Vec<u8> = vec![];
     // prefix
-    let route = if let Some(route) = anounce_route {
+    let _route = if let Some(route) = anounce_route {
         format!("/{}", route)
     } else {
         format!("/announce")
