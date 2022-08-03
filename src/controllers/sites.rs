@@ -55,40 +55,47 @@ impl SitesController {
     }
 
     pub fn get(&mut self, address: Address) -> Result<(Address, Addr<Site>), Error> {
-        if let Some(addr) = self.sites_addr.get(&address) {
-            Ok((address, addr.clone()))
+        let address_str = address.address.clone();
+        let mut site;
+        let site = if let Some(site) = self.sites.get_mut(&address_str) {
+            site
         } else {
-            info!(
-                "Spinning up actor for site zero://{}",
-                address.get_address_short()
-            );
-            let address_str = address.address.clone();
-            let mut site = Site::new(&address_str, ENV.data_path.clone().join(&address_str))?;
-            site.modify_storage(self.sites.get(&address_str).unwrap().storage.clone());
-            if !site.site_path().exists() {
-                info!("Site content does not exist. Downloading...");
-                let addr = site.start();
-                self.sites_addr.insert(address.clone(), addr.clone());
-                Ok((address, addr))
-            } else {
-                block_on(site.load_content())?;
-                if let Some(site_storage) = (&*SITE_STORAGE).get(&address.address) {
-                    let wrapper_key = site_storage.keys.wrapper_key.clone();
-                    if !wrapper_key.is_empty() {
-                        self.nonce.insert(wrapper_key, address.clone());
-                    }
-                }
-                if let Some(schema) = self.db_manager.load_schema(&site.address()) {
-                    self.db_manager.insert_schema(&site.address(), schema);
-                    self.db_manager.connect_db(&site.address())?;
-                }
-                let addr = site.start();
-                // TODO: Decide whether to spawn actors in syncArbiter
-                // let addr = SyncArbiter::start(1, || Site::new());
-                self.sites_addr.insert(address.clone(), addr.clone());
-                self.update_sites_changed();
-                Ok((address, addr))
+            site = Site::new(&address_str, ENV.data_path.join(address_str.clone())).unwrap();
+            &mut site
+        };
+        if let Some(addr) = self.sites_addr.get(&address) {
+            if site.content_path().is_file() {
+                return Ok((address, addr.clone()));
             }
+        }
+        info!(
+            "Spinning up actor for site zero://{}",
+            address.get_address_short()
+        );
+        if !site.content_path().is_file() {
+            info!("Site content does not exist. Downloading...");
+            let addr = site.clone().start();
+            self.sites_addr.insert(address.clone(), addr.clone());
+            Ok((address, addr))
+        } else {
+            site.modify_storage(site.storage.clone());
+            block_on(site.load_content())?;
+            if let Some(site_storage) = (*SITE_STORAGE).get(&address.address) {
+                let wrapper_key = site_storage.keys.wrapper_key.clone();
+                if !wrapper_key.is_empty() {
+                    self.nonce.insert(wrapper_key, address.clone());
+                }
+            }
+            if let Some(schema) = self.db_manager.load_schema(&site.address()) {
+                self.db_manager.insert_schema(&site.address(), schema);
+                self.db_manager.connect_db(&site.address())?;
+            }
+            let addr = site.clone().start();
+            // TODO: Decide whether to spawn actors in syncArbiter
+            // let addr = SyncArbiter::start(1, || Site::new());
+            self.sites_addr.insert(address.clone(), addr.clone());
+            self.update_sites_changed();
+            Ok((address, addr))
         }
     }
 
