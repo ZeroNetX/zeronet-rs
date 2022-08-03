@@ -244,6 +244,7 @@ impl User {
         self.sites.insert(address.to_string(), site_data);
 
         #[cfg(feature = "userio")]
+        #[cfg(not(test))]
         block_on(self.save());
 
         debug!(
@@ -276,6 +277,7 @@ impl User {
     fn delete_site_data(&mut self, address: &str) {
         if self.sites.remove(address).is_some() {
             #[cfg(feature = "userio")]
+            #[cfg(not(test))]
             block_on(self.save());
 
             debug!("Deleted site: {}", address);
@@ -287,6 +289,7 @@ impl User {
         let site_data = self.get_site_data(address, true).set_settings(settings);
 
         #[cfg(feature = "userio")]
+        #[cfg(not(test))]
         block_on(self.save());
 
         site_data
@@ -314,6 +317,7 @@ impl User {
             .insert(site_address.to_string(), site_data.clone());
 
         #[cfg(feature = "userio")]
+        #[cfg(not(test))]
         block_on(self.save());
         site_data
     }
@@ -384,6 +388,7 @@ impl User {
             self.certs.insert(domain.to_string(), cert_node);
 
             #[cfg(feature = "userio")]
+            #[cfg(not(test))]
             block_on(self.save());
 
             true
@@ -406,6 +411,7 @@ impl User {
         }
 
         #[cfg(feature = "userio")]
+        #[cfg(not(test))]
         block_on(self.save());
 
         site_data
