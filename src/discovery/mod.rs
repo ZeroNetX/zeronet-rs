@@ -50,14 +50,14 @@ impl Discovery for Site {
 impl Site {
     pub async fn find_peers(&mut self) -> Result<Vec<Peer>, Error> {
         let peers = self.discover().await?;
-        let peers_from_file = load_peers()
-            .await
-            .iter()
-            .map(|peer| Peer::new(PeerAddr::parse(peer.to_string()).unwrap()))
-            .collect::<Vec<_>>();
         let mut peers = peers
             .into_iter()
-            .chain(peers_from_file.into_iter())
+            .chain(
+                load_peers()
+                    .await
+                    .iter()
+                    .map(|peer| Peer::new(PeerAddr::parse(peer.to_string()).unwrap())),
+            )
             .collect::<Vec<_>>();
         let mut connections = peers
             .par_iter_mut()
@@ -67,10 +67,10 @@ impl Site {
                     error!("Error : {:?}", e);
                     let peer = peer.clone().address().to_string();
                     error!("{}", peer);
-                    return None;
+                    None
                 } else {
                     info!("Connection Successful to {:?}", peer);
-                    return Some(peer);
+                    Some(peer)
                 }
             })
             .collect::<Vec<_>>();
@@ -92,7 +92,7 @@ impl Site {
         let valid_connections = join_all(valid_connections)
             .await
             .into_iter()
-            .filter_map(|res| res)
+            .flatten()
             .collect::<Vec<_>>();
         Ok(valid_connections)
     }

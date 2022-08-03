@@ -238,5 +238,5 @@ pub async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
 pub async fn save_peers(peers: &mut impl Iterator<Item = String>) {
     let mut file = tokio::fs::File::create("data/peers.txt").await.unwrap();
     let peers = peers.join("\n");
-    file.write(peers.as_bytes()).await.unwrap();
+    let _ = file.write(peers.as_bytes()).await.unwrap();
 }

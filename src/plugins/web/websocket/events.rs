@@ -25,7 +25,8 @@ impl Handler<RegisterWSClient> for WebsocketController {
     type Result = Result<(), Error>;
 
     fn handle(&mut self, msg: RegisterWSClient, _ctx: &mut Context<Self>) -> Self::Result {
-        Ok(self.listeners.push(msg.addr))
+        self.listeners.push(msg.addr);
+        Ok(())
     }
 }
 
@@ -33,14 +34,10 @@ impl Handler<RegisterWSClient> for WebsocketController {
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase")]
 pub enum ServerEvent {
-    Event {
-        cmd: String,
-        params: EventType,
-    },
-    #[serde(rename = "event")]
-    EventString(String),
+    Event { cmd: String, params: EventType },
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[serde(rename_all = "camelCase")]

@@ -279,7 +279,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fileserver_port,
         ui_ip: String::from(ui_ip),
         ui_port,
-        trackers: (*TRACKERS).iter().map(|s| String::from(&*s)).collect(),
+        trackers: (*TRACKERS).iter().map(String::from).collect(),
         homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
         dist: String::from(matches.value_of("DIST_TYPE").unwrap()),

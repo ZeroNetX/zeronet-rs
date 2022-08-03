@@ -121,7 +121,7 @@ pub fn handle_site_list(
     trace!("Handling SiteList : {:?}", command.params);
     let connecting = if let Value::Object(map) = &command.params {
         let res = if let Some(Value::Bool(value)) = map.get("connecting_sites") {
-            value.clone()
+            *value
         } else {
             false
         };

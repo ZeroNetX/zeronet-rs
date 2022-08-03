@@ -58,14 +58,12 @@ impl Handler<UserSettings> for UserController {
                 let setting = msg.settings.unwrap();
                 user.settings = setting.values().next().unwrap().clone();
                 None
+            } else if msg.set {
+                let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
+                user.settings = msg.settings.unwrap().get(&site_addr).unwrap().clone();
+                None
             } else {
-                if msg.set {
-                    let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
-                    user.settings = msg.settings.unwrap().get(&site_addr).unwrap().clone();
-                    None
-                } else {
-                    Some(user.settings.clone())
-                }
+                Some(user.settings.clone())
             }
         } else {
             None
