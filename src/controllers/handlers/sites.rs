@@ -2,6 +2,7 @@ use actix::{Actor, Addr, Context, Handler, Message, ResponseActFuture};
 use bitcoin::hashes::hex::ToHex;
 use futures::{executor::block_on, future::join_all, FutureExt};
 use log::info;
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use zerucontent::Content;
@@ -178,7 +179,7 @@ impl Handler<SiteInfoRequest> for Site {
     fn handle(&mut self, _: SiteInfoRequest, _ctx: &mut Context<Self>) -> Self::Result {
         // TODO: replace default values
         if !self.content_exists() {
-            let _ = self.init_download();
+            let _ = self.load_content();
         }
         let mut content = self
             .content(None)
@@ -232,19 +233,17 @@ impl Handler<SiteInfoListRequest> for SitesController {
     fn handle(&mut self, _msg: SiteInfoListRequest, _ctx: &mut Context<Self>) -> Self::Result {
         let requests: Vec<_> = self
             .sites_addr
-            .iter()
+            .par_iter()
             .map(|(_, addr)| addr.send(SiteInfoRequest()))
             .collect();
-        let request = join_all(requests)
-            // .map_err(|_error| Error::MailboxError)
-            .map(|r| {
-                Ok(r.into_iter()
-                    .filter_map(|x| match x {
-                        Ok(Ok(a)) => Some(a),
-                        _ => None,
-                    })
-                    .collect())
-            });
+        let request = join_all(requests).map(|r| {
+            Ok(r.into_iter()
+                .filter_map(|x| match x {
+                    Ok(Ok(a)) => Some(a),
+                    _ => None,
+                })
+                .collect())
+        });
         let wrapped = actix::fut::wrap_future::<_, Self>(request);
         Box::pin(wrapped)
     }
