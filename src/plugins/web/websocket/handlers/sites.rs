@@ -5,9 +5,12 @@ use serde::Serialize;
 use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
-use crate::controllers::handlers::{
-    sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
-    users::UserSiteData,
+use crate::{
+    controllers::handlers::{
+        sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
+        users::UserSiteData,
+    },
+    plugins::web::websocket::events::RegisterChannels,
 };
 
 pub fn handle_site_info(
@@ -86,11 +89,27 @@ pub fn handle_db_query(
 
 pub fn handle_channel_join(
     _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
+    ctx: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
-    debug!("Handling ChannelJoin request using dummy response");
-    command.respond(String::from("ok"))
+    trace!("Handling ChannelJoin request");
+    if let Some(channels) = command.params.as_object() {
+        if let Some(channels) = channels.get("channels") {
+            if let Some(channels) = channels.as_array() {
+                let mut channels_list: Vec<String> = Vec::new();
+                for channel in channels {
+                    if let Some(channel) = channel.as_str() {
+                        channels_list.push(channel.to_string());
+                    }
+                }
+                ctx.address().do_send(RegisterChannels(channels_list));
+                return command.respond("ok");
+            }
+        }
+    }
+    Err(Error {
+        error: String::from("Invalid params"),
+    })
 }
 
 pub fn handle_site_list(
