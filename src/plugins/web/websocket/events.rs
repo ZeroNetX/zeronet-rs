@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use actix::prelude::*;
+use log::*;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{error::Error, site::models::SiteInfo};
@@ -66,8 +67,8 @@ impl Handler<RegisterChannels> for ZeruWebsocket {
     type Result = Result<(), Error>;
 
     fn handle(&mut self, msg: RegisterChannels, _ctx: &mut Self::Context) -> Self::Result {
-        let channels = msg.0;
-        println!("RegisteringChannels: {:?}", channels);
+        trace!("RegisteringChannels: {:?}", &msg.0);
+        self.channels = msg.0;
         Ok(())
     }
 }

@@ -64,6 +64,7 @@ pub async fn serve_websocket(
         user_controller: data.user_controller.clone(),
         site_addr: addr,
         address,
+        channels: vec![],
     };
     let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
         .start_with_addr()
@@ -77,6 +78,7 @@ pub struct ZeruWebsocket {
     user_controller: Addr<UserController>,
     site_addr: actix::Addr<Site>,
     address: Address,
+    channels: Vec<String>,
 }
 
 impl Actor for ZeruWebsocket {

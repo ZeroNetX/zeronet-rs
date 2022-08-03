@@ -76,8 +76,11 @@ impl Site {
                     )
                     .await;
                 if let Err(e) = &message {
-                    let err = format!("Error Downloading File from Peer, Error : {:?}", e);
-                    error!("File Download Error: {}", err);
+                    let err = format!(
+                        "Error Downloading File {} from Peer, Error : {:?}",
+                        inner_path, e
+                    );
+                    error!("{}", err);
                     return Err(err.as_str().into());
                 } else {
                     let bytes_downloaded = message.unwrap().body;
@@ -92,8 +95,11 @@ impl Site {
                 .get_file(self.address(), inner_path.clone(), file_size, 0, None)
                 .await;
             if let Err(e) = &message {
-                let err = format!("Error Downloading File from Peer, Error : {:?}", e);
-                error!("File Download Error: {}", err);
+                let err = format!(
+                    "Error Downloading File {} from Peer, Error : {:?}",
+                    inner_path, e
+                );
+                error!("{}", err);
                 Err(err.as_str().into())
             } else {
                 let msg = message.unwrap();
@@ -152,12 +158,19 @@ impl Site {
             return Ok(true);
         }
         //TODO!: Download from multiple peers
-        let mut peer = self.peers.values().next().unwrap().clone();
-        let bytes = Self::download_file_from_peer(self, inner_path, file, &mut peer).await?;
-        let mut file = File::create(path).await?;
-        file.write_all(&bytes).await?;
-
-        Ok(true)
+        if let Some(peer) = self.peers.values().next() {
+            let mut peer = peer.clone();
+            let bytes =
+                Self::download_file_from_peer(self, inner_path.clone(), file, &mut peer).await?;
+            let mut file = File::create(path).await?;
+            file.write_all(&bytes).await?;
+            Ok(true)
+        } else {
+            Err(Error::Err(format!(
+                "No peers found to download file: {}",
+                &inner_path
+            )))
+        }
     }
 
     async fn download_site_files(&self) -> Result<(), Error> {
@@ -429,8 +442,10 @@ impl SiteIO for Site {
         let verified = self.load_content().await?;
         if verified {
             let _ = self.download_site_files().await;
+            self.verify_files(false).await?;
+        } else {
+            error!("Site content verification failed");
         }
-        self.verify_files(false).await?;
         Ok(verified)
     }
 

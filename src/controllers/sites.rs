@@ -27,8 +27,9 @@ pub async fn run() -> Result<Addr<SitesController>, Error> {
         .extend_sites_from_sitedata(site_storage.clone())
         .await;
     for site in site_storage.keys().clone() {
-        let site = site_controller.get_site(site).unwrap();
-        site_controller.get(site.addr())?;
+        if let Some(site) = site_controller.get_site(site) {
+            site_controller.get(site.addr())?;
+        }
     }
     let site_controller_addr = site_controller.start();
     Ok(site_controller_addr)
