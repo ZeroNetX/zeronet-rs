@@ -23,7 +23,7 @@ use crate::{
     },
     core::{address::Address, error::Error},
     environment::ENV,
-    plugins::web,
+    plugins::web::{self, SiteAnnounce},
 };
 
 pub struct ZeroServer {
@@ -82,6 +82,13 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     let mut wrapper = true;
     let address = req.match_info().query("address");
     let inner_path = req.match_info().query("inner_path");
+    let addr_str = address.to_string();
+    let site_controller = data.site_controller.clone();
+    actix::spawn(async move {
+        info!("Sending site announce to {}", &addr_str);
+        let address = Address::from_str(&addr_str).unwrap();
+        site_controller.do_send(SiteAnnounce { address });
+    });
     if inner_path == "favicon.ico" {
         return serve_uimedia(req).await;
     } else if !inner_path.is_empty()
@@ -130,7 +137,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
             response
         }
         Err(err) => {
-            error!("Bad request {:?}", err);
+            error!("Serve Site:: Bad request {:?}", err);
             HttpResponse::BadRequest().finish()
         }
     }
@@ -177,12 +184,11 @@ async fn serve_file(req: &HttpRequest, data: Data<ZeroServer>) -> Result<NamedFi
         let res: bool = match res1 {
             Ok(v) => v,
             Err(err) => {
-                error!("{:?}", err);
-                false
+                return Err(err);
             }
         };
         if !res {
-            return Result::Err(Error::MissingError);
+            return Err(Error::MissingError);
         }
     }
 

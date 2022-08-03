@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 
 use self::{
     events::WebsocketController,
-    handlers::{files::*, sites::*, tracker::handle_announcer_stats, users::*},
+    handlers::{files::*, sites::*, tracker::*, users::*},
     request::CommandType,
 };
 use crate::{
@@ -262,6 +262,7 @@ impl ZeruWebsocket {
                 UserGetSettings => handle_user_get_settings(self, ctx, command),
                 UserSetSettings => handle_user_set_settings(self, ctx, command),
                 UserGetGlobalSettings => handle_user_get_global_settings(self, ctx, command),
+                AnnouncerInfo => handle_announcer_info(self, ctx, command),
                 _ => {
                     debug!("Unhandled Ui command: {:?}", command.cmd);
                     return Err(Error {

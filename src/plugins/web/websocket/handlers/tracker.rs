@@ -6,8 +6,27 @@ use futures::executor::block_on;
 use log::*;
 use serde::{Deserialize, Serialize};
 
-use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
-use crate::core::{io::SiteIO, site::Site};
+use super::super::{
+    error::Error, events::EventType::AnnouncerInfo, request::Command, response::Message,
+    ZeruWebsocket,
+};
+use crate::{
+    controllers::sites::SitesController,
+    core::{address::Address, site::Site},
+};
+
+pub fn handle_announcer_info(
+    ws: &ZeruWebsocket,
+    _ctx: &mut WebsocketContext<ZeruWebsocket>,
+    command: &Command,
+) -> Result<Message, Error> {
+    warn!("Handling AnnouncerStats request");
+    let address = ws.address.address.clone();
+    command.respond(AnnouncerInfo {
+        address,
+        stats: HashMap::new(),
+    })
+}
 
 pub fn handle_announcer_stats(
     _ws: &ZeruWebsocket,
@@ -48,7 +67,7 @@ pub struct AnnouncerStats {
 #[derive(actix::Message)]
 #[rtype(result = "()")]
 pub struct SiteAnnounce {
-    pub address: String,
+    pub address: Address,
 }
 
 impl Handler<SiteAnnounce> for Site {
@@ -58,11 +77,14 @@ impl Handler<SiteAnnounce> for Site {
         warn!("Handling SiteAnnounce request with dummy response");
         let peers = block_on(self.find_peers()).unwrap();
         self.add_peers(peers);
-        let _res = block_on(self.init_download());
-        // if let Err(e) = res {
-        //     error!("Error while initializing download: {:?}", e);
-        // } else {
-        //     info!("Download initialized");
-        // }
+    }
+}
+
+impl Handler<SiteAnnounce> for SitesController {
+    type Result = ();
+
+    fn handle(&mut self, msg: SiteAnnounce, _ctx: &mut Self::Context) -> Self::Result {
+        let (_, site) = self.get(msg.address.clone()).unwrap();
+        site.do_send(msg)
     }
 }
