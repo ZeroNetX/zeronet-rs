@@ -12,7 +12,7 @@ use tokio::{
     io::AsyncWriteExt,
 };
 
-use decentnet_protocol::interface::RequestImpl;
+use decentnet_protocol::{interface::RequestImpl, Either};
 use zerucontent::{Content, File as ZFile};
 
 use crate::{
@@ -50,6 +50,7 @@ impl Site {
         self.save_content(None).await?;
         Ok(())
     }
+
     #[async_recursion::async_recursion]
     async fn download_file_from_peer(
         &self,
@@ -80,13 +81,20 @@ impl Site {
                         "Error Downloading File {} from Peer, Error : {:?}",
                         inner_path, e
                     );
-                    error!("{}", err);
                     return Err(err.as_str().into());
                 } else {
-                    let bytes_downloaded = message.unwrap().body;
-                    downloaded += bytes_downloaded.len();
-                    debug!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
-                    bytes.extend_from_slice(&bytes_downloaded);
+                    match message? {
+                        Either::Success(msg) => {
+                            let bytes_downloaded = msg.body;
+                            downloaded += bytes_downloaded.len();
+                            trace!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
+                            bytes.extend_from_slice(&bytes_downloaded);
+                        }
+                        Either::Error(e) => {
+                            return Self::handle_error_response(&inner_path, e.error.as_str())
+                                .await;
+                        }
+                    }
                 }
             }
             Ok(bytes)
@@ -99,25 +107,46 @@ impl Site {
                     "Error Downloading File {} from Peer, Error : {:?}",
                     inner_path, e
                 );
-                error!("{}", err);
-                Err(err.as_str().into())
+                Self::handle_error_response(&inner_path, err.as_str()).await
             } else {
-                let msg = message.unwrap();
-                let bytes = msg.body;
-                if bytes.len() == msg.size {
-                    Ok(bytes)
-                } else {
-                    //TODO: Optimize this by reusing downloaded buffer
-                    self.download_file_from_peer(
-                        inner_path,
-                        Some(ZFile {
-                            sha512: "".into(),
-                            size: msg.size,
-                        }),
-                        peer,
-                    )
-                    .await
+                match message? {
+                    Either::Success(msg) => {
+                        let bytes = msg.body;
+                        if bytes.len() == msg.size {
+                            Ok(bytes)
+                        } else {
+                            //TODO: Optimize this by reusing downloaded buffer
+                            self.download_file_from_peer(
+                                inner_path,
+                                Some(ZFile {
+                                    sha512: "".into(),
+                                    size: msg.size,
+                                }),
+                                peer,
+                            )
+                            .await
+                        }
+                    }
+                    Either::Error(e) => {
+                        Self::handle_error_response(&inner_path, e.error.as_str()).await
+                    }
                 }
+            }
+        }
+    }
+
+    #[async_recursion::async_recursion] //Needed due to consumption fn are marked as async_recursion
+    async fn handle_error_response(inner_path: &str, error: &str) -> Result<ByteBuf, Error> {
+        match error {
+            "File read error" => {
+                return Err(Error::FileNotFound(inner_path.into()).into());
+            }
+            error => {
+                let err = format!(
+                    "Error Downloading File {} from Peer, Error : {:?}",
+                    inner_path, error
+                );
+                return Err(err.as_str().into());
             }
         }
     }
@@ -235,7 +264,7 @@ impl Site {
         let mut res = join_all(files).await;
         let errs = res.drain_filter(|res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
-            error!("{:?}", err);
+            error!("Downloading Site Files Error: {:?}", err);
         }
 
         Ok(())

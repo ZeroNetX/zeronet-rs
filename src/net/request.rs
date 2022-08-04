@@ -4,7 +4,7 @@ use serde_bytes::ByteBuf;
 use serde_json::Value;
 
 use decentnet_protocol::{
-    builders::request::*, interface::RequestImpl, message::RequestType, templates::*,
+    builders::request::*, interface::RequestImpl, message::RequestType, templates::*, Either,
 };
 
 use crate::{
@@ -43,7 +43,7 @@ impl<'a> RequestImpl for Protocol<'a> {
         file_size: usize,
         location: usize,
         read_bytes: Option<usize>,
-    ) -> Result<GetFileResponse, Self::Error> {
+    ) -> Result<Either<GetFileResponse, ErrorResponse>, Self::Error> {
         let builder = get_file(site, inner_path, file_size, location, read_bytes);
         let res = self
             .0
@@ -58,7 +58,7 @@ impl<'a> RequestImpl for Protocol<'a> {
         &mut self,
         site: String,
         inner_path: String,
-    ) -> Result<StreamFileResponse, Error> {
+    ) -> Result<Either<StreamFileResponse, ErrorResponse>, Error> {
         //TODO!: Remove default values from builder, size
         let builder = stream_file(site, inner_path, 0, 0, 0);
         let res = self
