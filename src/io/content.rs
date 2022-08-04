@@ -48,7 +48,7 @@ impl ContentMod for Site {
         private_key: &str,
     ) -> Result<(), Error> {
         let content = self.content_mut(inner_path).unwrap();
-        content.modified = current_unix_epoch() as usize;
+        content.modified = current_unix_epoch().into();
         let sign = content.sign(private_key.to_string());
         let address = zeronet_cryptography::privkey_to_pubkey(private_key)?;
         content.signs.insert(address, sign);

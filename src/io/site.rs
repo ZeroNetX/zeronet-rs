@@ -404,7 +404,7 @@ impl Site {
                 inner_path.to_owned(),
                 ByteBuf::from(content),
                 diff.unwrap_or_default(),
-                modified,
+                modified.into(),
             )
             .await;
         if let Err(err) = res {

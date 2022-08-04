@@ -357,7 +357,7 @@ impl ConnectionController {
                         } else {
                             let site_content_modified =
                                 site.content(Some(inner_path)).unwrap().modified;
-                            content_modified > site_content_modified
+                            content_modified > site_content_modified.into()
                         }
                     }
                 };
