@@ -39,7 +39,7 @@ impl UserIO for User {
             let users: HashMap<String, User> = serde_json::from_str(&content)?;
             let end_time = SystemTime::now();
             let duration = end_time.duration_since(start_time).unwrap();
-            info!("Loaded user in {} seconds", duration.as_secs());
+            trace!("Loaded user in {} seconds", duration.as_secs());
             Ok(users)
         }
     }
@@ -52,8 +52,8 @@ impl UserIO for User {
             error!("Couldn't save user: {:?}", err_msg);
             Err(err_msg)
         } else {
-            debug!(
-                "Saved in {}s",
+            trace!(
+                "Saved users.json in {}s",
                 SystemTime::now()
                     .duration_since(start_time)
                     .unwrap()

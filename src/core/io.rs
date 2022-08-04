@@ -8,7 +8,6 @@ pub trait SiteIO {
     fn content_path(&self) -> PathBuf;
     fn get_path(&self, inner_path: &str) -> Result<PathBuf, Error>;
     fn get_inner_path(&self, path: &str) -> Result<PathBuf, Error>;
-    // async fn content_exists(&self) -> Result<bool, Error>;
     async fn init_download(&mut self) -> Result<bool, Error>;
     async fn load_storage(path: &str) -> Result<bool, Error>;
     async fn save_storage(&self) -> Result<bool, Error>;

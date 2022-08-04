@@ -17,14 +17,6 @@ pub enum Error {
     ParseError,
 }
 
-// impl From<reqwest::Error> for Error {
-//     fn from(error: reqwest::Error) -> Error {
-//         match error {
-//             _ => Error::ReqwestError,
-//         }
-//     }
-// }
-
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Error {
         Error::IOError(error.to_string())
@@ -78,8 +70,6 @@ impl From<zeronet_cryptography::Error> for Error {
         Error::CryptError(error.to_string())
     }
 }
-
-// impl ResponseError for Error {}
 
 impl From<&str> for Error {
     fn from(string: &str) -> Error {

@@ -138,15 +138,13 @@ impl Site {
     #[async_recursion::async_recursion] //Needed due to consumption fn are marked as async_recursion
     async fn handle_error_response(inner_path: &str, error: &str) -> Result<ByteBuf, Error> {
         match error {
-            "File read error" => {
-                return Err(Error::FileNotFound(inner_path.into()).into());
-            }
+            "File read error" => Err(Error::FileNotFound(inner_path.into())),
             error => {
                 let err = format!(
                     "Error Downloading File {} from Peer, Error : {:?}",
                     inner_path, error
                 );
-                return Err(err.as_str().into());
+                Err(err.as_str().into())
             }
         }
     }
