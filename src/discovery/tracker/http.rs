@@ -22,6 +22,7 @@ pub async fn http_announce(
     info_hash: [u8; 20],
     port: u16,
     anounce_route: Option<&str>,
+    peer_id: &str,
 ) -> Result<Vec<IpPort>, Error> {
     let mut get: Vec<u8> = vec![];
     // prefix
@@ -36,7 +37,9 @@ pub async fn http_announce(
         base.push_str(&format!("%{:02x}", byte));
     }
     // append suffix of get request
-    base.push_str("&peer_id=-qB4250-rj6kZQu4P_Mh&port=");
+    base.push_str("&peer_id=");
+    base.push_str(peer_id);
+    base.push_str("&port=");
     base.push_str(&format!("{}", port));
     base.push_str("&uploaded=0&downloaded=0&left=1456927919\
     &corrupt=0&key=8B26698B&event=started&numwant=200&compact=1&no_peer_id=1&supportcrypto=1&redundant=0\

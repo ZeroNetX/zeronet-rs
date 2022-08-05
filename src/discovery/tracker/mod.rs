@@ -107,10 +107,16 @@ pub fn make_addr(addr: &str) -> Result<Addr, String> {
     }
 }
 
-pub async fn announce(addr: Addr, info_hash: [u8; 20], port: u16) -> Result<Vec<IpPort>, Error> {
+pub async fn announce(
+    addr: Addr,
+    info_hash: [u8; 20],
+    port: u16,
+    peer_id: &str,
+) -> Result<Vec<IpPort>, Error> {
+    println!("{:?}", addr);
     match addr {
-        Addr::Http(a) => http_announce(a, info_hash, port, None).await,
-        Addr::Udp(a) => udp_announce(a, info_hash, port).await,
+        Addr::Http(a) => http_announce(a, info_hash, port, None, peer_id).await,
+        Addr::Udp(a) => udp_announce(a, info_hash, port, peer_id).await,
     }
 }
 
@@ -133,7 +139,7 @@ mod tests {
         let site_addr = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk".to_string();
         let info_hash = get_info_hash(site_addr.to_string());
         let tracker_addr = make_addr(tracker_addr).unwrap();
-        let res = announce(tracker_addr, info_hash, 0).await;
+        let res = announce(tracker_addr, info_hash, 0, "-qB4250-rj6kZQu4P_Mh").await;
         assert!(res.is_ok());
         println!("{:?}", res.unwrap());
     }

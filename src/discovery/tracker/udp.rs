@@ -73,6 +73,7 @@ pub async fn udp_announce(
     addr: SocketAddr,
     info_hash: [u8; 20],
     port: u16,
+    peer_id: &str,
 ) -> Result<Vec<IpPort>, Error> {
     // set up udp socket
     let socket = UdpSocket::bind("0.0.0.0:0").await.unwrap();
@@ -98,13 +99,14 @@ pub async fn udp_announce(
     // deserialize struct and check tx id
     conresp = bincode::deserialize(&serresp).unwrap();
 
+    let peer_id = peer_id.as_bytes()[..20].try_into().unwrap();
     // init structs and serialize
     let announce_req = AnnounceReq {
         connection_id: conresp.connection_id,
         action: u32::to_be(1),
         transaction_id: random::<u32>(),
         info_hash,
-        peer_id: [1; 20],
+        peer_id,
         downloaded: 0,
         left: 0,
         uploaded: 0,
