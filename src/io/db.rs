@@ -311,18 +311,26 @@ impl DbManager {
     }
 
     fn handle_to_table_map(
-        to_table_list: &[ToTable],
+        to_table_list: &[EitherToTableType],
         json_id: i64,
         content: &HashMap<String, Value>,
         conn: &Connection,
     ) {
         for to_table in to_table_list {
-            let table = to_table.table.clone();
-            let node = to_table.node.clone().unwrap_or_else(|| table.clone());
-            let key_col = to_table.key_col.clone();
-            let value_col = to_table.val_col.clone();
-            let import_col = to_table.import_cols.clone();
-            let replaces = to_table.replaces.clone();
+            let (table, node, key_col, value_col, import_col, replaces) = match to_table {
+                EitherToTableType::String(to_table) => {
+                    (to_table.into(), to_table.into(), None, None, None, None)
+                }
+                EitherToTableType::ToTable(to_table) => {
+                    let table = to_table.table.clone();
+                    let node = to_table.node.clone().unwrap_or_else(|| table.clone());
+                    let key_col = to_table.key_col.clone();
+                    let value_col = to_table.val_col.clone();
+                    let import_col = to_table.import_cols.clone();
+                    let replaces = to_table.replaces.clone();
+                    (table, node, key_col, value_col, import_col, replaces)
+                }
+            };
             let value = &content[node.as_str()].clone();
 
             if let Value::Array(v) = value {

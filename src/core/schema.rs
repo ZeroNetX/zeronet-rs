@@ -3,6 +3,13 @@ use std::collections::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum EitherToTableType {
+    ToTable(ToTable),
+    String(String),
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DBSchema {
     pub db_name: String,
@@ -19,7 +26,7 @@ pub struct DBSchema {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FileMap {
     #[serde(default)]
-    pub to_table: Vec<ToTable>,
+    pub to_table: Vec<EitherToTableType>,
     #[serde(default)]
     pub to_keyvalue: Vec<String>,
     #[serde(default)]
