@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, VecDeque},
     path::{Path, PathBuf},
 };
 
@@ -107,7 +107,55 @@ impl DbManager {
             Self::db_exec(conn, &format!("DROP TABLE {}", table_name));
         });
         Self::db_exec(conn, "DROP TABLE json");
-        for (table_name, table) in tables {
+        let mut sorted_tables = Vec::<(String, Table)>::new();
+        let mut tables = tables.clone();
+        let mut sorted = false;
+        let mut initial = true;
+        while !sorted {
+            let need = ["keyvalue", "json"];
+            if initial {
+                for table_name in need {
+                    let table_name = table_name.to_string();
+                    sorted_tables.push((table_name.clone(), (&tables[&table_name]).clone()));
+                    tables.remove(&table_name);
+                }
+                initial = false;
+            }
+            for (table_name, table) in tables.clone() {
+                let ref_tables = |query: &str| {
+                    let mut parts = query.split("REFERENCES ").collect::<VecDeque<&str>>();
+                    let refs = {
+                        let mut refs = vec![];
+                        parts.pop_front();
+                        while let Some(part) = parts.pop_front() {
+                            let ref_ = part.split("(").next().unwrap().replace(" ", "");
+                            if !need.contains(&ref_.as_str()) {
+                                refs.push(ref_);
+                            }
+                        }
+                        refs
+                    };
+                    refs
+                };
+                let refs = ref_tables(&table.to_query(&table_name));
+                let keys = sorted_tables
+                    .iter()
+                    .map(|(name, _)| name)
+                    .collect::<Vec<_>>();
+                for ref_table in refs {
+                    if !keys.contains(&&ref_table) {
+                        continue;
+                    }
+                }
+                let table_name = table_name.to_string();
+                if !keys.contains(&&table_name) {
+                    sorted_tables.push((table_name.clone(), tables[&table_name].clone()));
+                    tables.remove(&table_name);
+                }
+            }
+            sorted = tables.is_empty();
+        }
+        for (table_name, table) in sorted_tables {
             let query = table.to_query(&table_name);
 
             Self::db_exec(conn, &query);
