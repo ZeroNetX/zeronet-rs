@@ -610,11 +610,13 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "base64",
+ "koibumi-base32",
  "rmp-serde",
  "serde",
  "serde_bytes",
  "serde_json",
  "thiserror",
+ "tor-stream 0.3.0 (git+https://github.com/decentnetwork/tor-stream.git)",
 ]
 
 [[package]]
@@ -1896,6 +1898,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tor-stream"
+version = "0.3.0"
+source = "git+https://github.com/decentnetwork/tor-stream.git#14cca2e2dd5b66d4419143c2c7155e47f3147b14"
+dependencies = [
+ "lazy_static",
+ "socks",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2159,7 +2170,7 @@ dependencies = [
  "sha2 0.10.2",
  "time",
  "tokio",
- "tor-stream",
+ "tor-stream 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "uuid",
  "zeronet_cryptography",
  "zeronet_protocol",
