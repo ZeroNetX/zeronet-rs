@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_recursion::async_recursion;
-use log::{debug, error};
+use log::*;
 use regex::Regex;
 use rusqlite::{params, Connection};
 use serde_json::Value;
@@ -379,7 +379,12 @@ impl DbManager {
                     (table, node, key_col, value_col, import_col, replaces)
                 }
             };
-            let value = &content[node.as_str()].clone();
+            let value = content.get(&node);
+            if value.is_none() {
+                continue;
+            }
+
+            let value = value.unwrap();
 
             if let Value::Array(v) = value {
                 if v.is_empty() {
@@ -599,19 +604,22 @@ impl DbManager {
         conn: &Connection,
     ) {
         for key in keyvalue {
-            let value: &Value = &content[key];
-            if let Some(value) = value.as_u64() {
-                let query = format!(
-                    "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', {}, {})",
-                    key, value, json_id
-                );
-                Self::db_exec(conn, &query);
-            } else if let Some(value) = value.as_str() {
-                let query = format!(
-                    "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', '{}', {})",
-                    key, value, json_id
-                );
-                Self::db_exec(conn, &query);
+            if let Some(value) = content.get(key) {
+                if let Some(value) = value.as_u64() {
+                    let query = format!(
+                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', {}, {})",
+                        key, value, json_id
+                    );
+                    Self::db_exec(conn, &query);
+                } else if let Some(value) = value.as_str() {
+                    let query = format!(
+                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', '{}', {})",
+                        key, value, json_id
+                    );
+                    Self::db_exec(conn, &query);
+                }
+            } else {
+                warn!("Data missing for {} in json {}", key, json_id);
             }
         }
     }
