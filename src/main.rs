@@ -26,6 +26,7 @@ async fn main() -> Result<(), Error> {
     //TODO! Replace with file based logger with public release.
     pretty_env_logger::init();
     let user_storage = &*USER_STORAGE;
+    let site_storage = &*SITE_STORAGE;
     let mut db_manager = DbManager::new();
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
@@ -33,6 +34,9 @@ async fn main() -> Result<(), Error> {
         if let Some(mut site_args) = _args.values_of("site") {
             let site_addr = site_args.next().unwrap();
             let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
+            if let Some(storage) = site_storage.get(site_addr).cloned() {
+                site.modify_storage(storage);
+            }
             match cmd {
                 "siteNeedFile" => {
                     let inner_path = site_args.next().unwrap();
@@ -73,6 +77,7 @@ async fn main() -> Result<(), Error> {
                     warn!("Unknown command: {}", cmd);
                 }
             }
+            user.get_site_data(site_addr, true);
         } else if let Some(mut peer_args) = _args.values_of("peer") {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);
@@ -95,7 +100,6 @@ async fn main() -> Result<(), Error> {
         let conn = DbManager::connect_db_from_path(&ENV.data_path.join("content.db"))?;
         db_manager.insert_connection("content_db", conn);
         let mut controller = SitesController::new(db_manager);
-        let site_storage = &*SITE_STORAGE;
         controller
             .extend_sites_from_sitedata(site_storage.clone())
             .await;

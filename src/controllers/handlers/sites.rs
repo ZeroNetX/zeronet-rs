@@ -181,7 +181,7 @@ impl Handler<SiteInfoRequest> for Site {
         if !self.content_exists() {
             let _ = self.load_content();
         }
-        let mut content = self.content(None).unwrap_or_default().raw().clone();
+        let mut content = self.content(None).unwrap_or_default().raw();
         if let Value::Object(map) = &mut content {
             for key in &["sign", "signs", "signers_sign"] {
                 if map.contains_key(*key) {
