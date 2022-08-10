@@ -14,6 +14,22 @@ use crate::{
     plugins::web::websocket::events::RegisterChannels,
 };
 
+pub fn handle_cert_add(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_cert_select(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
 pub fn handle_site_info(
     ws: &ZeruWebsocket,
     _: &mut WebsocketContext<ZeruWebsocket>,
@@ -142,6 +158,70 @@ pub fn handle_channel_join_all_site(
 ) -> Result<Message, Error> {
     debug!("Handling ChannelJoinAllsite request using dummy response");
     command.respond(String::from("ok"))
+}
+
+pub fn handle_site_sign(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_publish(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_reload(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_update(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_bad_files(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_list_modified_files(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_pause(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_site_delete(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
 }
 
 #[derive(Serialize)]

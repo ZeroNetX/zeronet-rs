@@ -260,21 +260,30 @@ impl ZeruWebsocket {
             match cmd {
                 Ping => handle_ping(ctx, command),
                 ServerInfo => handle_server_info(self, ctx, command),
+                CertAdd => handle_cert_add(self, ctx, command),
+                CertSelect => handle_cert_select(self, ctx, command),
                 SiteInfo => handle_site_info(self, ctx, command),
+                SiteSign => handle_site_sign(self, ctx, command),
+                SitePublish => handle_site_publish(self, ctx, command),
+                SiteUpdate => handle_site_update(self, ctx, command),
+                SiteBadFiles => handle_site_bad_files(self, ctx, command),
+                SiteListModifiedFiles => handle_site_list_modified_files(self, ctx, command),
+                SiteReload => handle_site_reload(self, ctx, command),
                 ChannelJoin => handle_channel_join(self, ctx, command),
                 DbQuery => handle_db_query(self, ctx, command),
+
                 FileGet => handle_file_get(self, ctx, command),
+                FileNeed => handle_file_need(self, ctx, command),
                 FileRules => handle_file_rules(self, ctx, command),
+                FileQuery => handle_file_query(self, ctx, command),
+                FileWrite => handle_file_write(self, ctx, command),
+                FileDelete => handle_file_delete(self, ctx, command),
+                FileList => handle_file_list(self, ctx, command),
+                DirList => handle_dir_list(self, ctx, command),
                 UserGetSettings => handle_user_get_settings(self, ctx, command),
                 UserSetSettings => handle_user_set_settings(self, ctx, command),
                 UserGetGlobalSettings => handle_user_get_global_settings(self, ctx, command),
                 AnnouncerInfo => handle_announcer_info(self, ctx, command),
-                _ => {
-                    debug!("Unhandled Ui command: {:?}", command.cmd);
-                    return Err(Error {
-                        error: "Unhandled command".to_string(),
-                    });
-                }
             }
         } else if let CommandType::Admin(cmd) = &command.cmd {
             if !self.is_admin_site()? {
@@ -287,6 +296,8 @@ impl ZeruWebsocket {
                 ChannelJoinAllsite => handle_channel_join_all_site(self, ctx, command),
                 SiteList => handle_site_list(self, ctx, command),
                 UserSetGlobalSettings => handle_user_set_global_settings(self, ctx, command),
+                SitePause => handle_site_pause(self, ctx, command),
+                SiteDelete => handle_site_delete(self, ctx, command),
                 _ => {
                     debug!("Unhandled Admin command: {:?}", command.cmd);
                     return Err(Error {

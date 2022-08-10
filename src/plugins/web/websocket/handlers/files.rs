@@ -11,6 +11,14 @@ use crate::{
     environment::ENV,
 };
 
+pub fn handle_file_need(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
 pub fn handle_file_get(
     ws: &ZeruWebsocket,
     _: &mut WebsocketContext<ZeruWebsocket>,
@@ -70,4 +78,44 @@ pub fn handle_file_rules(
         rules = Some(json!({"":""}));
     }
     command.respond(rules.unwrap())
+}
+
+pub fn handle_file_query(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_file_write(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_file_delete(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_file_list(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
+}
+
+pub fn handle_dir_list(
+    _: &ZeruWebsocket,
+    _: &mut WebsocketContext<ZeruWebsocket>,
+    _: &Command,
+) -> Result<Message, Error> {
+    unimplemented!("Please File a Bug Report")
 }
