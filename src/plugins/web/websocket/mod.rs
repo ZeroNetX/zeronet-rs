@@ -251,7 +251,11 @@ impl ZeruWebsocket {
         ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
         command: &Command,
     ) -> Result<(), Error> {
-        // info!("Handling command: {:?}", command.cmd);
+        trace!(
+            "Handling command: {:?} with params: {:?}",
+            command.cmd,
+            command.params
+        );
         let response = if let CommandType::UiServer(cmd) = &command.cmd {
             match cmd {
                 Ping => handle_ping(ctx, command),

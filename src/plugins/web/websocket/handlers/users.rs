@@ -84,8 +84,7 @@ pub fn handle_user_get_global_settings(
     command: &Command,
 ) -> Result<Message, Error> {
     let user = get_current_user(ws)?;
-    let user_settings = user.settings;
-    command.respond(serde_json::to_string(&user_settings)?)
+    command.respond(user.settings)
 }
 
 pub fn handle_user_set_global_settings(
@@ -93,11 +92,14 @@ pub fn handle_user_set_global_settings(
     _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
+    info!("Handling UserSetGlobalSettings");
     if let Value::Array(value) = command.params.clone() {
         let content_map = value.first();
-        if let Some(Value::String(content_map)) = content_map {
-            println!("{}", content_map);
-            let settings = serde_json::from_str(content_map)?;
+        if let Some(Value::Object(settings)) = content_map {
+            let settings = settings
+                .to_owned()
+                .into_iter()
+                .collect::<HashMap<String, Value>>();
             let mut content_map = HashMap::new();
             content_map.insert(ws.address.clone(), settings);
             let _ = block_on(ws.user_controller.send(UserSettings {

@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 use actix::{Actor, Context, Handler, Message};
+use futures::executor::block_on;
 use serde_json::Value;
 
 use crate::{
     controllers::users::UserController,
     core::{
         address::Address,
+        io::UserIO,
         user::{models::SiteData, User},
     },
 };
@@ -57,6 +59,7 @@ impl Handler<UserSettings> for UserController {
             if msg.global {
                 let setting = msg.settings.unwrap();
                 user.settings = setting.values().next().unwrap().clone();
+                let _ = block_on(user.save());
                 None
             } else if msg.set {
                 let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
