@@ -51,7 +51,7 @@ jobs:
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: zeronet
-          include: CHANGELOG.md, COPYING, README.md, ui
+          include: CHANGELOG.md, LICENSE.md, README.md, ui
           archive: ZeroNetX-linux-x64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -61,7 +61,7 @@ jobs:
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: zeronet
-          include: CHANGELOG.md, COPYING, README.md, ui
+          include: CHANGELOG.md, LICENSE.md, README.md, ui
           archive: ZeroNetX-mac-x64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: zeronet
-          include: CHANGELOG.md, COPYING, README.md, ui
+          include: CHANGELOG.md, LICENSE.md, README.md, ui
           archive: ZeroNetX-windows-x64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

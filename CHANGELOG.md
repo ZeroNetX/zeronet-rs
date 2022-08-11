@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.1.0-patch] - 2022-08-11
-
+- Rename COPYING to LICENSE.md
 - Most of these are Github Action Changes for Binary Releases
 - Include CHANGELOG.md, COPYING, README.md, ui directory with each release
 - Name Build Steps 
