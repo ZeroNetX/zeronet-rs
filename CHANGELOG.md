@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.0.1] - 2022-08-11
+## [0.1.0] - 2022-08-11
 
 - Added CHANGELOG.md
 - Automoted Public Releases via GitHub Actions.
