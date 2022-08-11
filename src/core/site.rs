@@ -44,6 +44,7 @@ pub mod models {
         #[serde(flatten)]
         pub settings: SiteSettings,
         pub cache: SiteCache,
+        #[serde(skip_serializing, skip_deserializing)]
         pub plugin_storage: SitePluginStorage,
     }
 
@@ -57,7 +58,7 @@ pub mod models {
         pub piecefields: BTreeMap<String, String>,
     }
 
-    #[derive(Serialize, Deserialize, Debug, Default, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
     pub struct SitePluginStorage {
         #[serde(default, skip_serializing_if = "is_default")]
         pub data: HashMap<String, serde_json::Value>,

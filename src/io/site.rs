@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
+    time::SystemTime,
 };
 
 use futures::future::join_all;
@@ -8,8 +9,8 @@ use log::*;
 use serde_bytes::ByteBuf;
 use serde_json::Value;
 use tokio::{
-    fs::{self, File},
-    io::AsyncWriteExt,
+    fs::{self, remove_file, File},
+    io::{AsyncReadExt, AsyncWriteExt},
 };
 
 use decentnet_protocol::{interface::RequestImpl, Either};
@@ -481,6 +482,31 @@ impl SiteIO for Site {
     }
 
     async fn save_storage(&self) -> Result<bool, Error> {
-        unimplemented!()
+        trace!("Saving site storage");
+        let mut storage = self.storage.clone();
+        if self.address() == ENV.homepage {
+            storage.settings.permissions.push("ADMIN".into());
+        }
+        let start_time = SystemTime::now();
+        let file_path = ENV.data_path.join("sites.json");
+        let mut file = File::open(&file_path).await?;
+        let mut content = String::new();
+        file.read_to_string(&mut content).await?;
+        remove_file(file_path).await?;
+        let file_path = ENV.data_path.join("sites.json");
+        let mut file = File::create(&file_path).await?;
+        let mut sites: HashMap<String, serde_json::Value> = serde_json::from_str(&content)?;
+        sites.insert(self.address(), serde_json::to_value(storage)?);
+        let bytes = serde_json::to_vec_pretty(&sites)?;
+        let len = file.write(&bytes).await?;
+        assert_eq!(len, bytes.len());
+        debug!(
+            "Saved sites.json in {}s",
+            SystemTime::now()
+                .duration_since(start_time)
+                .unwrap()
+                .as_secs_f32()
+        );
+        Ok(true)
     }
 }

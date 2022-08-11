@@ -172,7 +172,10 @@ pub fn load_users_file() -> HashMap<String, User> {
         let res = std::fs::File::create(users_file);
         if let Ok(mut file) = res {
             let _ = file.write(b"{}");
-            let user = User::new();
+            let mut user = User::new();
+            user.settings.insert("theme".to_string(), "light".into());
+            user.settings
+                .insert("use_system_theme".to_string(), true.into());
             let res = block_on(user.save());
             if res.is_ok() {
                 users.insert(user.master_address.clone(), user);

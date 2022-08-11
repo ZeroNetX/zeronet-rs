@@ -16,7 +16,7 @@ use log::*;
 use crate::{
     common::*,
     controllers::{connections::ConnectionController, sites::SitesController, *},
-    core::{error::Error, site::Site},
+    core::{error::Error, io::SiteIO, site::Site},
     environment::*,
     io::db::DbManager,
 };
@@ -78,6 +78,10 @@ async fn main() -> Result<(), Error> {
                 }
             }
             user.get_site_data(site_addr, true);
+            let mut storage = site.storage.clone();
+            storage.settings.serving = true;
+            site.modify_storage(storage);
+            site.save_storage().await?;
         } else if let Some(mut peer_args) = _args.values_of("peer") {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);

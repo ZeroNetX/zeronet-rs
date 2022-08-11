@@ -165,7 +165,7 @@ fn get_matches() -> ArgMatches {
             //     .help("Open homepage in web browser automatically"),
             Arg::new("HOMEPAGE")
                 .long("homepage")
-                .default_value("/1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
+                .default_value("1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d")
                 .help("Web interface Homepage"),
             Arg::new("ACCESS_KEY")
                 .long("access_key")

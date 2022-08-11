@@ -1,6 +1,14 @@
 # Changelog
 
+## [0.1.1] - Unreleased
+
+- Save Site Storage to  sites.json when Site is Downloaded
+- Set Site Serving to true in Storage by def when Site is Downloaded
+- Set Def theme when user is created
+- remove "/" from Def ZeroNet homepage addr in env def homepage
+
 ## [0.1.0-patch] - 2022-08-11
+
 - Rename COPYING to LICENSE.md
 - Most of these are Github Action Changes for Binary Releases
 - Include CHANGELOG.md, COPYING, README.md, ui directory with each release
