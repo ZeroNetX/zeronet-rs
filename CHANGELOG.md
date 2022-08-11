@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.1] - Unreleased
+## [0.1.1] - 2022-08-12
 
 - Save Site Storage to  sites.json when Site is Downloaded
 - Set Site Serving to true in Storage by def when Site is Downloaded

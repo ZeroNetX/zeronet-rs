@@ -2,7 +2,7 @@
 authors = ["canewsin <canews.in@gmail.com>"]
 edition = "2021"
 name = "zeronet"
-version = "0.1.0"
+version = "0.1.1"
 
 [dependencies]
 async-recursion = "1.0.0"
