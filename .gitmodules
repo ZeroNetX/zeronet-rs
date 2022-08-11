@@ -1,6 +1,0 @@
-[submodule "zeronet_protocol"]
-	path = zeronet_protocol
-	url = https://github.com/decentnetwork/zeronet_protocol.git
-[submodule "decentnet_protocol"]
-	path = decentnet_protocol
-	url = https://github.com/decentnetwork/decentnet_protocol.git

@@ -54,13 +54,14 @@ version = "1.17.0"
 git = "https://github.com/decentnetwork/zeronet_cryptography.git"
 
 [dependencies.zeronet_protocol]
-path = "./zeronet_protocol"
+git = "https://github.com/decentnetwork/zeronet_protocol.git"
+branch = "decentnet"
 
 [dependencies.zerucontent]
 git = "https://github.com/decentnetwork/zerucontent.git"
 
 [dependencies.decentnet_protocol]
-path = "./decentnet_protocol"
+git = "https://github.com/decentnetwork/decentnet_protocol.git"
 features = ["full"]
 
 [features]

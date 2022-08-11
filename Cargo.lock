@@ -607,6 +607,7 @@ dependencies = [
 [[package]]
 name = "decentnet_protocol"
 version = "0.1.0"
+source = "git+https://github.com/decentnetwork/decentnet_protocol.git#0bde4c5e600f5487c58cd1a25e094ab23e7c943e"
 dependencies = [
  "async-trait",
  "base64",
@@ -2194,6 +2195,7 @@ dependencies = [
 [[package]]
 name = "zeronet_protocol"
 version = "0.1.10"
+source = "git+https://github.com/decentnetwork/zeronet_protocol.git?branch=decentnet#9ce8fabb17b7426a601f46136297de581d691413"
 dependencies = [
  "base64",
  "decentnet_protocol",
