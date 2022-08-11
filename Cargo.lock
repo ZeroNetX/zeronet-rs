@@ -2180,6 +2180,7 @@ dependencies = [
 [[package]]
 name = "zeronet_cryptography"
 version = "0.2.0"
+source = "git+https://github.com/decentnetwork/zeronet_cryptography.git#750d47698c45946f0f60a033553088ef995f3c22"
 dependencies = [
  "base64",
  "bitcoin 0.25.2",
@@ -2213,6 +2214,7 @@ dependencies = [
 [[package]]
 name = "zerucontent"
 version = "0.1.0"
+source = "git+https://github.com/decentnetwork/zerucontent.git#be781a555cefa6a97b6d8de6a052b8c4909ae54e"
 dependencies = [
  "json_filter_sorted",
  "serde",

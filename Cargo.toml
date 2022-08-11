@@ -51,13 +51,13 @@ features = ["full"]
 version = "1.17.0"
 
 [dependencies.zeronet_cryptography]
-path = "./zeronet_cryptography"
+git = "https://github.com/decentnetwork/zeronet_cryptography.git"
 
 [dependencies.zeronet_protocol]
 path = "./zeronet_protocol"
 
 [dependencies.zerucontent]
-path = "./zerucontent"
+git = "https://github.com/decentnetwork/zerucontent.git"
 
 [dependencies.decentnet_protocol]
 path = "./decentnet_protocol"
