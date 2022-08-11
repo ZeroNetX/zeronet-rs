@@ -8,6 +8,9 @@ on:
     tags:
       - v[0-9]+.*
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -28,15 +31,52 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1.0.7
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+      
+      - name: Checkingout Repo
+        uses: actions/checkout@v3
+      
+      - name: Setting Nightly Rust Toolchain
+        uses: actions-rs/toolchain@v1.0.7
         with:
           profile: minimal
           toolchain: nightly
           override: true
-      - uses: taiki-e/upload-rust-binary-action@v1
+      
+      - name: Building Linux Binaries and Uploading to Releases
+        if: matrix.os == 'ubuntu-latest'
+        uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: zeronet
-          archive: $bin-$tag-$target
+          include: CHANGELOG.md, COPYING, README.md, ui
+          archive: ZeroNetX-linux-x64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Building Mac OS Binaries and Uploading to Releases
+        if: matrix.os == 'macos-latest'
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: zeronet
+          include: CHANGELOG.md, COPYING, README.md, ui
+          archive: ZeroNetX-mac-x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Building Windows Binaries and Uploading to Releases
+        if: matrix.os == 'windows-latest'
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: zeronet
+          include: CHANGELOG.md, COPYING, README.md, ui
+          archive: ZeroNetX-windows-x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Saving Artifact to Cache
+        uses: Swatinem/rust-cache@v1.3.0
+        with:
+          key: ${{ matrix.os }}
