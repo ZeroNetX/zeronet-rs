@@ -1,9 +1,4 @@
-use std::{
-    fs::File,
-    io::Read,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{fs::File, io::Read, path::Path, str::FromStr};
 
 use actix_files::NamedFile;
 use actix_web::{HttpRequest, HttpResponse, Responder, Result};
@@ -17,7 +12,7 @@ use crate::{
         users::UserSettings,
     },
     core::{address::Address, error::Error},
-    environment::ENV,
+    environment::{DEF_MEDIA_PATH, DEF_TEMPLATES_PATH, ENV},
 };
 
 use super::server::ZeroServer;
@@ -146,7 +141,8 @@ pub async fn serve_wrapper(
 
     let postmessage_nonce_security = format!("{}", content.postmessage_nonce_security);
 
-    let path = PathBuf::from("./ui/templates/wrapper.html");
+    let mut path = (&*DEF_TEMPLATES_PATH).to_owned();
+    path.push("wrapper.html");
 
     let sandbox_permissions = "".into();
 
@@ -250,7 +246,7 @@ pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
 
 fn serve_uimedia_file(inner_path: &str) -> Result<NamedFile, Error> {
     trace!("Serving uimedia file: {:?}", inner_path);
-    let mut file_path = PathBuf::from("./ui/media");
+    let mut file_path = (&*DEF_MEDIA_PATH).to_owned();
 
     //TODO!: InFallible Handling of files
     match inner_path {

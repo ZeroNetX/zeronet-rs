@@ -6,6 +6,10 @@
 - Set Site Serving to true in Storage by def when Site is Downloaded
 - Set Def theme when user is created
 - remove "/" from Def ZeroNet homepage addr in env def homepage
+- Moved Site Files from ui to assets
+- Provide Default peers.txt(onion peers) and trackers.txt(onion trackers, currently empty) via assets
+- Use New Default peers and tracker for commuincation
+- This release depends on tor, user needs to deploy tor on his Operating System before running ZeroNet for Communication to work.
 
 ## [0.1.0-patch] - 2022-08-11
 

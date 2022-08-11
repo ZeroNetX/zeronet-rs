@@ -9,7 +9,7 @@ use decentnet_protocol::{address::PeerAddr, interface::RequestImpl};
 use crate::{
     controllers::sites::SitesController,
     core::{error::Error, io::*, peer::*, site::*, user::*},
-    environment::ENV,
+    environment::{DEF_PEERS_FILE_PATH, ENV},
     io::db::DbManager,
     net::Protocol,
     utils,
@@ -32,13 +32,6 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
     let mut site = Site::new(&site_data.address, ENV.data_path.clone())?;
     site.create(site_data.index.unwrap(), &site_data.get_privkey().unwrap())
         .await?;
-    Ok(())
-}
-
-pub async fn find_peers(site: &mut Site) -> Result<(), Error> {
-    let connections = site.find_peers().await?;
-    let mut connectable_peers = connections.iter().map(|peer| peer.address().to_string());
-    save_peers(&mut connectable_peers).await;
     Ok(())
 }
 
@@ -72,7 +65,6 @@ pub async fn db_query(
 }
 
 pub async fn download_site(site: &mut Site) -> Result<(), Error> {
-    add_peers_to_site(site).await?;
     info!("Downloading Site");
     site.init_download().await?;
     Ok(())
@@ -121,7 +113,6 @@ pub async fn site_file_edit(site: &mut Site, inner_path: String) -> Result<(), E
 }
 
 pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), Error> {
-    let _ = add_peers_to_site(site).await;
     site.load_content().await?;
     let inner_path = content.unwrap_or("content.json");
     let path = site.site_path();
@@ -149,7 +140,6 @@ pub async fn site_update(site: &mut Site, content: Option<&str>) -> Result<(), E
 }
 
 pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), Error> {
-    add_peers_to_site(site).await?;
     let download = if inner_path == "content.json" {
         true
     } else {
@@ -189,7 +179,6 @@ pub async fn peer_ping(addr: &str) -> Result<(), Error> {
 }
 
 pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
-    add_peers_to_site(site).await?;
     site.load_content().await?;
     let mut peers_cons = vec![];
     let peers = site.fetch_peers().await?;
@@ -209,7 +198,6 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
 }
 
 pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
-    add_peers_to_site(site).await?;
     site.load_content().await?;
     let modified = site.content(None).unwrap().modified;
     info!("{:?}", modified);
@@ -236,7 +224,9 @@ pub async fn add_peers_to_site(site: &mut Site) -> Result<(), Error> {
 }
 
 pub async fn save_peers(peers: &mut impl Iterator<Item = String>) {
-    let mut file = tokio::fs::File::create("data/peers.txt").await.unwrap();
+    let mut file = tokio::fs::File::create(&*DEF_PEERS_FILE_PATH)
+        .await
+        .unwrap();
     let peers = peers.join("\n");
     let _ = file.write(peers.as_bytes()).await.unwrap();
 }

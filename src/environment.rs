@@ -11,6 +11,11 @@ use crate::{
 };
 
 lazy_static! {
+    pub static ref DEF_ASSETS_PATH: PathBuf = PathBuf::from("assets/");
+    pub static ref DEF_PEERS_FILE_PATH: PathBuf = DEF_ASSETS_PATH.join("peers.txt");
+    pub static ref DEF_TRACKERS_FILE_PATH: PathBuf = DEF_ASSETS_PATH.join("trackers.txt");
+    pub static ref DEF_MEDIA_PATH: PathBuf = DEF_ASSETS_PATH.join("media/");
+    pub static ref DEF_TEMPLATES_PATH: PathBuf = DEF_ASSETS_PATH.join("templates/");
     pub static ref CURRENT_DIR: PathBuf = current_dir().unwrap();
     pub static ref DEF_DATA_DIR: String = CURRENT_DIR.join("data").to_str().unwrap().to_string();
     pub static ref DEF_LOG_DIR: String = CURRENT_DIR.join("log").to_str().unwrap().to_string();

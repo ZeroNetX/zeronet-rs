@@ -24,7 +24,7 @@ use crate::{
             User,
         },
     },
-    environment::ENV,
+    environment::{DEF_PEERS_FILE_PATH, DEF_TRACKERS_FILE_PATH, ENV},
 };
 
 pub fn current_unix_epoch() -> u64 {
@@ -298,7 +298,11 @@ pub fn load_sites_file() -> HashMap<String, SiteStorage> {
 }
 
 pub async fn load_peers() -> Vec<String> {
-    let mut file = File::open("data/peers.txt").await.unwrap();
+    let file = Path::new(&*DEF_PEERS_FILE_PATH);
+    if !file.exists() {
+        return vec![];
+    }
+    let mut file = File::open(file).await.unwrap();
     let mut buf = vec![];
     tokio::io::AsyncReadExt::read_to_end(&mut file, &mut buf)
         .await
@@ -311,7 +315,10 @@ pub async fn load_peers() -> Vec<String> {
 }
 
 pub fn load_trackers() -> Vec<String> {
-    let mut file = Path::new("data/trackers.txt");
+    let mut file = Path::new(&*DEF_TRACKERS_FILE_PATH);
+    if !file.exists() {
+        return vec![];
+    }
     let buf = read(&mut file).unwrap();
     let mut trackers = vec![];
     for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {

@@ -38,6 +38,41 @@ async fn main() -> Result<(), Error> {
                 site.modify_storage(storage);
             }
             match cmd {
+                "siteFindPeers" | "siteNeedFile" | "siteDownload" | "siteUpdate"
+                | "sitePeerExchange" | "siteFetchChanges" => {
+                    add_peers_to_site(&mut site).await?;
+                    let mut found_connectable_peer = false;
+                    while !found_connectable_peer {
+                        let peer_id = (&site.peers.keys().next()).unwrap().clone();
+                        let peer = site.peers.values_mut().next().unwrap();
+                        let conn = peer.connection_mut().unwrap();
+                        let mut protocol = net::Protocol::new(conn);
+                        use decentnet_protocol::{interface::RequestImpl, Either};
+                        let res = protocol
+                            .get_file(site_addr.into(), "content.json".into(), 0, 0, Some(1))
+                            .await;
+                        if let Ok(res) = res {
+                            match res {
+                                Either::Success(_) => {
+                                    found_connectable_peer = true;
+                                }
+                                Either::Error(err) => {
+                                    if err.error == "Unknown site" {
+                                        debug!("Site Not Served by Peer Querying Next Peer");
+                                    } else {
+                                        error!("Unknown Error : {}", err.error);
+                                    }
+                                    site.peers.remove(&peer_id);
+                                }
+                            }
+                        } else {
+                            error!("Communication Error {:#?}", res);
+                        }
+                    }
+                }
+                _ => {}
+            }
+            match cmd {
                 "siteNeedFile" => {
                     let inner_path = site_args.next().unwrap();
                     site_need_file(&mut site, inner_path.into()).await?
@@ -70,7 +105,14 @@ async fn main() -> Result<(), Error> {
                 "dbQuery" => {
                     db_query(&mut site, &mut db_manager, site_args.next().unwrap()).await?
                 }
-                "siteFindPeers" => find_peers(&mut site).await?,
+                "siteFindPeers" => {
+                    let mut connectable_peers = site
+                        .peers
+                        .values()
+                        .into_iter()
+                        .map(|peer| peer.address().to_string());
+                    save_peers(&mut connectable_peers).await;
+                }
                 "sitePeerExchange" => peer_exchange(&mut site).await?,
                 "siteFetchChanges" => fetch_changes(&mut site).await?,
                 _ => {
