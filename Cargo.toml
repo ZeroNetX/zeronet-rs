@@ -37,6 +37,7 @@ futures-util = "0.3.21"
 html-escape = "0.2.11"
 actix-web-actors = "4.1.0"
 rayon = "1.5.3"
+mut_static = "5.0.0"
 
 [dependencies.rusqlite]
 features = ["serde_json", "bundled"]
@@ -63,6 +64,10 @@ git = "https://github.com/decentnetwork/zerucontent.git"
 [dependencies.decentnet_protocol]
 git = "https://github.com/decentnetwork/decentnet_protocol.git"
 features = ["full"]
+
+[dependencies.wit-bindgen-wasmer]
+git = "https://github.com/wasmerio/wit-bindgen.git"
+branch="wasmer"
 
 [features]
 default = ["userio", "blockstorage"]

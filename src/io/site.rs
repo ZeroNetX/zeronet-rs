@@ -19,10 +19,10 @@ use zerucontent::{Content, File as ZFile};
 use crate::{
     core::{error::*, io::*, peer::*, site::*},
     discovery::tracker::IpPort,
-    environment::ENV,
+    environment::{ENV, PATH_PROVIDER_PLUGINS},
     io::utils::check_file_integrity,
     net::Protocol,
-    plugins::BlockStorage,
+    plugins::*,
 };
 
 impl Site {
@@ -166,9 +166,9 @@ impl Site {
         _peer: Option<Peer>,
     ) -> Result<bool, Error> {
         let (parent, path) = if let Some(file) = file.clone() {
-            if cfg!(feature = "blockstorage") && Self::use_block_storage() {
-                let file_path = BlockStorage::get_block_file_path(self, &file.sha512);
-                let parent = BlockStorage::get_block_storage_path(self);
+            if !PATH_PROVIDER_PLUGINS.read().unwrap().is_empty() {
+                let file_path = get_file_path(&file.sha512).into();
+                let parent: PathBuf = get_storage_path().into();
                 (parent, file_path)
             } else {
                 let path = self.site_path().join(&inner_path);
@@ -311,13 +311,12 @@ impl Site {
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
             let hash = file.sha512.clone();
-            let (site_path, inner_path) =
-                if cfg!(feature = "blockstorage") && Self::use_block_storage() {
-                    let path = BlockStorage::get_block_storage_path(self);
-                    (path, hash.clone())
-                } else {
-                    (self.site_path(), inner_path)
-                };
+            let (site_path, inner_path) = if !PATH_PROVIDER_PLUGINS.read().unwrap().is_empty() {
+                let path = get_storage_path().into();
+                (path, hash.clone())
+            } else {
+                (self.site_path(), inner_path)
+            };
             let task = check_file_integrity(site_path, inner_path, hash);
             tasks.push(task);
         }
