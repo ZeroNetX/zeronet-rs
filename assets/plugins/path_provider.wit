@@ -1,0 +1,3 @@
+get-storage-path: func(data-path: string) -> string
+
+get-file-path: func(data-path: string, block-id: string) -> string

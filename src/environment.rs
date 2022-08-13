@@ -1,16 +1,21 @@
+use std::{collections::HashMap, env::current_dir, fs, path::PathBuf, str::FromStr};
+
 use clap::{Arg, ArgMatches, Command};
 use lazy_static::lazy_static;
+use mut_static::MutStatic;
 use rand::Rng;
 use serde_json::json;
-use std::{collections::HashMap, env::current_dir, fs, path::PathBuf, str::FromStr};
 
 use crate::{
     core::{error::Error, site::models::SiteStorage, user::User},
     io::utils::{load_sites_file, load_trackers, load_users_file},
+    plugins::*,
     utils::gen_peer_id,
 };
 
 lazy_static! {
+    pub static ref PLUGINS: Vec<Plugin> = load_plugins();
+    pub static ref PATH_PROVIDER_PLUGINS: MutStatic<Vec<PathProviderPlugin>> = load_path_provider_plugins();
     pub static ref DEF_ASSETS_PATH: PathBuf = PathBuf::from("assets/");
     pub static ref DEF_PEERS_FILE_PATH: PathBuf = DEF_ASSETS_PATH.join("peers.txt");
     pub static ref DEF_TRACKERS_FILE_PATH: PathBuf = DEF_ASSETS_PATH.join("trackers.txt");
