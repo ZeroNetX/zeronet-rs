@@ -46,7 +46,7 @@ fn build_app(shared_data: ZeroServer) -> App<impl AppEntryImpl> {
         .route("/{address:1[^/]+}", get().to(serve_site))
         .route("/{address:1[^/]+}/{inner_path:.*}", get().to(serve_site))
         .route("/uimedia/{inner_path:.*}", get().to(serve_uimedia))
-        .route("/{inner_path}", get().to(serve_uimedia));
+        .route("/{inner_path}.{ext}", get().to(serve_uimedia));
     web::register_site_plugins(app)
 }
 
