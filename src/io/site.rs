@@ -22,7 +22,7 @@ use crate::{
     environment::{ENV, PATH_PROVIDER_PLUGINS},
     io::utils::check_file_integrity,
     net::Protocol,
-    plugins::*,
+    plugins::path_provider::*,
 };
 
 impl Site {
