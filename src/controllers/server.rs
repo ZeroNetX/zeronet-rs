@@ -8,7 +8,7 @@ use std::{
 use actix::Addr;
 use actix_files::NamedFile;
 use actix_web::{
-    body::MessageBody,
+    body::BoxBody,
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
     http::header::{self, HeaderValue},
     web::{get, Data, Query},
@@ -32,17 +32,15 @@ pub struct ZeroServer {
     pub wrapper_nonces: Arc<Mutex<HashSet<String>>>,
 }
 
-fn build_app(
-    shared_data: ZeroServer,
-) -> App<
-    impl ServiceFactory<
-        ServiceRequest,
-        Response = ServiceResponse<impl MessageBody>,
-        Config = (),
-        InitError = (),
-        Error = actix_web::Error,
-    >,
-> {
+pub trait AppEntryImpl = ServiceFactory<
+    ServiceRequest,
+    Response = ServiceResponse<BoxBody>,
+    Config = (),
+    InitError = (),
+    Error = actix_web::Error,
+>;
+
+fn build_app(shared_data: ZeroServer) -> App<impl AppEntryImpl> {
     let app = web::register_plugins(App::new().app_data(Data::new(shared_data)))
         .route("/", get().to(index))
         .route("/{address:1[^/]+}", get().to(serve_site))

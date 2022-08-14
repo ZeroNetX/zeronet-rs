@@ -1,4 +1,5 @@
 #![feature(drain_filter)]
+#![feature(trait_alias)]
 
 pub mod common;
 pub mod controllers;
