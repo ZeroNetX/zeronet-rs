@@ -18,9 +18,9 @@ macro_rules! impl_plugin {
     ($name:ident, $provider:ident, $plugin:expr, $permissions:expr) => {
         wit_bindgen_wasmer::import!($plugin);
         pub struct $name {
-            store: wit_bindgen_wasmer::wasmer::Store,
-            module: wit_bindgen_wasmer::wasmer::Module,
-            provider: $provider,
+            pub store: wit_bindgen_wasmer::wasmer::Store,
+            pub module: wit_bindgen_wasmer::wasmer::Module,
+            pub provider: $provider,
         }
 
         pub fn load_plugins() -> mut_static::MutStatic<Vec<$name>> {
