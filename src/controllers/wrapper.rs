@@ -236,7 +236,8 @@ fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
 }
 
 pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
-    let inner_path = req.match_info().query("inner_path");
+    let path = req.match_info();
+    let inner_path = &format!("{}.{}", path.query("inner_path"), path.query("ext"));
 
     match serve_uimedia_file(inner_path) {
         Ok(f) => f.respond_to(&req),
