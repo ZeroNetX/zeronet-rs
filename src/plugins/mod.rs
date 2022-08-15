@@ -79,20 +79,19 @@ pub fn load_plugins() -> Vec<Plugin> {
                     let name = manifest.name(&mut store).unwrap();
                     let description = manifest.description(&mut store).unwrap();
                     let version = manifest.version(&mut store).unwrap();
+                    let revision = manifest.revision(&mut store).unwrap();
                     let permissions = manifest
                         .permissions(&mut store)
                         .unwrap()
                         .into_iter()
-                        .map(|s| match s.as_str() {
-                            "path_provider" => Permission::PathProvider,
-                            _ => unimplemented!(),
-                        })
+                        .map(|s| s.as_str().into())
                         .collect();
                     let path = plugin.clone();
                     let plugin = Plugin {
                         name,
                         description,
                         version,
+                        revision,
                         permissions,
                         path,
                     };
@@ -114,7 +113,8 @@ pub fn load_plugins() -> Vec<Plugin> {
 pub struct Plugin {
     name: String,
     description: String,
-    version: i64,
+    version: String,
+    revision: i64,
     permissions: Vec<Permission>,
     path: PathBuf,
 }
@@ -122,4 +122,13 @@ pub struct Plugin {
 #[derive(Debug, PartialEq)]
 enum Permission {
     PathProvider,
+}
+
+impl From<&str> for Permission {
+    fn from(s: &str) -> Self {
+        match s {
+            "path_provider" => Permission::PathProvider,
+            _ => panic!("Unknown permission"),
+        }
+    }
 }
