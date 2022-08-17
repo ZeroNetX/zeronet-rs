@@ -31,8 +31,8 @@ async fn main() -> Result<(), Error> {
     let mut db_manager = DbManager::new();
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
-    if let Some((cmd, _args)) = sub_cmd {
-        if let Some(mut site_args) = _args.values_of("site") {
+    if let Some((cmd, args)) = sub_cmd {
+        if let Some(mut site_args) = args.values_of("site") {
             let site_addr = site_args.next().unwrap();
             let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
             if let Some(storage) = site_storage.get(site_addr).cloned() {
@@ -125,7 +125,7 @@ async fn main() -> Result<(), Error> {
             storage.settings.serving = true;
             site.modify_storage(storage);
             site.save_storage().await?;
-        } else if let Some(mut peer_args) = _args.values_of("peer") {
+        } else if let Some(mut peer_args) = args.values_of("peer") {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);
             match cmd {
