@@ -47,8 +47,9 @@ lazy_static! {
             "peerPing".into(),
             // "peerGetFile".into()
             // "peerCmd".into()
-            // "cryptSign".into()
-            // "cryptVerify".into()
+            "cryptKeyPair".into(),
+            "cryptSign".into(),
+            "cryptVerify".into(),
             // "cryptGetPrivateKey".into()
             "getConfig".into(),
             "siteFindPeers".into(),
@@ -95,6 +96,7 @@ fn get_matches() -> ArgMatches {
             Command::new(cmd)
                 .arg(Arg::new("site").short('s').required(false).min_values(1))
                 .arg(Arg::new("peer").short('p').required(false).min_values(1))
+                .arg(Arg::new("data").short('d').required(false).min_values(1))
         })
         .collect::<Vec<_>>();
 

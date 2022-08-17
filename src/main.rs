@@ -135,6 +135,46 @@ async fn main() -> Result<(), Error> {
                     warn!("Unknown command: {}", cmd);
                 }
             }
+        } else if cmd.starts_with("crypt") && let Some(mut args) = args.values_of("data") {
+            match cmd {
+                "cryptKeyPair" => {
+                    let (priv_key, pub_key) = zeronet_cryptography::create();
+                    info!(
+                        "Your Private key : {}",
+                        zeronet_cryptography::privkey_to_wif(priv_key)
+                    );
+                    info!("Your Public key : {}", pub_key);
+                }
+                "cryptSign" => {
+                    let data = args.next().unwrap();
+                    if let Some(priv_key) = args.next() {
+                        match zeronet_cryptography::sign(data, priv_key) {
+                            Ok(signature) => info!("{}", signature),
+                            Err(err) => error!("{}", err),
+                        }
+                    } else {
+                        error!("cryptSign cmd requires private key to sign");
+                    };
+                }
+                "cryptVerify" => {
+                    let data = args.next().unwrap();
+                    if let Some(pub_key) = args.next() {
+                        if let Some(signature) = args.next() {
+                            match zeronet_cryptography::verify(data, pub_key, signature) {
+                                Ok(_) => info!("Signature Successfully verified"),
+                                Err(err) => error!("{}", err),
+                            }
+                        } else {
+                            error!("cryptVerify cmd requires signature as arg to verify");
+                        }
+                    } else {
+                        error!("cryptVerify cmd requires Public key & Signature as args");
+                    };
+                }
+                _ => {
+                    warn!("Unknown command: {}", cmd);
+                }
+            }
         } else {
             match cmd {
                 "getConfig" => info!("{}", serde_json::to_string_pretty(&client_info())?),
