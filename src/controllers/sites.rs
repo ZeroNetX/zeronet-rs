@@ -73,10 +73,9 @@ impl SitesController {
             address.get_address_short()
         );
         if !site.content_path().is_file() {
-            info!("Site content does not exist. Downloading...");
-            let addr = site.clone().start();
-            self.sites_addr.insert(address.clone(), addr.clone());
-            Ok((address, addr))
+            // info!("Site content does not exist. Downloading...");
+            error!("\n\n\nSite content does not exist, Site Download from UiServer not implemented yet, Use siteDownload cmd via cli to download site\n\n\n");
+            unimplemented!();
         } else {
             site.modify_storage(site.storage.clone());
             block_on(site.load_content())?;
@@ -90,13 +89,13 @@ impl SitesController {
                 self.db_manager.insert_schema(&site.address(), schema);
                 self.db_manager.connect_db(&site.address())?;
             }
-            let addr = site.clone().start();
-            // TODO: Decide whether to spawn actors in syncArbiter
-            // let addr = SyncArbiter::start(1, || Site::new());
-            self.sites_addr.insert(address.clone(), addr.clone());
-            self.update_sites_changed();
-            Ok((address, addr))
+            self.sites_changed = current_unix_epoch();
         }
+
+        // TODO: Decide whether to spawn actors in syncArbiter
+        let addr = site.clone().start();
+        self.sites_addr.insert(address.clone(), addr.clone());
+        Ok((address, addr))
     }
 
     pub fn get_by_key(&mut self, key: String) -> Result<(Address, Addr<Site>), Error> {
