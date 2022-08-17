@@ -32,7 +32,7 @@ async fn main() -> Result<(), Error> {
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
     if let Some((cmd, args)) = sub_cmd {
-        if let Some(mut site_args) = args.values_of("site") {
+        if cmd.starts_with("site") && let Some(mut site_args) = args.values_of("site") {
             let site_addr = site_args.next().unwrap();
             let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
             if let Some(storage) = site_storage.get(site_addr).cloned() {
@@ -74,6 +74,7 @@ async fn main() -> Result<(), Error> {
                 _ => {}
             }
             match cmd {
+                "siteCreate" => site_create(&mut user, true).await?,
                 "siteNeedFile" => {
                     let inner_path = site_args.next().unwrap();
                     site_need_file(&mut site, inner_path.into()).await?
@@ -125,7 +126,7 @@ async fn main() -> Result<(), Error> {
             storage.settings.serving = true;
             site.modify_storage(storage);
             site.save_storage().await?;
-        } else if let Some(mut peer_args) = args.values_of("peer") {
+        } else if cmd.starts_with("peer") && let Some(mut peer_args) = args.values_of("peer") {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);
             match cmd {
@@ -136,7 +137,6 @@ async fn main() -> Result<(), Error> {
             }
         } else {
             match cmd {
-                "siteCreate" => site_create(&mut user, true).await?,
                 "getConfig" => info!("{}", serde_json::to_string_pretty(&client_info())?),
                 _ => {
                     warn!("Unknown command: {}", cmd);
