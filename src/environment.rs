@@ -93,10 +93,14 @@ fn get_matches() -> ArgMatches {
     let sub_commands = (*SUB_CMDS)
         .iter()
         .map(|cmd| {
-            Command::new(cmd)
-                .arg(Arg::new("site").short('s').required(false).min_values(1))
-                .arg(Arg::new("peer").short('p').required(false).min_values(1))
-                .arg(Arg::new("data").short('d').required(false).min_values(1))
+            let app = Command::new(cmd);
+            if cmd.starts_with("peer") {
+                app.arg(Arg::new("peer").short('p').required(false).min_values(1))
+            } else if cmd.starts_with("crypt") {
+                app.arg(Arg::new("data").short('d').required(false).min_values(1))
+            } else {
+                app.arg(Arg::new("site").short('s').required(false).min_values(1))
+            }
         })
         .collect::<Vec<_>>();
 
