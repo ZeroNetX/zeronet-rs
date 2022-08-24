@@ -316,7 +316,7 @@ pub fn client_info() -> serde_json::Value {
         "macos"
     } else if cfg!(android) {
         "android"
-    } else if cfg!(android) {
+    } else if cfg!(ios) {
         "ios"
     } else {
         "unrecognised"
