@@ -1,3 +1,5 @@
+///path_provider@0.0.1
+
 get-storage-path: func(data-path: string) -> string
 
 get-file-path: func(data-path: string, block-id: string) -> string

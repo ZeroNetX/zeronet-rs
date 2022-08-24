@@ -14,7 +14,7 @@ impl_plugin!(
     PathProviderPlugin,
     PathProvider,
     "assets/plugins/path_provider.wit",
-    Permission::PathProvider
+    Permission::PathProvider("0.0.1".into())
 );
 
 pub fn get_storage_path() -> String {

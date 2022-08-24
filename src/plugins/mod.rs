@@ -121,14 +121,42 @@ pub struct Plugin {
 
 #[derive(Debug, PartialEq)]
 enum Permission {
-    PathProvider,
+    PathProvider(String),
+    None,
 }
 
 impl From<&str> for Permission {
     fn from(s: &str) -> Self {
+        let mut splited = s.split("@").into_iter();
+        let s = splited.next().unwrap();
+        let version = splited.next().unwrap_or("0.0.1");
         match s {
-            "path_provider" => Permission::PathProvider,
-            _ => panic!("Unknown permission"),
+            "path_provider" => Permission::PathProvider(version.into()),
+            _ => Permission::None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_permission_from_str() {
+        let permission = "path_provider";
+        let perm: Permission = permission.into();
+        assert_eq!(perm, Permission::PathProvider("0.0.1".into()));
+
+        let permission = "path_provider@0.0.2";
+        let perm: Permission = permission.into();
+        assert_eq!(perm, Permission::PathProvider("0.0.2".into()));
+
+        let permission = "path_provider#0.0.2";
+        let perm: Permission = permission.into();
+        assert_eq!(perm, Permission::None);
+
+        let permission = "";
+        let perm: Permission = permission.into();
+        assert_eq!(perm, Permission::None);
     }
 }
