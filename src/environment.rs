@@ -96,8 +96,8 @@ fn get_matches() -> ArgMatches {
             let app = Command::new(cmd);
             if cmd.starts_with("peer") {
                 app.arg(Arg::new("peer").short('p').required(false).min_values(1))
-            } else if cmd.starts_with("crypt") {
-                app.arg(Arg::new("data").short('d').required(false).min_values(1))
+            } else if cmd.starts_with("cryptSign") || cmd.starts_with("cryptVerify") {
+                app.arg(Arg::new("data").short('d').required(true).min_values(1))
             } else {
                 app.arg(Arg::new("site").short('s').required(false).min_values(1))
             }

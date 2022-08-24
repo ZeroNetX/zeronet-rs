@@ -135,7 +135,7 @@ async fn main() -> Result<(), Error> {
                     warn!("Unknown command: {}", cmd);
                 }
             }
-        } else if cmd.starts_with("crypt") && let Some(mut args) = args.values_of("data") {
+        } else if cmd.starts_with("crypt") {
             match cmd {
                 "cryptKeyPair" => {
                     let (priv_key, pub_key) = zeronet_cryptography::create();
@@ -146,6 +146,7 @@ async fn main() -> Result<(), Error> {
                     info!("Your Public key : {}", pub_key);
                 }
                 "cryptSign" => {
+                    let mut args = args.values_of("data").unwrap();
                     let data = args.next().unwrap();
                     if let Some(priv_key) = args.next() {
                         match zeronet_cryptography::sign(data, priv_key) {
@@ -157,6 +158,7 @@ async fn main() -> Result<(), Error> {
                     };
                 }
                 "cryptVerify" => {
+                    let mut args = args.values_of("data").unwrap();
                     let data = args.next().unwrap();
                     if let Some(pub_key) = args.next() {
                         if let Some(signature) = args.next() {
