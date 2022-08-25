@@ -1,15 +1,17 @@
 mod peer_db;
 
+pub mod package;
 pub mod path_provider;
 pub mod web;
 
 use std::path::PathBuf;
 
+use futures::executor::block_on;
 use log::error;
-
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use wit_bindgen_wasmer::wasmer::{imports, Cranelift, Module, Store};
 
-use self::manifest::Manifest;
+use self::{manifest::Manifest, package::PluginManifest};
 
 wit_bindgen_wasmer::import!("assets/plugins/manifest.wit");
 
@@ -62,11 +64,24 @@ pub fn load_plugins() -> Vec<Plugin> {
         let list = std::fs::read_dir(plugins_dir).unwrap();
         let plugins = list.filter_map(|entry| {
             let path = entry.unwrap().path();
-            if path.is_file() && path.extension().unwrap() == "wasm" {
-                Some(path)
-            } else {
-                None
+            if path.is_dir() {
+                let name = path.file_name().unwrap().to_str().unwrap();
+                let plugin_dir = path.display().to_string();
+                let manifest = PathBuf::from(format!("{}/manifest.json", plugin_dir));
+                let plugin = PathBuf::from(format!("{}/{}.wasm", plugin_dir, name));
+                let has_manifest = manifest.is_file();
+                let has_plugin = plugin.is_file();
+                if has_manifest && has_plugin {
+                    let res = block_on(PluginManifest::load(name));
+                    if let Ok(manifest) = res {
+                        let verified = manifest.verify().unwrap();
+                        if verified {
+                            return Some(plugin);
+                        }
+                    }
+                }
             }
+            return None;
         });
         let mut plugins_loaded = Vec::new();
         for plugin in plugins {
@@ -109,20 +124,58 @@ pub fn load_plugins() -> Vec<Plugin> {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Plugin {
     name: String,
     description: String,
     version: String,
     revision: i64,
     permissions: Vec<Permission>,
+    #[serde(skip)]
     path: PathBuf,
 }
 
-#[derive(Debug, PartialEq)]
+impl Default for Plugin {
+    fn default() -> Self {
+        Plugin {
+            version: "0.0.1".into(),
+            revision: 1,
+            name: Default::default(),
+            description: Default::default(),
+            path: Default::default(),
+            permissions: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Default)]
 enum Permission {
     PathProvider(String),
+    #[default]
     None,
+}
+
+impl<'de> Deserialize<'de> for Permission {
+    fn deserialize<D>(deserializer: D) -> Result<Permission, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = String::deserialize(deserializer)?;
+        Ok(Permission::from(s.as_str()))
+    }
+}
+
+impl Serialize for Permission {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let string = match self {
+            Permission::PathProvider(version) => format!("path_provider@{}", version),
+            Permission::None => "".into(),
+        };
+        serializer.serialize_str(&string)
+    }
 }
 
 impl From<&str> for Permission {

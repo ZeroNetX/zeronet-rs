@@ -55,6 +55,10 @@ lazy_static! {
             "siteFindPeers".into(),
             "sitePeerExchange".into(),
             "siteFetchChanges".into(),
+
+            "pluginCreate".into(),
+            "pluginSign".into(),
+            "pluginVerify".into(),
         ];
     pub static ref ENV: Environment = {
         if let Ok(env) = get_env(&MATCHES) {
@@ -96,6 +100,8 @@ fn get_matches() -> ArgMatches {
             let app = Command::new(cmd);
             if cmd.starts_with("peer") {
                 app.arg(Arg::new("peer").short('p').required(false).min_values(1))
+            } else if cmd.starts_with("plugin") {
+                app.arg(Arg::new("name").short('n').required(false).min_values(1))
             } else if cmd.starts_with("cryptSign") || cmd.starts_with("cryptVerify") {
                 app.arg(Arg::new("data").short('d').required(true).min_values(1))
             } else {

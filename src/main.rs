@@ -12,6 +12,8 @@ pub mod net;
 pub mod plugins;
 pub mod utils;
 
+use std::path::PathBuf;
+
 use log::*;
 
 use crate::{
@@ -20,12 +22,14 @@ use crate::{
     core::{error::Error, io::SiteIO, site::Site},
     environment::*,
     io::db::DbManager,
+    plugins::package::PluginManifest,
 };
 
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     //TODO! Replace with file based logger with public release.
     pretty_env_logger::init_custom_env("DECENTNET_LOG");
+    let plugins = &*PLUGINS;
     let user_storage = &*USER_STORAGE;
     let site_storage = &*SITE_STORAGE;
     let mut db_manager = DbManager::new();
@@ -177,6 +181,44 @@ async fn main() -> Result<(), Error> {
                     warn!("Unknown command: {}", cmd);
                 }
             }
+        }  else if cmd.starts_with("plugin") {
+            match cmd {
+                "pluginSign" => {
+                    let mut args = args.values_of("path").unwrap();
+                    let name = args.next().unwrap();
+                    let manifest = PluginManifest::load(name).await;
+                    let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
+                    if manifest.is_ok() &&  let Some(private_key) = args.next() {
+                        let manifest = manifest.unwrap().sign_plugin(private_key).await.unwrap();
+                        let contents = serde_json::to_string_pretty(&manifest).unwrap();
+                        tokio::fs::write(manifest_path, contents).await?;
+                    } else {
+                        error!("pluginSign cmd requires private key to sign");
+                    };
+                }
+                "pluginVerify" => {
+                    let mut args = args.values_of("name").unwrap();
+                    let name = args.next().unwrap();
+                    let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
+                    let plugin_file = PathBuf::from(format!("plugins/{name}/{name}.wasm", name = name));
+                    let manifest_str = tokio::fs::read_to_string(&manifest_path).await.unwrap();
+                    let manifest: PluginManifest = serde_json::from_str(&manifest_str).unwrap();
+                    let manifest_verified = manifest.verify().unwrap_or(false);
+                    let bytes = tokio::fs::read(plugin_file).await.unwrap();
+                    let sign = manifest.plugin_signature;
+                    let mut verified = manifest_verified;
+                    for key in manifest.signs.keys() {
+                        if !manifest_verified {
+                            continue;
+                        }
+                        verified = verified || zeronet_cryptography::verify(&*bytes, key, &sign).is_ok();
+                    }
+                    println!("Plugin Verified : {}", verified);
+                }
+                _ => {
+                    warn!("Unknown command: {}", cmd);
+                }
+            }
         } else {
             match cmd {
                 "getConfig" => info!("{}", serde_json::to_string_pretty(&client_info())?),
@@ -195,6 +237,7 @@ async fn main() -> Result<(), Error> {
         let mut con = ConnectionController::new(controller).await?;
         let _ = con.run().await;
     } else {
+        info!("Loaded : {} Plugins.", plugins.len());
         let user_controller_addr = users::run().unwrap();
         let sites_controller_addr = sites::run().await.unwrap();
         let _ = server::run(sites_controller_addr, user_controller_addr).await;
