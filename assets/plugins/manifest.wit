@@ -9,11 +9,3 @@ version: func() -> string
 revision: func() -> s64
 
 permissions: func() -> list<string>
-
-min-engine-version: func() -> s64
-
-max-engine-version: func() -> s64
-
-public-key: func() -> string
-
-signature: func() -> string
