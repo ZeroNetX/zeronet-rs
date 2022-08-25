@@ -37,6 +37,24 @@ impl PluginManifest {
         Ok(manifest)
     }
 
+    pub async fn verify_plugin(&self) -> Result<bool, Error> {
+        self.verify()?;
+        let plugin_file = PathBuf::from(format!(
+            "plugins/{name}/{name}.wasm",
+            name = self.plugin.name
+        ));
+        let bytes = tokio::fs::read(plugin_file).await.unwrap();
+        let signature = &self.plugin_signature;
+        let mut verified = false;
+        for key in self.signs.keys() {
+            if verified {
+                continue;
+            }
+            verified = zeronet_cryptography::verify(bytes.clone(), &key, &signature).is_ok();
+        }
+        Ok(verified)
+    }
+
     pub fn sign(&mut self, private_key: &str) -> Result<Self, Error> {
         let mut data = sort_json(serde_json::to_value(&self)?)?;
         let data = data.as_object_mut().unwrap();

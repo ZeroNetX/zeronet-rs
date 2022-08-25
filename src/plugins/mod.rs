@@ -74,7 +74,7 @@ pub fn load_plugins() -> Vec<Plugin> {
                 if has_manifest && has_plugin {
                     let res = block_on(PluginManifest::load(name));
                     if let Ok(manifest) = res {
-                        let verified = manifest.verify().unwrap();
+                        let verified = block_on(manifest.verify_plugin()).unwrap();
                         if verified {
                             return Some(plugin);
                         }

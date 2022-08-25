@@ -184,7 +184,7 @@ async fn main() -> Result<(), Error> {
         }  else if cmd.starts_with("plugin") {
             match cmd {
                 "pluginSign" => {
-                    let mut args = args.values_of("path").unwrap();
+                    let mut args = args.values_of("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await;
                     let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
@@ -199,20 +199,8 @@ async fn main() -> Result<(), Error> {
                 "pluginVerify" => {
                     let mut args = args.values_of("name").unwrap();
                     let name = args.next().unwrap();
-                    let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
-                    let plugin_file = PathBuf::from(format!("plugins/{name}/{name}.wasm", name = name));
-                    let manifest_str = tokio::fs::read_to_string(&manifest_path).await.unwrap();
-                    let manifest: PluginManifest = serde_json::from_str(&manifest_str).unwrap();
-                    let manifest_verified = manifest.verify().unwrap_or(false);
-                    let bytes = tokio::fs::read(plugin_file).await.unwrap();
-                    let sign = manifest.plugin_signature;
-                    let mut verified = manifest_verified;
-                    for key in manifest.signs.keys() {
-                        if !manifest_verified {
-                            continue;
-                        }
-                        verified = verified || zeronet_cryptography::verify(&*bytes, key, &sign).is_ok();
-                    }
+                    let manifest = PluginManifest::load(name).await.unwrap();
+                    let verified = manifest.verify_plugin().await.unwrap_or(false) ;
                     println!("Plugin Verified : {}", verified);
                 }
                 _ => {
