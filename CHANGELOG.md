@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2] - 2022-08-26
+
+- Initial Plugin Implementaion to extend via Engine Plugins.
+- Added `cryptKeyPair`, `cryptSign`, `cryptVerify` cmds to generate keys and sign and verify data.
+- Added `pluginSign` and `pluginVerify` cmds to sign and verify plugins.
+- Several Internal changes and bug fixes, See [diff](https://github.com/canewsin/zeronet-rs/compare/v0.1.1...v0.1.2) for full commit changes.
+
 ## [0.1.1] - 2022-08-12
 
 - Save Site Storage to  sites.json when Site is Downloaded
