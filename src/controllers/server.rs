@@ -23,7 +23,7 @@ use crate::{
     },
     core::{address::Address, error::Error},
     environment::ENV,
-    plugins::web::{self, SiteAnnounce},
+    plugins::web,
 };
 
 pub struct ZeroServer {
@@ -80,13 +80,16 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     let mut wrapper = true;
     let address = req.match_info().query("address");
     let inner_path = req.match_info().query("inner_path");
-    let addr_str = address.to_string();
-    let site_controller = data.site_controller.clone();
-    actix::spawn(async move {
-        info!("Sending site announce to {}", &addr_str);
-        let address = Address::from_str(&addr_str).unwrap();
-        site_controller.do_send(SiteAnnounce { address });
-    });
+    // let addr_str = address.to_string();
+    // let site_controller = data.site_controller.clone();
+    // actix::spawn(async move {
+    //     info!("Sending site announce to {}", &addr_str);
+    //     let address = Address::from_str(&addr_str).unwrap();
+    //     let start = Instant::now();
+    //     site_controller.do_send(SiteAnnounce { address });
+    //     let taken = start.duration_since(start);
+    //     println!("{}", taken.as_micros());
+    // });
     if inner_path == "favicon.ico" {
         return serve_uimedia(req).await;
     } else if !inner_path.is_empty()
