@@ -1,5 +1,6 @@
 #![feature(drain_filter)]
 #![feature(trait_alias)]
+#![feature(let_chains)]
 
 pub mod common;
 pub mod controllers;
