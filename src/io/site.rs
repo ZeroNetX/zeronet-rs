@@ -272,10 +272,14 @@ impl Site {
     pub async fn load_content(&mut self) -> Result<bool, Error> {
         let buf = fs::read(self.content_path()).await?;
         let buf = ByteBuf::from(buf);
-        let content = Content::from_buf(buf).unwrap();
-        self.modify_content(None, content);
-        let res = self.verify_content(None).is_ok();
-        Ok(res)
+        match Content::from_buf(buf) {
+            Ok(content) => {
+                self.modify_content(None, content);
+                let res = self.verify_content(None).is_ok();
+                Ok(res)
+            }
+            Err(error) => Err(Error::from(error)),
+        }
     }
 
     pub async fn verify_files(&self, content_only: bool) -> Result<bool, Error> {
