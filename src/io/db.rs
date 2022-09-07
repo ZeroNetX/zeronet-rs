@@ -158,10 +158,11 @@ impl DbManager {
             let query = table.to_query(&table_name);
 
             Self::db_exec(conn, &query);
-            let indexes = table.indexes;
-            indexes.into_iter().for_each(|i| {
-                Self::db_exec(conn, &i);
-            });
+            if let Some(indexes) = table.indexes {
+                indexes.into_iter().for_each(|i| {
+                    Self::db_exec(conn, &i);
+                });
+            }
         }
     }
 
@@ -176,7 +177,9 @@ impl DbManager {
                 ("value".to_string(), "INTEGER".to_string()),
                 ("json_id".to_string(), "INTEGER".to_string()),
             ],
-            indexes: vec!["CREATE UNIQUE INDEX key_id ON keyvalue(json_id, key)".to_string()],
+            indexes: Some(vec![
+                "CREATE UNIQUE INDEX key_id ON keyvalue(json_id, key)".to_string()
+            ]),
             schema_changed: 1,
         }
     }
@@ -191,7 +194,7 @@ impl DbManager {
                     ),
                     ("path".to_string(), "VARCHAR(255)".to_string()),
                 ],
-                indexes: vec!["CREATE UNIQUE INDEX path ON json(path)".to_string()],
+                indexes: Some(vec!["CREATE UNIQUE INDEX path ON json(path)".to_string()]),
                 schema_changed: 1,
             },
             2 => Table {
@@ -203,7 +206,9 @@ impl DbManager {
                     ("directory".to_string(), "VARCHAR(255)".to_string()),
                     ("file_name".to_string(), "VARCHAR(255)".to_string()),
                 ],
-                indexes: vec!["CREATE UNIQUE INDEX path ON json(directory, file_name)".to_string()],
+                indexes: Some(vec![
+                    "CREATE UNIQUE INDEX path ON json(directory, file_name)".to_string(),
+                ]),
                 schema_changed: 1,
             },
             3 => Table {
@@ -216,9 +221,9 @@ impl DbManager {
                     ("directory".to_string(), "VARCHAR(255)".to_string()),
                     ("file_name".to_string(), "VARCHAR(255)".to_string()),
                 ],
-                indexes: vec![
+                indexes: Some(vec![
                     "CREATE UNIQUE INDEX path ON json(directory, site, file_name)".to_string(),
-                ],
+                ]),
                 schema_changed: 1,
             },
             _ => unreachable!(),

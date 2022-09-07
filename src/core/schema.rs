@@ -46,7 +46,7 @@ pub struct ToTable {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Table {
     pub cols: Vec<(String, String)>,
-    pub indexes: Vec<String>,
+    pub indexes: Option<Vec<String>>,
     pub schema_changed: usize,
 }
 
