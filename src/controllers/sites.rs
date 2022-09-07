@@ -68,7 +68,7 @@ impl SitesController {
                 return Ok((address, addr.clone()));
             }
         }
-        info!(
+        trace!(
             "Spinning up actor for site zero://{}",
             address.get_address_short()
         );
