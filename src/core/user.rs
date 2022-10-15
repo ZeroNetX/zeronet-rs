@@ -423,9 +423,14 @@ impl User {
     /// Get cert user name for the site address
     ///
     /// Return user@certprovider.bit or None
-    fn get_cert_user_id(&self, addr: &str) -> Option<String> {
-        let cert = &self.get_cert(addr)?;
-        return Some(format!("{}@{}", cert.auth_user_name, cert.auth_type));
+    fn get_cert_user_id(&mut self, address: &str) -> Option<String> {
+        let site_data = self.get_site_data(address, false);
+        let cert = &self.get_cert(address)?;
+        return Some(format!(
+            "{}@{}",
+            cert.auth_user_name,
+            site_data.get_cert_provider().unwrap()
+        ));
     }
 
     pub fn get_address_auth_index(address: &str) -> u32 {
