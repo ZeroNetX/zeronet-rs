@@ -233,6 +233,17 @@ impl User {
         self.master_seed.clone()
     }
 
+    pub fn get_address_auth_index(address: &str) -> u32 {
+        let bytes = address.bytes();
+        let hexs: Vec<String> = bytes.into_iter().map(|x| format!("{:02X}", x)).collect();
+        let hex = &hexs.join("");
+
+        let auth_index = BigUint::parse_bytes(hex.as_bytes(), 16).unwrap();
+
+        // We don't need the whole index
+        (auth_index % BigUint::from(100000000u32)).to_u32_digits()[0]
+    }
+
     fn generate_auth_address(&mut self, address: &str) -> AuthPair {
         let start_time = SystemTime::now();
         let address_id = User::get_address_auth_index(address);
@@ -396,6 +407,7 @@ impl User {
 
     /// Set active cert for a site
     fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
+        //TODO! Check if Cert actually exists
         let mut site_data = self.get_site_data(address, true);
 
         if let Some(provider) = provider {
@@ -431,17 +443,6 @@ impl User {
             cert.auth_user_name,
             site_data.get_cert_provider().unwrap()
         ));
-    }
-
-    pub fn get_address_auth_index(address: &str) -> u32 {
-        let bytes = address.bytes();
-        let hexs: Vec<String> = bytes.into_iter().map(|x| format!("{:02X}", x)).collect();
-        let hex = &hexs.join("");
-
-        let auth_index = BigUint::parse_bytes(hex.as_bytes(), 16).unwrap();
-
-        // We don't need the whole index
-        (auth_index % BigUint::from(100000000u32)).to_u32_digits()[0]
     }
 }
 
