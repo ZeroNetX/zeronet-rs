@@ -321,31 +321,27 @@ impl User {
         block_on(self.save());
         site_data
     }
+
+    fn get_auth_pair(&mut self, address: &str, create: bool) -> Option<AuthPair> {
+        if let Some(cert) = self.get_cert(&address) {
+            return Some(cert.get_auth_pair());
+        } else {
+            let site_data = self.get_site_data(address, create);
+            return site_data.get_auth_pair();
+        }
+    }
+
     /// Get BIP32 address from site address
     ///
     /// Return: BIP32 auth address
-    fn get_auth_address(&self, addr: &str) -> Option<AuthPair> {
-        if let Some(site_data) = self.sites.get(addr) {
-            return site_data.get_auth_pair();
-        }
-        None
+    fn get_auth_address(&mut self, address: &str, create: bool) -> Option<String> {
+        let auth_pair = self.get_auth_pair(&address, create)?;
+        Some(auth_pair.auth_address)
     }
 
     fn get_auth_privkey(&mut self, address: &str, create: bool) -> Option<String> {
-        if let Some(cert) = self.get_cert(address) {
-            let auth_pair = cert.get_auth_pair();
-            Some(auth_pair.get_auth_privkey().to_string())
-        } else {
-            let site_data = self.get_site_data(address, create);
-            // if let Some(auth_pair) = site_data.get_auth_pair() {
-            //     Some(auth_pair.get_auth_privkey().to_string())
-            // } else {
-            //     None
-            // }
-            site_data
-                .get_auth_pair()
-                .map(|pair| pair.get_auth_privkey().to_string())
-        }
+        let auth_pair = self.get_auth_pair(address, create)?;
+        Some(auth_pair.get_auth_privkey().to_owned())
     }
 
     /// Add cert for the user
