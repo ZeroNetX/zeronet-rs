@@ -420,8 +420,10 @@ impl User {
     /// Get cert for the site address
     ///
     /// Return: { "auth_address": "1AddR", "auth_privatekey": "xxx", "auth_type": "web", "auth_user_name": "nofish", "cert_sign": "xxx"} or None
-    fn get_cert(&self, provider: &str) -> Option<&Cert> {
-        self.certs.get(provider)
+    fn get_cert(&self, address: &str) -> Option<&Cert> {
+        let site_data = self.sites.get(address)?;
+        let cert = site_data.get_cert_provider()?;
+        self.certs.get(&cert)
     }
 
     /// Get cert user name for the site address
