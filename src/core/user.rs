@@ -354,11 +354,9 @@ impl User {
         cert_sign: &str,
     ) -> bool {
         let auth_pair: Option<AuthPair> = self.sites.values().find_map(|site_data| {
-            if let Some(auth_pair) = site_data.get_auth_pair() {
-                if auth_pair.auth_address == auth_address {
-                    return Some(auth_pair);
-                }
-                return None;
+            let auth_pair = site_data.get_auth_pair()?;
+            if auth_pair.auth_address == auth_address {
+                return Some(auth_pair);
             }
             None
         });
