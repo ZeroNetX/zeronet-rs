@@ -424,11 +424,8 @@ impl User {
     ///
     /// Return user@certprovider.bit or None
     fn get_cert_user_id(&self, addr: &str) -> Option<String> {
-        if let Some(cert) = &self.get_cert(addr) {
-            // return Some(cert.auth_user_name.clone());
-            return Some(format!("{}@{}", cert.auth_user_name, cert.auth_type));
-        }
-        None
+        let cert = &self.get_cert(addr)?;
+        return Some(format!("{}@{}", cert.auth_user_name, cert.auth_type));
     }
 
     pub fn get_address_auth_index(address: &str) -> u32 {
