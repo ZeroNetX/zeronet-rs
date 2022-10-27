@@ -7,11 +7,11 @@ use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
-    controllers::handlers::{
+    plugins::site_server::handlers::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
         users::UserSiteData,
     },
-    plugins::web::websocket::events::RegisterChannels,
+    plugins::websocket::events::RegisterChannels,
 };
 
 pub fn handle_cert_add(

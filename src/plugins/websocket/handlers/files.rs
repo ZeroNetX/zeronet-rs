@@ -7,8 +7,8 @@ use serde_json::{json, Value};
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
-    controllers::handlers::sites::{FileGetRequest, FileRulesRequest},
     environment::ENV,
+    plugins::site_server::handlers::sites::{FileGetRequest, FileRulesRequest},
 };
 
 pub fn handle_file_need(

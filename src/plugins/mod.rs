@@ -1,8 +1,10 @@
 mod peer_db;
 
+mod auth_wrapper;
 pub mod package;
 pub mod path_provider;
-pub mod web;
+pub mod site_server;
+mod websocket;
 
 use std::path::PathBuf;
 
@@ -14,6 +16,13 @@ use wit_bindgen_wasmer::wasmer::{imports, Cranelift, Module, Store};
 use self::{manifest::Manifest, package::PluginManifest};
 
 wit_bindgen_wasmer::import!("assets/plugins/manifest.wit");
+
+use site_server::server::AppEntryImpl;
+
+pub fn register_plugins<T: AppEntryImpl>(app: actix_web::App<T>) -> actix_web::App<T> {
+    use actix_web::web::{get, scope};
+    app.service(scope("/Authenticate").route("", get().to(auth_wrapper::serve_auth_wrapper_key)))
+}
 
 #[macro_export]
 macro_rules! impl_plugin {

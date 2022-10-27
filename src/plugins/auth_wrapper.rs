@@ -9,9 +9,9 @@ use log::*;
 use uuid::Uuid;
 
 use crate::{
-    controllers::{handlers::sites::AddWrapperKey, server::ZeroServer},
     core::address::Address,
     environment::ENV,
+    plugins::site_server::{handlers::sites::AddWrapperKey, server::ZeroServer},
 };
 
 pub async fn serve_auth_wrapper_key(

@@ -7,8 +7,8 @@ use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
-    controllers::handlers::users::{UserRequest, UserSettings},
     core::user::User,
+    plugins::site_server::handlers::users::{UserRequest, UserSettings},
 };
 
 pub fn get_current_user(ws: &ZeruWebsocket) -> Result<User, Error> {

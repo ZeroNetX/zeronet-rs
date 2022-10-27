@@ -229,7 +229,8 @@ async fn main() -> Result<(), Error> {
         info!("Loaded : {} Plugins.", plugins.len());
         let user_controller_addr = users::run().unwrap();
         let sites_controller_addr = sites::run().await.unwrap();
-        let _ = server::run(sites_controller_addr, user_controller_addr).await;
+        let _ =
+            plugins::site_server::server::run(sites_controller_addr, user_controller_addr).await;
     }
     Ok(())
 }

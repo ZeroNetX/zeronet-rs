@@ -7,12 +7,12 @@ use uuid::Uuid;
 use zerucontent::Content;
 
 use crate::{
-    controllers::handlers::{
+    core::{address::Address, error::Error},
+    environment::{DEF_MEDIA_PATH, DEF_TEMPLATES_PATH, ENV},
+    plugins::site_server::handlers::{
         sites::{AddWrapperKey, Lookup, SiteContent},
         users::UserSettings,
     },
-    core::{address::Address, error::Error},
-    environment::{DEF_MEDIA_PATH, DEF_TEMPLATES_PATH, ENV},
 };
 
 use super::server::ZeroServer;

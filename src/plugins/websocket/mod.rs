@@ -11,8 +11,8 @@ use std::collections::HashMap;
 
 use actix::{Actor, Addr, StreamHandler};
 use actix_web::{
-    web::{Data, Payload, Query},
-    HttpRequest, HttpResponse, Result,
+    web::{get, scope, Data, Payload, Query},
+    App, HttpRequest, HttpResponse, Result,
 };
 use actix_web_actors::ws::{self, WsResponseBuilder};
 use log::*;
@@ -24,19 +24,24 @@ use self::{
     request::CommandType,
 };
 use crate::{
-    controllers::{
-        handlers::sites::{Lookup, SiteInfoRequest},
-        server::ZeroServer,
-        sites::SitesController,
-        users::UserController,
-    },
+    controllers::{sites::SitesController, users::UserController},
     core::{address::Address, site::Site},
     environment::{Environment, ENV},
-    plugins::web::websocket::events::RegisterWSClient,
+    plugins::site_server::{
+        handlers::sites::{Lookup, SiteInfoRequest},
+        server::ZeroServer,
+    },
+    plugins::{site_server::server::AppEntryImpl, websocket::events::RegisterWSClient},
 };
 use error::Error;
 use request::{AdminCommandType::*, Command, UiServerCommandType::*};
 use response::Message;
+
+pub fn register_site_plugins<T: AppEntryImpl>(app: App<T>) -> App<T> {
+    let websocket_controller = WebsocketController { listeners: vec![] }.start();
+    app.app_data(Data::new(websocket_controller))
+        .service(scope("/ZeroNet-Internal").route("/Websocket", get().to(serve_websocket)))
+}
 
 pub async fn serve_websocket(
     req: HttpRequest,
