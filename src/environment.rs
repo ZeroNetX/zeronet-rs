@@ -66,6 +66,7 @@ lazy_static! {
         };
         panic!("Could not get environment variables");
     };
+    pub static ref SITE_PEERS_NEED: usize = ENV.site_peers_need;
     pub static ref TRACKERS: Vec<String> = load_trackers();
     pub static ref VERSION: String = String::from("0.8.0");
     pub static ref REV: usize = 4800;
@@ -91,6 +92,7 @@ pub struct Environment {
     pub access_key: String,
     pub size_limit: usize,
     pub file_size_limit: usize,
+    pub site_peers_need: usize,
 }
 
 fn get_matches() -> ArgMatches {
@@ -225,6 +227,10 @@ fn get_matches() -> ArgMatches {
                 .long("fileserver_port")
                 .default_value("10000-40000")
                 .help("Fileserver randomization range 10000-40000"),
+            Arg::new("SITE_PEERS_NEED")
+                .long("site_peers_need")
+                .default_value("1")
+                .help("Minimum Peers need for Site communication"),
             // Arg::new("FILESERVER_IP_TYPE")
             //     .long("fileserver_ip_type")
             //     .default_value("dual")
@@ -313,6 +319,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         access_key: String::from(matches.value_of("ACCESS_KEY").unwrap()),
         size_limit: matches.value_of("SIZE_LIMIT").unwrap().parse()?,
         file_size_limit: matches.value_of("FILE_SIZE_LIMIT").unwrap().parse()?,
+        site_peers_need: matches.value_of("SITE_PEERS_NEED").unwrap().parse()?,
     };
     Ok(env)
 }
