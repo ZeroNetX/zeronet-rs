@@ -91,7 +91,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     //     let taken = start.duration_since(start);
     //     println!("{}", taken.as_micros());
     // });
-    if inner_path == "favicon.ico" {
+    if inner_path == "favicon.ico" || inner_path == "apple-touch-icon.png" {
         return serve_uimedia(req).await;
     } else if !inner_path.is_empty()
         && inner_path.contains('.')
