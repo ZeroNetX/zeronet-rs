@@ -49,3 +49,103 @@ macro_rules! build_header {
         )
     };
 }
+
+/// prepare_header macro improves code readability of HeaderMap key values when appending to HeaderMap
+/// ```
+/// let mut header_map = HeaderMap::new();
+/// header_map.append(HeaderName::from_static("version"), HeaderValue::from_static("HTTP/1.1"));
+/// header_map.append(header::X_FRAME_OPTIONS, HeaderValue::from_static("SAMEORIGIN"));
+/// ```
+///
+/// becomes
+/// ```
+/// let header_map = prepare_header![
+///     header_name!("version") => "HTTP/1.1",
+///     header::X_FRAME_OPTIONS => "SAMEORIGIN",
+/// ];
+/// ```
+/// There are more complex pattern available
+/// You can add headers conditionally
+/// via
+/// ```
+/// let header_map = prepare_header![
+///     header_name!("version") => "HTTP/1.1",
+///     header::X_FRAME_OPTIONS => "SAMEORIGIN",;
+///     cache =>> header::CACHE_CONTROL => "public, max-age=600",
+///     cache =>> header::CACHE_CONTROL => "public, max-age=600",
+/// ];
+/// ```
+/// If header_value is [String] syntax is
+/// ```
+/// let mut header_map = prepare_header![];
+/// prepare_header![header_map, header_name!("hello") =>> String("world")]
+/// ```
+///
+///
+#[macro_export]
+macro_rules! prepare_header {
+    ($($key:expr => $value:expr,)*) => {{
+        let mut header_map = HeaderMap::new();
+        $(
+            prepare_header!(header_map, $key, $value);
+        )*
+        header_map
+    }};
+    ($($key:expr => $value:expr,)*; $($condition:expr =>> $key_c:expr => $value_c:expr,)*) => {{
+        let mut header_map = HeaderMap::new();
+        $(
+            prepare_header!(header_map, $key, $value);
+        )*
+
+        $(
+            if $condition {
+                prepare_header!(header_map, $key_c, $value_c);
+            }
+        )*
+        header_map
+    }};
+    ($header_map:expr, $key:expr =>> $value:expr) => {{
+        let value: String = $value;
+        $header_map.append($key, HeaderValue::from_str(&value).unwrap());
+    }};
+    ($header_map:expr, $key:expr, $value:expr) => {
+        $header_map.append($key, header_value!($value));
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use actix_web::http::header::{self, HeaderMap, HeaderName, HeaderValue};
+
+    #[test]
+    fn prepare_header() {
+        let headers = prepare_header![
+            header_name!("version") => "HTTP/1.1",
+            header::X_FRAME_OPTIONS => "SAMEORIGIN",
+            header::CONNECTION => "Keep-Alive",
+            header::CONTENT_TYPE => "text/css",
+            header::CACHE_CONTROL => "no-cache",
+        ];
+        assert_eq!(headers.len(), 5);
+        assert_eq!(
+            headers.get(header_name!("version")),
+            Some(&header_value!("HTTP/1.1"))
+        );
+        assert_eq!(
+            headers.get(header::X_FRAME_OPTIONS),
+            Some(&header_value!("SAMEORIGIN"))
+        );
+        assert_eq!(
+            headers.get(header::CONNECTION),
+            Some(&header_value!("Keep-Alive"))
+        );
+        assert_eq!(
+            headers.get(header::CONTENT_TYPE),
+            Some(&header_value!("text/css"))
+        );
+        assert_eq!(
+            headers.get(header::CACHE_CONTROL),
+            Some(&header_value!("no-cache"))
+        );
+    }
+}
