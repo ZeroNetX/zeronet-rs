@@ -10,16 +10,18 @@ use actix_files::NamedFile;
 use actix_web::{
     body::BoxBody,
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
-    http::header::{self, HeaderValue},
+    http::header::{self, HeaderMap, HeaderName, HeaderValue},
     web::{get, Data, Query},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use log::*;
+use regex::Regex;
 
 use crate::{
     controllers::{sites::SitesController, users::UserController},
     core::{address::Address, error::Error},
     environment::ENV,
+    header_name, header_value,
     plugins::{
         register_plugins,
         site_server::{handlers::sites::*, wrapper::*},
@@ -143,6 +145,81 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
             HttpResponse::BadRequest().finish()
         }
     }
+}
+
+pub fn build_header(
+    status: Option<u16>,
+    content_type: Option<&str>,
+    no_script: Option<bool>,
+    allow_ajax: Option<bool>,
+    script_nonce: Option<&str>,
+    extra_header: Option<HeaderMap>,
+    request_method: Option<&str>,
+) -> HeaderMap {
+    let mut content_type = String::from(content_type.unwrap_or("text/html"));
+    let status = status.unwrap_or(200);
+    let request_method = request_method.unwrap_or("GET");
+    let no_script = no_script.unwrap_or(false);
+    let allow_ajax = allow_ajax.unwrap_or(false);
+    let extra_headers = extra_header.unwrap_or(HeaderMap::default());
+
+    let mut headers = HeaderMap::new();
+    headers.append(header_name!("version"), header_value!("HTTP/1.1"));
+    headers.append(header::CONNECTION, header_value!("keep-alive"));
+    headers.append(
+        header_name!("keep-alive"),
+        header_value!("max=25, timeout=30"),
+    );
+    headers.append(header::X_FRAME_OPTIONS, header_value!("SAMEORIGIN"));
+    if no_script {
+        headers.append(header::CONTENT_SECURITY_POLICY, header_value!("default-src 'none'; sandbox allow-top-navigation allow-forms; img-src *; font-src * data:; media-src *; style-src * 'unsafe-inline';"))
+    } else if let Some(nonce) = script_nonce {
+        let value = format!("default-src 'none'; script-src 'nonce-{}'; img-src 'self' blob: data:; style-src 'self' blob: 'unsafe-inline'; connect-src *; frame-src 'self' blob:", &nonce);
+        headers.append(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_str(&value).unwrap(),
+        );
+    }
+    if allow_ajax {
+        headers.append(header::ACCESS_CONTROL_ALLOW_ORIGIN, header_value!("null"));
+    }
+    let mut cacheable_type = false;
+    if request_method == "OPTIONS" {
+        headers.append(
+            header::ACCESS_CONTROL_ALLOW_HEADERS,
+            header_value!("Origin, X-Requested-With, Content-Type, Accept, Cookie, Range"),
+        );
+        headers.append(
+            header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
+            header_value!("true"),
+        );
+        let regex = Regex::new("image|video|font|application/javascript|text/css").unwrap();
+        cacheable_type = regex.is_match(&content_type);
+    }
+    let regex = Regex::new("svg|xml|x-shockwave-flash|pdf").unwrap();
+    if regex.is_match(&content_type) {
+        headers.append(header::CONTENT_DISPOSITION, header_value!("attachment"));
+    }
+    let regex = Regex::new("text/plain|text/html|text/css|application/javascript|application/json|application/manifest+json").unwrap();
+    if regex.is_match(&content_type) {
+        content_type += "; charset=utf-8";
+    }
+    if cacheable_type & [200, 206].contains(&status) {
+        headers.append(header::CACHE_CONTROL, header_value!("public, max-age=600"));
+    } else {
+        headers.append(
+            header::CACHE_CONTROL,
+            header_value!("no-cache, no-store, private, must-revalidate, max-age=0"),
+        );
+    }
+    headers.append(
+        header::CONTENT_TYPE,
+        HeaderValue::from_str(&content_type).unwrap(),
+    );
+    for (key, value) in extra_headers.into_iter() {
+        headers.append(key, value);
+    }
+    headers
 }
 
 async fn serve_file(req: &HttpRequest, data: Data<ZeroServer>) -> Result<NamedFile, Error> {
