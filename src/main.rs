@@ -28,8 +28,6 @@ use crate::{
 
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
-    //TODO! Replace with file based logger with public release.
-    pretty_env_logger::init_custom_env("DECENTNET_LOG");
     let plugins = &*PLUGINS;
     let user_storage = &*USER_STORAGE;
     let site_storage = &*SITE_STORAGE;

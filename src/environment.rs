@@ -150,10 +150,10 @@ fn get_matches() -> ArgMatches {
                 .long("log_dir")
                 .default_value(&DEF_LOG_DIR)
                 .help("Path of logging directory"),
-            // Should be removed
-            // Arg::new("CONSOLE_LOG_LEVEL")
-            //     .long("console_log_level")
-            //     .help("Level of logging to file")
+            Arg::new("CONSOLE_LOG_LEVEL")
+                .long("console_log_level")
+                .default_value("debug")
+                .help("Level of logging to file"),
             // Arg::new("LOG_LEVEL")
             //     .long("log_level")
             //     .help("Level of logging to file"),
@@ -301,6 +301,11 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let ui_ip = matches.value_of("UI_IP").unwrap();
     let ui_port: u16 = matches.value_of("UI_PORT").unwrap().parse()?;
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
+
+    //TODO! Replace with file based logger with public release.
+    std::env::set_var("DECENTNET_LOG", format!("zeronet={}", log_level));
+    pretty_env_logger::init_custom_env("DECENTNET_LOG");
+
     let env = Environment {
         version: VERSION.clone(),
         rev: *REV,
