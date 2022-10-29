@@ -163,59 +163,45 @@ pub fn build_header(
     let allow_ajax = allow_ajax.unwrap_or(false);
     let extra_headers = extra_header.unwrap_or(HeaderMap::default());
 
-    let mut headers = HeaderMap::new();
-    headers.append(header_name!("version"), header_value!("HTTP/1.1"));
-    headers.append(header::CONNECTION, header_value!("keep-alive"));
-    headers.append(
-        header_name!("keep-alive"),
-        header_value!("max=25, timeout=30"),
-    );
-    headers.append(header::X_FRAME_OPTIONS, header_value!("SAMEORIGIN"));
-    if no_script {
-        headers.append(header::CONTENT_SECURITY_POLICY, header_value!("default-src 'none'; sandbox allow-top-navigation allow-forms; img-src *; font-src * data:; media-src *; style-src * 'unsafe-inline';"))
-    } else if let Some(nonce) = script_nonce {
-        let value = format!("default-src 'none'; script-src 'nonce-{}'; img-src 'self' blob: data:; style-src 'self' blob: 'unsafe-inline'; connect-src *; frame-src 'self' blob:", &nonce);
-        headers.append(
-            header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_str(&value).unwrap(),
-        );
-    }
-    if allow_ajax {
-        headers.append(header::ACCESS_CONTROL_ALLOW_ORIGIN, header_value!("null"));
-    }
-    let mut cacheable_type = false;
-    if request_method == "OPTIONS" {
-        headers.append(
-            header::ACCESS_CONTROL_ALLOW_HEADERS,
-            header_value!("Origin, X-Requested-With, Content-Type, Accept, Cookie, Range"),
-        );
-        headers.append(
-            header::ACCESS_CONTROL_ALLOW_CREDENTIALS,
-            header_value!("true"),
-        );
-        let regex = Regex::new("image|video|font|application/javascript|text/css").unwrap();
-        cacheable_type = regex.is_match(&content_type);
-    }
-    let regex = Regex::new("svg|xml|x-shockwave-flash|pdf").unwrap();
-    if regex.is_match(&content_type) {
-        headers.append(header::CONTENT_DISPOSITION, header_value!("attachment"));
-    }
+    let attachable = Regex::new("svg|xml|x-shockwave-flash|pdf")
+        .unwrap()
+        .is_match(&content_type);
+    let nonce = if let Some(nonce) = script_nonce {
+        format!("default-src 'none'; script-src 'nonce-{}'; img-src 'self' blob: data:; style-src 'self' blob: 'unsafe-inline'; connect-src *; frame-src 'self' blob:", &nonce)
+    } else {
+        "".into()
+    };
+
+    let cacheable_type = request_method == "OPTIONS"
+        && Regex::new("image|video|font|application/javascript|text/css")
+            .unwrap()
+            .is_match(&content_type);
+
     let regex = Regex::new("text/plain|text/html|text/css|application/javascript|application/json|application/manifest+json").unwrap();
     if regex.is_match(&content_type) {
         content_type += "; charset=utf-8";
     }
-    if cacheable_type & [200, 206].contains(&status) {
-        headers.append(header::CACHE_CONTROL, header_value!("public, max-age=600"));
-    } else {
-        headers.append(
-            header::CACHE_CONTROL,
-            header_value!("no-cache, no-store, private, must-revalidate, max-age=0"),
-        );
+
+    let mut headers = prepare_header![
+        header_name!("version") => "HTTP/1.1",
+        header::CONNECTION => "keep-alive",
+        header_name!("keep-alive") => "max=25, timeout=30",
+        header::X_FRAME_OPTIONS => "SAMEORIGIN",;
+        no_script =>> header::CONTENT_SECURITY_POLICY => "default-src 'none'; sandbox allow-top-navigation allow-forms; img-src *; font-src * data:; media-src *; style-src * 'unsafe-inline';",
+        allow_ajax =>> header::ACCESS_CONTROL_ALLOW_ORIGIN => "null",
+        request_method == "OPTIONS" =>> header::ACCESS_CONTROL_ALLOW_HEADERS => "Origin, X-Requested-With, Content-Type, Accept, Cookie, Range",
+        request_method == "OPTIONS" =>> header::ACCESS_CONTROL_ALLOW_CREDENTIALS => "true",
+        attachable =>> header::CONTENT_DISPOSITION => "attachment",
+        cacheable_type & [200, 206].contains(&status) =>> header::CACHE_CONTROL => "public, max-age=600",
+        !cacheable_type & [200, 206].contains(&status) =>> header::CACHE_CONTROL => "no-cache, no-store, private, must-revalidate, max-age=0",
+    ];
+
+    prepare_header![headers, header::CACHE_CONTROL =>> content_type];
+
+    if !nonce.is_empty() {
+        prepare_header![ headers, header::CONTENT_SECURITY_POLICY =>> nonce ];
     }
-    headers.append(
-        header::CONTENT_TYPE,
-        HeaderValue::from_str(&content_type).unwrap(),
-    );
+
     for (key, value) in extra_headers.into_iter() {
         headers.append(key, value);
     }
