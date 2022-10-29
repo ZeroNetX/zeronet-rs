@@ -83,6 +83,9 @@ pub struct Environment {
     pub fileserver_port: u16,
     pub ui_ip: String,
     pub ui_port: u16,
+    pub ui_restrict: bool,
+    pub ui_host: String,
+    pub ui_trans_proxy: bool,
     // pub broadcast_port: usize,
     pub trackers: Vec<String>,
     pub homepage: String,
@@ -179,15 +182,15 @@ fn get_matches() -> ArgMatches {
                 .long("ui_port")
                 .default_value("42110")
                 .help("Web interface bind port"),
-            // Arg::new("UI_RESTRICT")
-            //     .long("ui_restrict")
-            //     .help("Restrict web access"),
-            // Arg::new("UI_HOST")
-            //     .long("ui_host")
-            //     .help("Allow access using this hosts"),
-            // Arg::new("UI_TRANS_PROXY")
-            //     .long("ui_trans_proxy")
-            //     .help("Allow access using a transparent proxy"),
+            Arg::new("UI_RESTRICT")
+                .long("ui_restrict")
+                .help("Restrict web access"),
+            Arg::new("UI_HOST")
+                .long("ui_host")
+                .help("Allow access using this hosts"),
+            Arg::new("UI_TRANS_PROXY")
+                .long("ui_trans_proxy")
+                .help("Allow access using a transparent proxy"),
             // Arg::new("OPEN_BROWSER")
             //     .long("open_browser")
             //     .help("Open homepage in web browser automatically"),
@@ -300,6 +303,10 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let use_block_storage = matches.is_present("USE_BLOCK_STORAGE");
     let ui_ip = matches.value_of("UI_IP").unwrap();
     let ui_port: u16 = matches.value_of("UI_PORT").unwrap().parse()?;
+    let ui_host = matches.value_of("UI_HOST").unwrap_or_default().into();
+    let ui_trans_proxy = matches.is_present("UI_TRANS_PROXY");
+    let ui_restrict = matches.is_present("UI_RESTRICT");
+    let log_level = matches.value_of("CONSOLE_LOG_LEVEL").unwrap();
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
 
     //TODO! Replace with file based logger with public release.
@@ -316,6 +323,9 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fileserver_port,
         ui_ip: String::from(ui_ip),
         ui_port,
+        ui_host,
+        ui_trans_proxy,
+        ui_restrict,
         trackers: (*TRACKERS).iter().map(String::from).collect(),
         homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
         lang: String::from(matches.value_of("LANGUAGE").unwrap()),
