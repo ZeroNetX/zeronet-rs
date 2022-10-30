@@ -263,3 +263,73 @@ fn serve_uimedia_file(inner_path: &str) -> Result<NamedFile, Error> {
 
     Ok(f)
 }
+
+fn parse_media_path(path: &str) -> Result<(String, String), Error> {
+    let mut path = path.replace('\\', "/");
+    if path.ends_with('/') {
+        path = path + "index.html";
+    }
+    if path.contains("./") {
+        Err(Error::ParseError)
+    } else {
+        let regex =
+            Regex::new("/media/(?P<address>[A-Za-z0-9]+[A-Za-z0-9\\._-]+)(?P<inner_path>/.*|$)")
+                .unwrap();
+        if let Some(captured) = regex.captures(&path) {
+            let addr = captured.name("address").unwrap();
+            let inner_path = if let Some(inner) = captured.name("inner_path") {
+                let inner = inner.as_str();
+                if inner.starts_with('/') {
+                    inner.strip_prefix('/').unwrap()
+                } else if inner.is_empty() {
+                    "index.html"
+                } else {
+                    inner
+                }
+            } else {
+                "index.html"
+            };
+            return Ok((addr.as_str().to_owned(), inner_path.to_owned()));
+        }
+        Err(Error::MissingError)
+    }
+}
+
+#[cfg(tests)]
+mod tests {
+
+    #[test]
+    fn test_parse_media_path() {
+        const ADDR: &str = "1HelloAddr";
+        const ADDR1: &str = "1HelloAddr.bit";
+        const ADDR2: &str = "1Hello_Addr.bit";
+        const ADDR3: &str = "1Hello-Addr.bit";
+        const INNER_PATH: &str = "index.html";
+
+        let prepare_path = |addr: &str| format!("/media/{}/index.html", addr);
+
+        let test = parse_media_path("/media/1HelloAddr/");
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
+
+        let test = parse_media_path("/media/1HelloAddr");
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
+
+        let test = parse_media_path(&prepare_path(ADDR));
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
+
+        let test = parse_media_path(&prepare_path(ADDR1));
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR1.into(), INNER_PATH.into()));
+
+        let test = parse_media_path(&prepare_path(ADDR2));
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR2.into(), INNER_PATH.into()));
+
+        let test = parse_media_path(&prepare_path(ADDR3));
+        assert!(test.is_ok());
+        assert_eq!(test.unwrap(), (ADDR3.into(), INNER_PATH.into()));
+    }
+}
