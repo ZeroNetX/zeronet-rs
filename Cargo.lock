@@ -2909,6 +2909,8 @@ dependencies = [
  "itertools",
  "lazy_static",
  "log",
+ "mime",
+ "mime_guess",
  "mut_static",
  "num-bigint",
  "ping",

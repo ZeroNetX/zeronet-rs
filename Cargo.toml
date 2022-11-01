@@ -38,6 +38,8 @@ html-escape = "0.2.11"
 actix-web-actors = "4.1.0"
 rayon = "1.5.3"
 mut_static = "5.0.0"
+mime = "0.3.16"
+mime_guess = "2.0.4"
 
 [dependencies.rusqlite]
 features = ["serde_json", "bundled"]

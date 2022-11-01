@@ -295,17 +295,60 @@ fn parse_media_path(path: &str) -> Result<(String, String), Error> {
     }
 }
 
+pub fn is_wrapper_necessary(path: &str) -> bool {
+    let regex = Regex::new("/(?P<address>[A-Za-z0-9\\._-]+)(?P<inner_path>/.*|$)").unwrap();
+    let result = regex.captures(path);
+    if result.is_none() {
+        return true;
+    }
+    let inner_path = result.unwrap().name("inner_path");
+
+    if inner_path.is_none()
+        || inner_path.unwrap().as_str().ends_with('/')
+        || inner_path.unwrap().as_str().ends_with("html")
+    {
+        true
+    } else {
+        let mime = MimeGuess::from_path(path);
+        return mime.iter().any(|type_| type_.type_() == mime::HTML);
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    const ADDR: &str = "1HelloAddr";
+    const ADDR1: &str = "1HelloAddr.bit";
+    const ADDR2: &str = "1Hello_Addr.bit";
+    const ADDR3: &str = "1Hello-Addr.bit";
+    const INNER_PATH: &str = "index.html";
+    const INNER_PATH1: &str = "index.xhtml";
+    const INNER_PATH2: &str = "index.js";
+    const INNER_PATH3: &str = "index.css";
+
+    #[test]
+    fn test_is_wrapper_necessary() {
+        let prepare_path = |addr: &str, inner_path: &str| format!("/{addr}/{inner_path}");
+
+        let test = is_wrapper_necessary(&prepare_path(ADDR, INNER_PATH));
+        assert!(test);
+
+        let test = is_wrapper_necessary(&prepare_path(ADDR3, ""));
+        assert!(test);
+
+        let test = is_wrapper_necessary(&prepare_path(ADDR1, INNER_PATH1));
+        assert!(test);
+
+        let test = is_wrapper_necessary(&prepare_path(ADDR2, INNER_PATH2));
+        assert!(!test);
+
+        let test = is_wrapper_necessary(&prepare_path(ADDR3, INNER_PATH3));
+        assert!(!test);
+    }
 
     #[test]
     fn test_parse_media_path() {
-        const ADDR: &str = "1HelloAddr";
-        const ADDR1: &str = "1HelloAddr.bit";
-        const ADDR2: &str = "1Hello_Addr.bit";
-        const ADDR3: &str = "1Hello-Addr.bit";
-        const INNER_PATH: &str = "index.html";
-
         let prepare_path = |addr: &str| format!("/media/{}/index.html", addr);
 
         let test = parse_media_path("/media/1HelloAddr/");
