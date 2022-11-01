@@ -295,7 +295,7 @@ fn parse_media_path(path: &str) -> Result<(String, String), Error> {
     }
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
 
     #[test]
