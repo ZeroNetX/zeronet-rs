@@ -135,7 +135,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_announce() {
-        let tracker_addr = "udp://tracker.0x.tf:6969/announce";
+        let tracker_addr = "udp://tracker.opentrackr.org:1337/announce";
         let site_addr = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk".to_string();
         let info_hash = get_info_hash(site_addr.to_string());
         let tracker_addr = make_addr(tracker_addr).unwrap();
