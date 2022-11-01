@@ -289,6 +289,9 @@ fn parse_media_path(path: &str) -> Result<(String, String), Error> {
             } else {
                 "index.html"
             };
+            if addr.as_str() == inner_path {
+                return Err(Error::MissingError);
+            }
             return Ok((addr.as_str().to_owned(), inner_path.to_owned()));
         }
         Err(Error::MissingError)
@@ -374,5 +377,20 @@ mod tests {
         let test = parse_media_path(&prepare_path(ADDR3));
         assert!(test.is_ok());
         assert_eq!(test.unwrap(), (ADDR3.into(), INNER_PATH.into()));
+
+        let test = parse_media_path("/media/ /index.html");
+        assert!(test.is_err());
+        match test.unwrap_err() {
+            Error::MissingError => {}
+            _ => unreachable!(),
+        }
+
+        let test = parse_media_path("/media/./index.html");
+        assert!(test.is_err());
+
+        match test.unwrap_err() {
+            Error::ParseError => {}
+            _ => unreachable!(),
+        }
     }
 }
