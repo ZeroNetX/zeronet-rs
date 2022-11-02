@@ -2,7 +2,7 @@ use actix_web::{HttpRequest, HttpResponse, Responder};
 
 use super::server::build_header;
 
-pub fn error400(req: &HttpRequest, message: Option<&str>) -> impl Responder {
+pub fn error400(req: &HttpRequest, message: Option<&str>) -> HttpResponse {
     let mut res = build_error("Bad Request", message.unwrap_or(""));
     let s = res.headers_mut();
     let headers = build_header!(400, true);
@@ -10,7 +10,7 @@ pub fn error400(req: &HttpRequest, message: Option<&str>) -> impl Responder {
     res.respond_to(req)
 }
 
-pub fn error403(req: &HttpRequest, message: Option<&str>) -> impl Responder {
+pub fn error403(req: &HttpRequest, message: Option<&str>) -> HttpResponse {
     let mut res = build_error("Forbidden", message.unwrap_or(""));
     let s = res.headers_mut();
     let headers = build_header!(403, true);
@@ -18,7 +18,7 @@ pub fn error403(req: &HttpRequest, message: Option<&str>) -> impl Responder {
     res.respond_to(req)
 }
 
-pub fn error404(req: &HttpRequest, path: Option<&str>) -> impl Responder {
+pub fn error404(req: &HttpRequest, path: Option<&str>) -> HttpResponse {
     let mut res = build_error("Not Found", path.unwrap_or(""));
     let s = res.headers_mut();
     let headers = build_header!(404, true);
@@ -26,7 +26,7 @@ pub fn error404(req: &HttpRequest, path: Option<&str>) -> impl Responder {
     res.respond_to(req)
 }
 
-pub fn error500(req: &HttpRequest, message: Option<&str>) -> impl Responder {
+pub fn error500(req: &HttpRequest, message: Option<&str>) -> HttpResponse {
     let mut res = build_error("Server error", message.unwrap_or(":("));
     let s = res.headers_mut();
     let headers = build_header!(500, true);
