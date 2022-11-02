@@ -24,7 +24,7 @@ use crate::{
     header_name, header_value,
     plugins::{
         register_plugins,
-        site_server::{handlers::sites::*, wrapper::*},
+        site_server::{handlers::sites::*, media::*, wrapper::*},
         websocket,
     },
 };
@@ -93,8 +93,12 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     //     let taken = start.duration_since(start);
     //     println!("{}", taken.as_micros());
     // });
-    if inner_path == "favicon.ico" || inner_path == "apple-touch-icon.png" {
-        return serve_uimedia(req).await;
+    let header_allow_ajax = !req.match_info().query("ajax_key").is_empty();
+    //TODO! Check if ajax_key matches with saved one
+    let path = format!("{}/{}", address, inner_path);
+    let is_wrapper_necessary = is_wrapper_necessary(&path);
+    if !is_wrapper_necessary {
+        return serve_sitemedia(req, &format!("/media/{path}"), header_allow_ajax).await;
     } else if !inner_path.is_empty()
         && inner_path.contains('.')
         && !inner_path.ends_with(".html")
