@@ -202,7 +202,7 @@ pub fn build_header(
         !cacheable_type & [200, 206].contains(&status) =>> header::CACHE_CONTROL => "no-cache, no-store, private, must-revalidate, max-age=0",
     ];
 
-    prepare_header![headers, header::CACHE_CONTROL =>> content_type];
+    prepare_header![headers, header::CONTENT_TYPE =>> content_type];
 
     if !nonce.is_empty() {
         prepare_header![ headers, header::CONTENT_SECURITY_POLICY =>> nonce ];
