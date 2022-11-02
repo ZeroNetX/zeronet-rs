@@ -44,6 +44,7 @@ pub trait AppEntryImpl = ServiceFactory<
 >;
 
 fn build_app(shared_data: ZeroServer) -> App<impl AppEntryImpl> {
+    //TODO! Handle REMOTE_ADDR & HTTP_HOST via middleware
     let app = register_plugins(App::new().app_data(Data::new(shared_data)))
         .route("/", get().to(index))
         .route("/{address:1[^/]+}", get().to(serve_site))
