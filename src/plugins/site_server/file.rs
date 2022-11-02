@@ -5,6 +5,7 @@ use actix_web::{
     http::header::{self, HeaderMap, HeaderValue},
     HttpRequest,
 };
+use log::error;
 
 use super::server::build_header;
 use crate::core::error::Error;
@@ -79,6 +80,7 @@ where
         };
         return Ok((file, headers));
     } else {
+        error!("serve_file: {:?} Not Found", inner_path.as_ref());
         Err(Error::FileNotFound(format!(
             "{:?}",
             inner_path.as_ref().as_os_str()
