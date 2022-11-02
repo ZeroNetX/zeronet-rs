@@ -1,17 +1,21 @@
 use std::{fs::File, io::Read, path::Path, str::FromStr};
 
-use actix_files::NamedFile;
-use actix_web::{HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{HttpRequest, HttpResponse, Result};
 use log::*;
+use mime_guess::MimeGuess;
+use regex::Regex;
 use uuid::Uuid;
 use zerucontent::Content;
 
 use crate::{
-    core::{address::Address, error::Error},
-    environment::{DEF_MEDIA_PATH, DEF_TEMPLATES_PATH, ENV},
-    plugins::site_server::handlers::{
-        sites::{AddWrapperKey, Lookup, SiteContent},
-        users::UserSettings,
+    core::address::Address,
+    environment::{DEF_TEMPLATES_PATH, ENV},
+    plugins::site_server::{
+        handlers::{
+            sites::{AddWrapperKey, Lookup, SiteContent},
+            users::UserSettings,
+        },
+        server::build_header,
     },
 };
 
@@ -235,69 +239,6 @@ fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
     Ok(string)
 }
 
-pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
-    let path = req.match_info();
-    let inner_path = &format!("{}.{}", path.query("inner_path"), path.query("ext"));
-
-    match serve_uimedia_file(inner_path) {
-        Ok(f) => f.respond_to(&req),
-        Err(_) => HttpResponse::BadRequest().finish(),
-    }
-}
-
-fn serve_uimedia_file(inner_path: &str) -> Result<NamedFile, Error> {
-    trace!("Serving uimedia file: {:?}", inner_path);
-    let mut file_path = (&*DEF_MEDIA_PATH).to_owned();
-
-    //TODO!: InFallible Handling of files
-    match inner_path {
-        "favicon.ico" | "apple-touch-icon.png" => file_path.push(&Path::new("img")),
-        _ => {}
-    }
-    file_path.push(&Path::new(inner_path));
-
-    if !file_path.is_file() {
-        return Err(Error::FileNotFound(file_path.to_str().unwrap().to_string()));
-    }
-    let f = NamedFile::open(file_path)?;
-
-    Ok(f)
-}
-
-fn parse_media_path(path: &str) -> Result<(String, String), Error> {
-    let mut path = path.replace('\\', "/");
-    if path.ends_with('/') {
-        path = path + "index.html";
-    }
-    if path.contains("./") {
-        Err(Error::ParseError)
-    } else {
-        let regex =
-            Regex::new("/media/(?P<address>[A-Za-z0-9]+[A-Za-z0-9\\._-]+)(?P<inner_path>/.*|$)")
-                .unwrap();
-        if let Some(captured) = regex.captures(&path) {
-            let addr = captured.name("address").unwrap();
-            let inner_path = if let Some(inner) = captured.name("inner_path") {
-                let inner = inner.as_str();
-                if inner.starts_with('/') {
-                    inner.strip_prefix('/').unwrap()
-                } else if inner.is_empty() {
-                    "index.html"
-                } else {
-                    inner
-                }
-            } else {
-                "index.html"
-            };
-            if addr.as_str() == inner_path {
-                return Err(Error::MissingError);
-            }
-            return Ok((addr.as_str().to_owned(), inner_path.to_owned()));
-        }
-        Err(Error::MissingError)
-    }
-}
-
 pub fn is_wrapper_necessary(path: &str) -> bool {
     let regex = Regex::new("/(?P<address>[A-Za-z0-9\\._-]+)(?P<inner_path>/.*|$)").unwrap();
     let result = regex.captures(path);
@@ -348,49 +289,5 @@ mod tests {
 
         let test = is_wrapper_necessary(&prepare_path(ADDR3, INNER_PATH3));
         assert!(!test);
-    }
-
-    #[test]
-    fn test_parse_media_path() {
-        let prepare_path = |addr: &str| format!("/media/{}/index.html", addr);
-
-        let test = parse_media_path("/media/1HelloAddr/");
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
-
-        let test = parse_media_path("/media/1HelloAddr");
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
-
-        let test = parse_media_path(&prepare_path(ADDR));
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR.into(), INNER_PATH.into()));
-
-        let test = parse_media_path(&prepare_path(ADDR1));
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR1.into(), INNER_PATH.into()));
-
-        let test = parse_media_path(&prepare_path(ADDR2));
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR2.into(), INNER_PATH.into()));
-
-        let test = parse_media_path(&prepare_path(ADDR3));
-        assert!(test.is_ok());
-        assert_eq!(test.unwrap(), (ADDR3.into(), INNER_PATH.into()));
-
-        let test = parse_media_path("/media/ /index.html");
-        assert!(test.is_err());
-        match test.unwrap_err() {
-            Error::MissingError => {}
-            _ => unreachable!(),
-        }
-
-        let test = parse_media_path("/media/./index.html");
-        assert!(test.is_err());
-
-        match test.unwrap_err() {
-            Error::ParseError => {}
-            _ => unreachable!(),
-        }
     }
 }
