@@ -10,7 +10,7 @@ use actix_files::NamedFile;
 use actix_web::{
     body::BoxBody,
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
-    http::header::{self, HeaderMap, HeaderName, HeaderValue},
+    http::header::{self, HeaderMap, HeaderValue},
     web::{get, Data, Query},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -25,7 +25,7 @@ use crate::{
     header_name, header_value,
     plugins::{
         register_plugins,
-        site_server::{handlers::sites::*, media::*, wrapper::*},
+        site_server::{common::*, error::*, handlers::sites::*, media::*, wrapper::*},
         websocket,
     },
 };
@@ -121,6 +121,30 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
             wrapper = false;
         } else if wrapper_nonce.is_some() {
             warn!("Nonce {:?} invalid!", wrapper_nonce);
+        }
+    }
+
+    if is_ajax_request(&req) {
+        return error403(&req, Some("Ajax request not allowed to load wrapper"));
+    } else if is_web_socket_request(&req) {
+        return error403(&req, Some("WebSocket request not allowed to load wrapper"));
+    }
+    if let Some(value) = get_header_value(&req, header_name!("HTTP_ACCEPT")) {
+        if !value.contains("text/html") {
+            let v = format!("Invalid Accept header to load wrapper: {value}");
+            return error403(&req, Some(&v));
+        }
+    }
+
+    if let Some(value) = get_header_value(&req, header_name!("HTTP_X_MOZ")) {
+        if value.contains("prefetch") {
+            return error403(&req, Some("Prefetch not allowed to load wrapper"));
+        }
+    }
+
+    if let Some(value) = get_header_value(&req, header_name!("HTTP_PURPOSE")) {
+        if value.contains("prefetch") {
+            return error403(&req, Some("Prefetch not allowed to load wrapper"));
         }
     }
 
