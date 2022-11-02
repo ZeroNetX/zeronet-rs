@@ -48,7 +48,17 @@ pub async fn serve_sitemedia(
         )
         .await
         {
-            Ok((f, headers)) => f.respond_to(&req),
+            Ok((file, headers)) => {
+                let mut resp = file.respond_to(&req);
+                if let Some(headers_) = headers {
+                    let headers = resp.headers_mut();
+                    headers.clear();
+                    for (key, value) in headers_.into_iter() {
+                        headers.append(key, value);
+                    }
+                }
+                resp
+            }
             Err(_) => HttpResponse::BadRequest().finish(),
         };
     } else {
@@ -83,7 +93,17 @@ pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
     // }
 
     match serve_file(&req, file_path.as_path(), None, None, None, None, None).await {
-        Ok((file, headers)) => file.respond_to(&req),
+        Ok((file, headers)) => {
+            let mut resp = file.respond_to(&req);
+            if let Some(headers_) = headers {
+                let headers = resp.headers_mut();
+                headers.clear();
+                for (key, value) in headers_.into_iter() {
+                    headers.append(key, value);
+                }
+            }
+            resp
+        }
         Err(_) => HttpResponse::BadRequest().finish(),
     }
 }
