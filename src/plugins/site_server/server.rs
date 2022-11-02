@@ -179,7 +179,7 @@ pub fn build_header(
     };
 
     let cacheable_type = request_method == "OPTIONS"
-        && Regex::new("image|video|font|application/javascript|text/css")
+        || Regex::new("image|video|font|application/javascript|text/css")
             .unwrap()
             .is_match(&content_type);
 
