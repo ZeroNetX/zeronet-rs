@@ -63,9 +63,10 @@ where
             if range.is_some() {
                 unimplemented!("Partial File Requests are not implemented, Please file Bug Report");
             }
+            let content_type = content_type.to_string();
             let headers = build_header!(
                 Some(200),
-                None,
+                Some(&content_type),
                 Some(header_noscript),
                 Some(header_allow_ajax),
                 None,
