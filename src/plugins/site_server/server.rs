@@ -46,14 +46,14 @@ pub trait AppEntryImpl = ServiceFactory<
 
 fn build_app(shared_data: ZeroServer) -> App<impl AppEntryImpl> {
     //TODO! Handle REMOTE_ADDR & HTTP_HOST via middleware
-    let app = register_plugins(App::new().app_data(Data::new(shared_data)))
+    let app = register_plugins(App::new().app_data(Data::new(shared_data)));
+    websocket::register_site_plugins(app)
         .route("/", get().to(index))
         .route("/{address:1[^/]+}", get().to(serve_site))
         .route("/{address:1[^/]+}/{inner_path:.*}", get().to(serve_site))
-        .route("/uimedia/{inner_path}.{ext}", get().to(serve_uimedia))
         .route("/raw/{inner_path}.{ext}", get().to(serve_raw_media))
-        .route("/{inner_path}.{ext}", get().to(serve_uimedia));
-    websocket::register_site_plugins(app)
+        .route("/uimedia/{inner_path:.*}", get().to(serve_uimedia))
+        .route("/{inner_path:.*}", get().to(serve_uimedia))
 }
 
 pub async fn run(

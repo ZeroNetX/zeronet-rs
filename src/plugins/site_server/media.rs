@@ -72,8 +72,7 @@ pub async fn serve_sitemedia(
 
 pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
     let path = req.match_info();
-    let inner_path = &format!("{}.{}", path.query("inner_path"), path.query("ext"));
-    trace!("Serving uimedia file: {:?}", inner_path);
+    let inner_path = path.query("inner_path");
     if inner_path.contains("../") {
         error!("Error 403 : {inner_path}");
         return error403(&req, None);
@@ -82,7 +81,7 @@ pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
     let mut file_path = (&*DEF_MEDIA_PATH).to_owned();
 
     //TODO!: InFallible Handling of files
-    match inner_path.as_str() {
+    match inner_path {
         "favicon.ico" | "apple-touch-icon.png" => file_path.push(&Path::new("img")),
         _ => {}
     }
