@@ -101,7 +101,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     let path = format!("{}/{}", address, inner_path);
     let is_wrapper_necessary = is_wrapper_necessary(&path);
     if !is_wrapper_necessary {
-        return serve_sitemedia(req, &format!("/media/{path}"), header_allow_ajax).await;
+        return serve_sitemedia(req, &format!("/media/{path}"), header_allow_ajax, None).await;
     } else if !inner_path.is_empty()
         && inner_path.contains('.')
         && !inner_path.ends_with(".html")

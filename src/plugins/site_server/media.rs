@@ -16,7 +16,9 @@ pub async fn serve_sitemedia(
     req: HttpRequest,
     path: &str,
     header_allow_ajax: bool,
+    header_no_script: Option<bool>,
 ) -> HttpResponse {
+    let header_no_script = header_no_script.unwrap_or(false);
     let res = parse_media_path(path);
     if res.is_err() {
         match res.unwrap_err() {
@@ -41,7 +43,7 @@ pub async fn serve_sitemedia(
             None,
             None,
             None,
-            Some(true),
+            Some(header_no_script),
             Some(header_allow_ajax),
         )
         .await
@@ -91,7 +93,7 @@ pub async fn serve_raw_media(req: HttpRequest) -> HttpResponse {
     let inner_path = &format!("/media/{}.{}", path.query("inner_path"), path.query("ext"));
     println!("Loading Raw Path {inner_path}");
     let header_allow_ajax = !path.query("ajax_key").is_empty();
-    serve_sitemedia(req, inner_path, header_allow_ajax).await
+    serve_sitemedia(req, inner_path, header_allow_ajax, Some(true)).await
 }
 
 fn parse_media_path(path: &str) -> Result<(String, String), Error> {
