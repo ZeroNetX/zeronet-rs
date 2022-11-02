@@ -15,6 +15,7 @@ use actix_web::{
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use log::*;
+use mime::Mime;
 use regex::Regex;
 
 use crate::{
@@ -188,6 +189,8 @@ pub fn build_header(
         content_type += "; charset=utf-8";
     }
 
+    let is_html = Mime::from_str(&content_type).unwrap().subtype() == mime::HTML;
+
     let mut headers = prepare_header![
         header_name!("version") => "HTTP/1.1",
         header::CONNECTION => "keep-alive",
@@ -195,6 +198,7 @@ pub fn build_header(
         header::X_FRAME_OPTIONS => "SAMEORIGIN",;
         no_script =>> header::CONTENT_SECURITY_POLICY => "default-src 'none'; sandbox allow-top-navigation allow-forms; img-src *; font-src * data:; media-src *; style-src * 'unsafe-inline';",
         allow_ajax =>> header::ACCESS_CONTROL_ALLOW_ORIGIN => "null",
+        !is_html =>> header::ACCESS_CONTROL_ALLOW_ORIGIN => "*",
         request_method == "OPTIONS" =>> header::ACCESS_CONTROL_ALLOW_HEADERS => "Origin, X-Requested-With, Content-Type, Accept, Cookie, Range",
         request_method == "OPTIONS" =>> header::ACCESS_CONTROL_ALLOW_CREDENTIALS => "true",
         attachable =>> header::CONTENT_DISPOSITION => "attachment",
