@@ -129,20 +129,20 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     } else if is_web_socket_request(&req) {
         return error403(&req, Some("WebSocket request not allowed to load wrapper"));
     }
-    if let Some(value) = get_header_value(&req, header_name!("HTTP_ACCEPT")) {
+    if let Some(value) = get_header_value(&req, header_name!("http_accept")) {
         if !value.contains("text/html") {
             let v = format!("Invalid Accept header to load wrapper: {value}");
             return error403(&req, Some(&v));
         }
     }
 
-    if let Some(value) = get_header_value(&req, header_name!("HTTP_X_MOZ")) {
+    if let Some(value) = get_header_value(&req, header_name!("http_x_moz")) {
         if value.contains("prefetch") {
             return error403(&req, Some("Prefetch not allowed to load wrapper"));
         }
     }
 
-    if let Some(value) = get_header_value(&req, header_name!("HTTP_PURPOSE")) {
+    if let Some(value) = get_header_value(&req, header_name!("http_purpose")) {
         if value.contains("prefetch") {
             return error403(&req, Some("Prefetch not allowed to load wrapper"));
         }

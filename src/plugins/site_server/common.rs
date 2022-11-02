@@ -23,7 +23,7 @@ pub fn get_header_value(req: &HttpRequest, key: impl AsHeaderName) -> Option<&st
 }
 
 pub fn is_web_socket_request(req: &HttpRequest) -> bool {
-    let res = get_header_value(req, header_name!("HTTP_UPGRADE"));
+    let res = get_header_value(req, header_name!("http_upgrade"));
     if res.is_none() {
         return false;
     }
@@ -31,7 +31,7 @@ pub fn is_web_socket_request(req: &HttpRequest) -> bool {
 }
 
 pub fn is_ajax_request(req: &HttpRequest) -> bool {
-    let res = get_header_value(req, header_name!("HTTP_X_REQUESTED_WITH"));
+    let res = get_header_value(req, header_name!("http_x_requested_with"));
     if res.is_none() {
         return false;
     }
@@ -39,7 +39,7 @@ pub fn is_ajax_request(req: &HttpRequest) -> bool {
 }
 
 pub fn is_script_nonce_supported(req: &HttpRequest) -> bool {
-    let res = get_header_value(req, header_name!("HTTP_USER_AGENT"));
+    let res = get_header_value(req, header_name!("http_user_agent"));
     if res.is_none() {
         return true;
     }
@@ -54,6 +54,6 @@ pub fn is_script_nonce_supported(req: &HttpRequest) -> bool {
 }
 
 pub fn get_referer(req: &HttpRequest) -> Option<&HeaderValue> {
-    let res = req.headers().get(header_name!("HTTP_REFERER"));
+    let res = req.headers().get(header_name!("http_referer"));
     res
 }
