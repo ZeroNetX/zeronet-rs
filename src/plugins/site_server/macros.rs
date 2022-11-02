@@ -1,14 +1,14 @@
 #[macro_export]
 macro_rules! header_name {
     ($value:expr) => {
-        HeaderName::from_static($value)
+        actix_web::http::header::HeaderName::from_static($value)
     };
 }
 
 #[macro_export]
 macro_rules! header_value {
     ($value:expr) => {
-        HeaderValue::from_static($value)
+        actix_web::http::header::HeaderValue::from_static($value)
     };
 }
 
@@ -85,14 +85,14 @@ macro_rules! build_header {
 #[macro_export]
 macro_rules! prepare_header {
     ($($key:expr => $value:expr,)*) => {{
-        let mut header_map = HeaderMap::new();
+        let mut header_map = actix_web::http::header::HeaderMap::new();
         $(
             prepare_header!(header_map, $key, $value);
         )*
         header_map
     }};
     ($($key:expr => $value:expr,)*; $($condition:expr =>> $key_c:expr => $value_c:expr,)*) => {{
-        let mut header_map = HeaderMap::new();
+        let mut header_map = actix_web::http::header::HeaderMap::new();
         $(
             prepare_header!(header_map, $key, $value);
         )*
@@ -106,7 +106,7 @@ macro_rules! prepare_header {
     }};
     ($header_map:expr, $key:expr =>> $value:expr) => {{
         let value: String = $value;
-        $header_map.append($key, HeaderValue::from_str(&value).unwrap());
+        $header_map.append($key, actix_web::http::header::HeaderValue::from_str(&value).unwrap());
     }};
     ($header_map:expr, $key:expr, $value:expr) => {
         $header_map.append($key, header_value!($value));
@@ -115,7 +115,7 @@ macro_rules! prepare_header {
 
 #[cfg(test)]
 mod tests {
-    use actix_web::http::header::{self, HeaderMap, HeaderName, HeaderValue};
+    use actix_web::http::header;
 
     #[test]
     fn prepare_header() {
