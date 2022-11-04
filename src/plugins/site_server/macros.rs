@@ -17,6 +17,17 @@ macro_rules! build_header {
     () => {
         build_header!(None, None, None, None, None, None, None)
     };
+    ($status:expr, $content_type:expr, $script_nonce:expr) => {
+        build_header!(
+            Some($status),
+            None,
+            None,
+            None,
+            Some($script_nonce),
+            None,
+            None
+        )
+    };
     ($status:expr) => {
         build_header!(Some($status), None, None, None, None, None, None)
     };

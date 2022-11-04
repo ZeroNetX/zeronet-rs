@@ -7,13 +7,13 @@ use log::*;
 use mime_guess::MimeGuess;
 use regex::Regex;
 use tokio::fs;
-use uuid::Uuid;
 use zerucontent::{Content, Number};
 
 use crate::{
     core::address::Address,
     environment::{DEF_TEMPLATES_PATH, ENV},
     plugins::site_server::{
+        common::get_nonce,
         file::serve_file,
         handlers::{
             sites::{AddWrapperKey, Lookup, SiteContent},
@@ -53,7 +53,7 @@ pub async fn serve_wrapper(
     data: actix_web::web::Data<ZeroServer>,
     has_wrapper_nonce: bool,
 ) -> HttpResponse {
-    let nonce = Uuid::new_v4().simple().to_string();
+    let nonce = get_nonce(false, 64);
     {
         let mut nonces = data.wrapper_nonces.lock().unwrap();
         nonces.insert(nonce.clone());
@@ -196,7 +196,7 @@ pub async fn serve_wrapper(
     path.push("wrapper.html");
 
     let sandbox_permissions = "".into();
-
+    let script_nonce = get_nonce(true, 64);
     let string = match render(
         &path,
         WrapperData {
@@ -218,14 +218,14 @@ pub async fn serve_wrapper(
             lang: ENV.lang.to_string(),
             homepage: String::from(&*ENV.homepage),
             themeclass,
-            script_nonce: String::from("script_nonce"), //TODO!: Need to Replace with real value
+            script_nonce: script_nonce.clone(),
         },
     ) {
         Ok(s) => s,
         Err(_) => String::new(),
     };
     let mut res = HttpResponse::Ok();
-    for (key, value) in build_header!().iter() {
+    for (key, value) in build_header!(200, None, &script_nonce).iter() {
         res.append_header((key.as_str(), value.to_str().unwrap()));
     }
     res.keep_alive().body(string)
