@@ -1,16 +1,18 @@
 use std::path::Path;
 
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use actix_web::{http::header::HeaderMap, HttpRequest, HttpResponse, Responder};
 use log::*;
 use regex::Regex;
 
 use crate::{
     core::error::Error,
     environment::{DEF_MEDIA_PATH, ENV},
-    plugins::site_server::file::serve_file,
+    plugins::site_server::{
+        common::{get_referer, redirect},
+        error::*,
+        file::serve_file,
+    },
 };
-
-use super::{common::redirect, error::*};
 
 pub async fn serve_sitemedia(
     req: HttpRequest,
@@ -51,11 +53,7 @@ pub async fn serve_sitemedia(
             Ok((file, headers)) => {
                 let mut resp = file.respond_to(&req);
                 if let Some(headers_) = headers {
-                    let headers = resp.headers_mut();
-                    headers.clear();
-                    for (key, value) in headers_.into_iter() {
-                        headers.append(key, value);
-                    }
+                    resp = append_headers(&req, resp, headers_);
                 }
                 resp
             }
@@ -68,6 +66,23 @@ pub async fn serve_sitemedia(
         //TODO! Handle Missing Files
         unimplemented!("Site Media File Not Exist")
     }
+}
+
+pub fn append_headers(req: &HttpRequest, resp: HttpResponse, headers: HeaderMap) -> HttpResponse {
+    let mut resp = resp;
+    let headers_ = resp.headers_mut();
+    headers_.clear();
+    for (key, value) in headers.into_iter() {
+        if key == header_name!("access-control-allow-origin") {
+            //TODO!: Need A Check for Same Origin
+            if get_referer(req).is_some() {
+                headers_.append(key, value);
+            }
+        } else {
+            headers_.append(key, value);
+        }
+    }
+    resp
 }
 
 pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
@@ -95,11 +110,7 @@ pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
         Ok((file, headers)) => {
             let mut resp = file.respond_to(&req);
             if let Some(headers_) = headers {
-                let headers = resp.headers_mut();
-                headers.clear();
-                for (key, value) in headers_.into_iter() {
-                    headers.append(key, value);
-                }
+                resp = append_headers(&req, resp, headers_);
             }
             resp
         }
