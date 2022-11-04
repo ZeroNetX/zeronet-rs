@@ -11,8 +11,8 @@ use crate::{
     io::utils::{load_sites_file, load_trackers, load_users_file},
     plugins::{
         self,
+        core::plugin::Plugin,
         path_provider::{self, PathProviderPlugin},
-        Plugin,
     },
     utils::gen_peer_id,
 };

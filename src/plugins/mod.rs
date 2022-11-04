@@ -10,11 +10,10 @@ use std::path::PathBuf;
 
 use futures::executor::block_on;
 use log::error;
-use serde::{Deserialize, Serialize};
 use wit_bindgen_wasmer::wasmer::{imports, Cranelift, Module, Store};
 
 use self::{
-    core::{manifest::PluginManifest, permission::Permission},
+    core::{manifest::PluginManifest, plugin::Plugin},
     manifest::Manifest,
 };
 
@@ -91,30 +90,5 @@ pub fn load_plugins() -> Vec<Plugin> {
         plugins_loaded
     } else {
         vec![]
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Plugin {
-    name: String,
-    description: String,
-    version: String,
-    revision: i64,
-    permissions: Vec<Permission>,
-    #[serde(skip)]
-    path: PathBuf,
-}
-
-impl Default for Plugin {
-    fn default() -> Self {
-        Plugin {
-            version: "0.0.1".into(),
-            revision: 1,
-            name: Default::default(),
-            description: Default::default(),
-            path: Default::default(),
-            permissions: Default::default(),
-        }
     }
 }
