@@ -38,7 +38,7 @@ pub async fn serve_sitemedia(
     let file_path = &ENV.data_path.join(address).join(&inner_path);
 
     if file_path.is_dir() {
-        return redirect(&inner_path);
+        redirect(&inner_path)
     } else if file_path.is_file() {
         return match serve_file(
             &req,
@@ -94,14 +94,14 @@ pub async fn serve_uimedia(req: HttpRequest) -> HttpResponse {
         return error403(&req, None);
     }
 
-    let mut file_path = (&*DEF_MEDIA_PATH).to_owned();
+    let mut file_path = (*DEF_MEDIA_PATH).to_owned();
 
     //TODO!: InFallible Handling of files
     match inner_path {
-        "favicon.ico" | "apple-touch-icon.png" => file_path.push(&Path::new("img")),
+        "favicon.ico" | "apple-touch-icon.png" => file_path.push(Path::new("img")),
         _ => {}
     }
-    file_path.push(&Path::new(inner_path));
+    file_path.push(Path::new(inner_path));
 
     // if !file_path.is_file() {
     //     return Err(Error::FileNotFound(file_path.to_str().unwrap().to_string()));
@@ -130,7 +130,7 @@ pub async fn serve_raw_media(req: HttpRequest) -> HttpResponse {
 pub fn parse_media_path(path: &str) -> Result<(String, String), Error> {
     let mut path = path.replace('\\', "/");
     if path.ends_with('/') {
-        path = path + "index.html";
+        path += "index.html";
     }
     if path.contains("./") {
         Err(Error::ParseError)

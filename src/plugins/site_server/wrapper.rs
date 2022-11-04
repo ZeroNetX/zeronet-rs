@@ -122,7 +122,7 @@ pub async fn serve_wrapper(
     };
     if has_wrapper_nonce {
         let inner_path = &format!("/media/{}.{}", address.address, inner_path);
-        let (address, inner_path) = parse_media_path(&inner_path).unwrap();
+        let (address, inner_path) = parse_media_path(inner_path).unwrap();
         let file_path = &ENV.data_path.join(address).join(&inner_path);
         match serve_file(&req, file_path, None, Some(true), None, Some(false), None).await {
             Ok((res, headers)) => {
@@ -189,7 +189,7 @@ pub async fn serve_wrapper(
 
     let postmessage_nonce_security = format!("{}", content.postmessage_nonce_security);
 
-    let mut path = (&*DEF_TEMPLATES_PATH).to_owned();
+    let mut path = (*DEF_TEMPLATES_PATH).to_owned();
     path.push("wrapper.html");
 
     let sandbox_permissions = "".into();
@@ -299,7 +299,7 @@ pub fn is_wrapper_necessary(path: &str) -> bool {
         true
     } else {
         let mime = MimeGuess::from_path(path);
-        return mime.iter().any(|type_| type_.type_() == mime::HTML);
+        mime.iter().any(|type_| type_.type_() == mime::HTML)
     }
 }
 

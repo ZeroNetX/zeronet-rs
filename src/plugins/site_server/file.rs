@@ -51,7 +51,7 @@ where
             let key = "zeronet_content_encoding";
             let content_encoding = req_path.get(key).unwrap_or("").to_owned();
             let need_header = content_encoding
-                .split(",")
+                .split(',')
                 .all(|a| ["gzip", "compress", "deflate", "identity", "br"].contains(&a));
             if need_header {
                 prepare_header![extra_headers, header::CONTENT_ENCODING =>> content_encoding]
@@ -78,7 +78,7 @@ where
         } else {
             None
         };
-        return Ok((file, headers));
+        Ok((file, headers))
     } else {
         error!("serve_file: {:?} Not Found", inner_path.as_ref());
         Err(Error::FileNotFound(format!(

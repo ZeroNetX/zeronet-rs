@@ -22,7 +22,7 @@ pub fn get_storage_path() -> String {
     let plugin = plugin.deref_mut().first_mut().unwrap();
     let path = plugin
         .provider
-        .get_storage_path(&mut plugin.store, &(&*ENV).data_path.display().to_string());
+        .get_storage_path(&mut plugin.store, &ENV.data_path.display().to_string());
     if path.is_err() {
         error!("Failed to get storage path");
     }
@@ -34,7 +34,7 @@ pub fn get_file_path(block_id: &str) -> String {
     let plugin = plugin.deref_mut().first_mut().unwrap();
     let path = plugin.provider.get_file_path(
         &mut plugin.store,
-        &(&*ENV).data_path.display().to_string(),
+        &ENV.data_path.display().to_string(),
         block_id,
     );
     if path.is_err() {

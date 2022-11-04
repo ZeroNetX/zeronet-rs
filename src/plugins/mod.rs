@@ -35,7 +35,7 @@ macro_rules! impl_plugin {
         }
 
         pub fn load_plugins() -> mut_static::MutStatic<Vec<$name>> {
-            let plugins = (&*crate::environment::PLUGINS)
+            let plugins = (&*$crate::environment::PLUGINS)
                 .iter()
                 .filter(|p| p.permissions.contains(&$permissions));
             let mut plugins_loaded = Vec::new();
@@ -90,12 +90,12 @@ pub fn load_plugins() -> Vec<Plugin> {
                     }
                 }
             }
-            return None;
+            None
         });
         let mut plugins_loaded = Vec::new();
         for plugin in plugins {
             let bytes = std::fs::read(&plugin).unwrap();
-            let module = Module::new(&store, &bytes);
+            let module = Module::new(&store, bytes);
             if let Ok(module) = module {
                 let mut imports = imports! {};
                 let funs = Manifest::instantiate(&mut store, &module, &mut imports);
@@ -189,7 +189,7 @@ impl Serialize for Permission {
 
 impl From<&str> for Permission {
     fn from(s: &str) -> Self {
-        let mut splited = s.split("@").into_iter();
+        let mut splited = s.split('@');
         let s = splited.next().unwrap();
         let version = splited.next().unwrap_or("0.0.1");
         match s {

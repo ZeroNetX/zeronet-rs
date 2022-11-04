@@ -47,7 +47,7 @@ async fn main() -> Result<(), Error> {
                     add_peers_to_site(&mut site).await?;
                     let mut found_connectable_peer = false;
                     while !found_connectable_peer {
-                        let peer_id = (&site.peers.keys().next()).unwrap().clone();
+                        let peer_id = site.peers.keys().next().unwrap().clone();
                         let peer = site.peers.values_mut().next().unwrap();
                         let conn = peer.connection_mut().unwrap();
                         let mut protocol = net::Protocol::new(conn);

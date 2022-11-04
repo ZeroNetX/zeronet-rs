@@ -76,7 +76,7 @@ impl DbManager {
     }
 
     pub fn load_schema_from_path(path: &Path) -> DBSchema {
-        let schema_str = std::fs::read_to_string(&path).unwrap();
+        let schema_str = std::fs::read_to_string(path).unwrap();
         Self::load_schema_from_str(&schema_str)
     }
 
@@ -265,7 +265,7 @@ impl DbManager {
         for (regex_str, path_str) in handlers {
             let map = (maps[&regex_str]).clone();
             let path = Path::new(&db_dir).join(&path_str);
-            let content = std::fs::read_to_string(&path).unwrap();
+            let content = std::fs::read_to_string(path).unwrap();
             let json_content: HashMap<String, Value> = serde_json::from_str(&content).unwrap();
             let has_custom_table = !&map.to_json_table.is_empty();
 

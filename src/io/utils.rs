@@ -315,11 +315,11 @@ pub async fn load_peers() -> Vec<String> {
 }
 
 pub fn load_trackers() -> Vec<String> {
-    let mut file = Path::new(&*DEF_TRACKERS_FILE_PATH);
+    let file = Path::new(&*DEF_TRACKERS_FILE_PATH);
     if !file.exists() {
         return vec![];
     }
-    let buf = read(&mut file).unwrap();
+    let buf = read(file).unwrap();
     let mut trackers = vec![];
     for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
         trackers.push(String::from_utf8(peer.to_vec()).unwrap());

@@ -50,7 +50,7 @@ impl PluginManifest {
             if verified {
                 continue;
             }
-            verified = zeronet_cryptography::verify(bytes.clone(), &key, &signature).is_ok();
+            verified = zeronet_cryptography::verify(bytes.clone(), key, signature).is_ok();
         }
         Ok(verified)
     }
@@ -64,7 +64,7 @@ impl PluginManifest {
         let data = serde_json::to_string(&data)?;
         let signature = zeronet_cryptography::sign(data, private_key)?;
         let public_key = zeronet_cryptography::privkey_to_pubkey(private_key)?;
-        let mut signs = (&self.signs).clone();
+        let mut signs = self.signs.clone();
         signs.insert(public_key, signature);
         let signed_manifest = PluginManifest {
             signs,
@@ -74,7 +74,7 @@ impl PluginManifest {
     }
 
     pub fn verify(&self) -> Result<bool, Error> {
-        let mut data = sort_json(serde_json::to_value(&self)?)?;
+        let mut data = sort_json(serde_json::to_value(self)?)?;
         let data = data.as_object_mut().unwrap();
         for key in ["path", "plugin_signature", "signs"] {
             data.remove(key);

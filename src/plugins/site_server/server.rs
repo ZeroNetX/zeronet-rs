@@ -166,7 +166,7 @@ pub fn build_header(
     let request_method = request_method.unwrap_or("GET");
     let no_script = no_script.unwrap_or(false);
     let allow_ajax = allow_ajax.unwrap_or(false);
-    let extra_headers = extra_header.unwrap_or(HeaderMap::default());
+    let extra_headers = extra_header.unwrap_or_default();
 
     let attachable = Regex::new("svg|xml|x-shockwave-flash|pdf")
         .unwrap()

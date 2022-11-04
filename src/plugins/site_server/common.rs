@@ -46,10 +46,8 @@ pub fn is_script_nonce_supported(req: &HttpRequest) -> bool {
     let user_agent = res.unwrap();
     if user_agent.contains("Edge/") {
         false
-    } else if user_agent.contains("Safari/") & !user_agent.contains("Chrome/") {
-        false
     } else {
-        true
+        !(user_agent.contains("Safari/") & !user_agent.contains("Chrome/"))
     }
 }
 

@@ -40,7 +40,7 @@ impl Site {
     //TODO? Move this to templates module
     async fn add_file_data(&mut self, private_key: &str) -> Result<(), Error> {
         let data_dir = &*ENV.data_path;
-        let site_dir = data_dir.join(&self.address());
+        let site_dir = data_dir.join(self.address());
         fs::create_dir_all(&site_dir).await?;
         let index_path = site_dir.join("index.html");
         let mut file = File::create(&index_path).await?;

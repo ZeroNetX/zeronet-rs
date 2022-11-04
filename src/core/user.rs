@@ -334,11 +334,11 @@ impl User {
     }
 
     fn get_auth_pair(&mut self, address: &str, create: bool) -> Option<AuthPair> {
-        if let Some(cert) = self.get_cert(&address) {
-            return Some(cert.get_auth_pair());
+        if let Some(cert) = self.get_cert(address) {
+            Some(cert.get_auth_pair())
         } else {
             let site_data = self.get_site_data(address, create);
-            return site_data.get_auth_pair();
+            site_data.get_auth_pair()
         }
     }
 
@@ -346,7 +346,7 @@ impl User {
     ///
     /// Return: BIP32 auth address
     fn get_auth_address(&mut self, address: &str, create: bool) -> Option<String> {
-        let auth_pair = self.get_auth_pair(&address, create)?;
+        let auth_pair = self.get_auth_pair(address, create)?;
         Some(auth_pair.auth_address)
     }
 
