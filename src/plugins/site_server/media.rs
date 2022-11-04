@@ -127,7 +127,7 @@ pub async fn serve_raw_media(req: HttpRequest) -> HttpResponse {
     serve_sitemedia(req, inner_path, header_allow_ajax, Some(true)).await
 }
 
-fn parse_media_path(path: &str) -> Result<(String, String), Error> {
+pub fn parse_media_path(path: &str) -> Result<(String, String), Error> {
     let mut path = path.replace('\\', "/");
     if path.ends_with('/') {
         path = path + "index.html";
