@@ -2,7 +2,7 @@ use std::path::Path;
 
 use actix_files::NamedFile;
 use actix_web::{
-    http::header::{self, HeaderMap, HeaderValue},
+    http::header::{self, HeaderMap},
     HttpRequest,
 };
 use log::error;
