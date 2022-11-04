@@ -2,6 +2,7 @@ use actix_web::{
     http::header::{self, AsHeaderName, HeaderValue},
     HttpRequest, HttpResponse,
 };
+use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 
 pub fn redirect(path: &str) -> HttpResponse {
@@ -80,5 +81,18 @@ pub fn is_same_origin(req: &HttpRequest) -> bool {
         }
     } else {
         false
+    }
+}
+
+pub fn get_nonce(need_base_64: bool, length: usize) -> String {
+    let mut bytes: [u8; 256] = [0; 256];
+    let mut rand = OsRng::default();
+    rand.fill(&mut bytes);
+    if need_base_64 {
+        let rand_str = base64::encode(bytes).chars().take(length).collect();
+        rand_str
+    } else {
+        let rand_str = hex::encode(bytes).chars().take(length).collect();
+        rand_str
     }
 }

@@ -2905,6 +2905,7 @@ dependencies = [
  "diff",
  "futures",
  "futures-util",
+ "hex",
  "html-escape",
  "itertools",
  "lazy_static",
