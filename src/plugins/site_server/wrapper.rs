@@ -1,6 +1,8 @@
 use std::{fs::File, io::Read, path::Path, str::FromStr};
 
-use actix_web::{body::BoxBody, HttpRequest, HttpResponse, Responder, Result};
+use actix_web::{
+    body::BoxBody, http::ConnectionType::KeepAlive, HttpRequest, HttpResponse, Responder, Result,
+};
 use log::*;
 use mime_guess::MimeGuess;
 use regex::Regex;
@@ -152,6 +154,7 @@ pub async fn serve_wrapper(
                         headers.append(key, value);
                     }
                 }
+                response.head_mut().set_connection_type(KeepAlive);
                 return response;
             }
             Err(err) => {
@@ -225,7 +228,7 @@ pub async fn serve_wrapper(
     for (key, value) in build_header!().iter() {
         res.append_header((key.as_str(), value.to_str().unwrap()));
     }
-    res.body(string)
+    res.keep_alive().body(string)
 }
 
 fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {

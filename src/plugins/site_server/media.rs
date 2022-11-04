@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use actix_web::{http::header::HeaderMap, HttpRequest, HttpResponse, Responder};
+use actix_web::{
+    http::{header::HeaderMap, ConnectionType::KeepAlive},
+    HttpRequest, HttpResponse, Responder,
+};
 use log::*;
 use regex::Regex;
 
@@ -78,6 +81,7 @@ pub fn append_headers(req: &HttpRequest, resp: HttpResponse, headers: HeaderMap)
             headers_.append(key, value);
         }
     }
+    resp.head_mut().set_connection_type(KeepAlive);
     resp
 }
 
