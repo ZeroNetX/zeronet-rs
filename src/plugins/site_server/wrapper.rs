@@ -123,7 +123,7 @@ pub async fn serve_wrapper(
         Content::default()
     };
     if has_wrapper_nonce {
-        let inner_path = &format!("/media/{}.{}", address.address, inner_path);
+        let inner_path = &format!("/media/{}/{}", address.address, inner_path);
         let (address, inner_path) = parse_media_path(inner_path).unwrap();
         let file_path = &ENV.data_path.join(address).join(&inner_path);
         match serve_file(&req, file_path, None, Some(true), None, Some(false), None).await {
