@@ -221,10 +221,11 @@ pub async fn serve_wrapper(
         Ok(s) => s,
         Err(_) => String::new(),
     };
-    HttpResponse::Ok()
-        .content_type("html")
-        .append_header(("X-Hdr", "sample")) //TODO!: Use Header value from ZeroNet impl
-        .body(string)
+    let mut res = HttpResponse::Ok();
+    for (key, value) in build_header!().iter() {
+        res.append_header((key.as_str(), value.to_str().unwrap()));
+    }
+    res.body(string)
 }
 
 fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
