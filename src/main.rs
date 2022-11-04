@@ -23,7 +23,7 @@ use crate::{
     core::{error::Error, io::SiteIO, site::Site},
     environment::*,
     io::db::DbManager,
-    plugins::package::PluginManifest,
+    plugins::core::manifest::PluginManifest,
 };
 
 #[actix_web::main]

@@ -13,7 +13,7 @@ use log::error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use wit_bindgen_wasmer::wasmer::{imports, Cranelift, Module, Store};
 
-use self::{manifest::Manifest, package::PluginManifest};
+use self::{core::manifest::PluginManifest, manifest::Manifest};
 
 wit_bindgen_wasmer::import!("assets/plugins/manifest.wit");
 

@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use zeronet_cryptography::error::CryptError;
 use zerucontent::sort::sort_json;
 
-use super::Plugin;
-use crate::core::error::Error;
+use crate::{core::error::Error, plugins::Plugin};
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub struct PluginManifest {
