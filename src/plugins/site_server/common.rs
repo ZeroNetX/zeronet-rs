@@ -54,6 +54,6 @@ pub fn is_script_nonce_supported(req: &HttpRequest) -> bool {
 }
 
 pub fn get_referer(req: &HttpRequest) -> Option<&HeaderValue> {
-    let res = req.headers().get(header_name!("http_referer"));
+    let res = req.headers().get(header_name!("referer"));
     res
 }
