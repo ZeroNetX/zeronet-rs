@@ -18,7 +18,7 @@ use crate::{
 };
 
 lazy_static! {
-    pub static ref PLUGINS: Vec<Plugin> = plugins::load_plugins();
+    pub static ref PLUGINS: Vec<Plugin> = plugins::utils::load_plugins();
     pub static ref PATH_PROVIDER_PLUGINS: MutStatic<Vec<PathProviderPlugin>> = path_provider::load_plugins();
     pub static ref DEF_ASSETS_PATH: PathBuf = PathBuf::from("assets/");
     pub static ref DEF_PEERS_FILE_PATH: PathBuf = DEF_ASSETS_PATH.join("peers.txt");
