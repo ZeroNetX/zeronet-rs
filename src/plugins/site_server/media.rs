@@ -7,11 +7,7 @@ use regex::Regex;
 use crate::{
     core::error::Error,
     environment::{DEF_MEDIA_PATH, ENV},
-    plugins::site_server::{
-        common::{get_referer, redirect},
-        error::*,
-        file::serve_file,
-    },
+    plugins::site_server::{common::*, error::*, file::serve_file},
 };
 
 pub async fn serve_sitemedia(
@@ -75,8 +71,7 @@ pub fn append_headers(req: &HttpRequest, resp: HttpResponse, headers: HeaderMap)
     headers_.clear();
     for (key, value) in headers.into_iter() {
         if key == header_name!("access-control-allow-origin") {
-            //TODO!: Need A Check for Same Origin
-            if get_referer(req).is_some() {
+            if is_same_origin(req) {
                 headers_.append(key, value);
             }
         } else {
