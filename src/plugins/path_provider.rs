@@ -7,7 +7,7 @@ use self::path_provider::PathProvider;
 use crate::{
     environment::{ENV, PATH_PROVIDER_PLUGINS},
     impl_plugin,
-    plugins::Permission,
+    plugins::core::permission::Permission,
 };
 
 impl_plugin!(
