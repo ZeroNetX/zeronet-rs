@@ -35,7 +35,7 @@ async fn main() -> Result<(), Error> {
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
     if let Some((cmd, args)) = sub_cmd {
-        if cmd.starts_with("site") && let Some(mut site_args) = args.values_of("site") {
+        if cmd.starts_with("site") && let Some(mut site_args) = args.get_many::<String>("site") {
             let site_addr = site_args.next().unwrap();
             let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
             if let Some(storage) = site_storage.get(site_addr).cloned() {
@@ -129,7 +129,7 @@ async fn main() -> Result<(), Error> {
             storage.settings.serving = true;
             site.modify_storage(storage);
             site.save_storage().await?;
-        } else if cmd.starts_with("peer") && let Some(mut peer_args) = args.values_of("peer") {
+        } else if cmd.starts_with("peer") && let Some(mut peer_args) = args.get_many::<String>("peer") {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);
             match cmd {
@@ -149,10 +149,10 @@ async fn main() -> Result<(), Error> {
                     info!("Your Public key : {}", pub_key);
                 }
                 "cryptSign" => {
-                    let mut args = args.values_of("data").unwrap();
+                    let mut args = args.get_many::<String>("data").unwrap();
                     let data = args.next().unwrap();
                     if let Some(priv_key) = args.next() {
-                        match zeronet_cryptography::sign(data, priv_key) {
+                        match zeronet_cryptography::sign(data.as_str(), priv_key) {
                             Ok(signature) => info!("{}", signature),
                             Err(err) => error!("{}", err),
                         }
@@ -161,11 +161,11 @@ async fn main() -> Result<(), Error> {
                     };
                 }
                 "cryptVerify" => {
-                    let mut args = args.values_of("data").unwrap();
+                    let mut args = args.get_many::<String>("data").unwrap();
                     let data = args.next().unwrap();
                     if let Some(pub_key) = args.next() {
                         if let Some(signature) = args.next() {
-                            match zeronet_cryptography::verify(data, pub_key, signature) {
+                            match zeronet_cryptography::verify(data.as_str(), pub_key, signature) {
                                 Ok(_) => info!("Signature Successfully verified"),
                                 Err(err) => error!("{}", err),
                             }
@@ -183,7 +183,7 @@ async fn main() -> Result<(), Error> {
         }  else if cmd.starts_with("plugin") {
             match cmd {
                 "pluginSign" => {
-                    let mut args = args.values_of("name").unwrap();
+                    let mut args = args.get_many::<String>("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await;
                     let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
@@ -196,7 +196,7 @@ async fn main() -> Result<(), Error> {
                     };
                 }
                 "pluginVerify" => {
-                    let mut args = args.values_of("name").unwrap();
+                    let mut args = args.get_many::<String>("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await.unwrap();
                     let verified = manifest.verify_plugin().await.unwrap_or(false) ;

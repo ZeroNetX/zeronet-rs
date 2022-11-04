@@ -70,6 +70,7 @@ lazy_static! {
     pub static ref TRACKERS: Vec<String> = load_trackers();
     pub static ref VERSION: String = String::from("0.8.0");
     pub static ref REV: usize = 4800;
+    pub static ref VERSION_WITH_REV: String = format!("{} r{}", &*VERSION, &*REV);
 }
 
 #[derive(Debug, Clone)]
@@ -102,21 +103,20 @@ fn get_matches() -> ArgMatches {
     let sub_commands = (*SUB_CMDS)
         .iter()
         .map(|cmd| {
-            let app = Command::new(cmd);
+            let app = Command::new(cmd.as_str());
             if cmd.starts_with("peer") {
-                app.arg(Arg::new("peer").short('p').required(false).min_values(1))
+                app.arg(Arg::new("peer").short('p').required(false).num_args(1))
             } else if cmd.starts_with("plugin") {
-                app.arg(Arg::new("name").short('n').required(false).min_values(1))
+                app.arg(Arg::new("name").short('n').required(false).num_args(1))
             } else if cmd.starts_with("cryptSign") || cmd.starts_with("cryptVerify") {
-                app.arg(Arg::new("data").short('d').required(true).min_values(1))
+                app.arg(Arg::new("data").short('d').required(true).num_args(1))
             } else {
-                app.arg(Arg::new("site").short('s').required(false).min_values(1))
+                app.arg(Arg::new("site").short('s').required(false).num_args(1))
             }
         })
         .collect::<Vec<_>>();
-
     Command::new("ZeroNetX")
-        .version(format!("{} r{}", &*VERSION, &*REV).as_str())
+        .version(&VERSION.as_str())
         .author("PramUkesh <pramukesh@zeroid.bit>")
         .about("ZeroNet Protocol Implementation in Rust.")
         .args(&[
@@ -147,11 +147,11 @@ fn get_matches() -> ArgMatches {
             //         .help("Path of config file"),
             Arg::new("DATA_DIR")
                 .long("data_dir")
-                .default_value(&DEF_DATA_DIR)
+                .default_value(&**DEF_DATA_DIR)
                 .help("Path of data directory"),
             Arg::new("LOG_DIR")
                 .long("log_dir")
-                .default_value(&DEF_LOG_DIR)
+                .default_value(&**DEF_LOG_DIR)
                 .help("Path of logging directory"),
             Arg::new("CONSOLE_LOG_LEVEL")
                 .long("console_log_level")
@@ -265,7 +265,7 @@ fn get_matches() -> ArgMatches {
 }
 
 pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
-    let data_path_str = matches.value_of("DATA_DIR").unwrap();
+    let data_path_str = matches.get_one::<String>("DATA_DIR").unwrap();
     let data_path = PathBuf::from_str(data_path_str).unwrap();
     let data_path = if data_path.is_dir() {
         data_path
@@ -273,7 +273,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fs::create_dir_all(data_path_str).unwrap();
         PathBuf::from_str(data_path_str).unwrap()
     };
-    let log_path_str = matches.value_of("LOG_DIR").unwrap();
+    let log_path_str = matches.get_one::<String>("LOG_DIR").unwrap();
     let log_path = PathBuf::from_str(log_path_str).unwrap();
     let log_path = if log_path.is_dir() {
         log_path
@@ -281,7 +281,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         fs::create_dir_all(log_path_str).unwrap();
         PathBuf::from_str(log_path_str).unwrap()
     };
-    let fileserver_ip = if let Some(ip) = matches.value_of("FILESERVER_IP") {
+    let fileserver_ip = if let Some(ip) = matches.get_one::<String>("FILESERVER_IP") {
         if ip == "*" {
             "127.0.0.1".into()
         } else {
@@ -290,7 +290,7 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     } else {
         unreachable!()
     };
-    let fileserver_port = if let Some(port) = matches.value_of("FILESERVER_PORT") {
+    let fileserver_port = if let Some(port) = matches.get_one::<String>("FILESERVER_PORT") {
         if port.contains("10000-40000") {
             let mut rng = rand::thread_rng();
             rng.gen_range(10000..=40000)
@@ -300,13 +300,16 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     } else {
         10000 + rand::random::<u16>() % 10000
     };
-    let use_block_storage = matches.is_present("USE_BLOCK_STORAGE");
-    let ui_ip = matches.value_of("UI_IP").unwrap();
-    let ui_port: u16 = matches.value_of("UI_PORT").unwrap().parse()?;
-    let ui_host = matches.value_of("UI_HOST").unwrap_or_default().into();
-    let ui_trans_proxy = matches.is_present("UI_TRANS_PROXY");
-    let ui_restrict = matches.is_present("UI_RESTRICT");
-    let log_level = matches.value_of("CONSOLE_LOG_LEVEL").unwrap();
+    let use_block_storage = matches.get_one::<bool>("USE_BLOCK_STORAGE").is_some();
+    let ui_ip = matches.get_one::<String>("UI_IP").unwrap();
+    let ui_port: u16 = matches.get_one::<String>("UI_PORT").unwrap().parse()?;
+    let ui_host = matches
+        .get_one::<String>("UI_HOST")
+        .unwrap_or(&String::default())
+        .to_owned();
+    let ui_trans_proxy = matches.get_one::<bool>("UI_TRANS_PROXY").is_some();
+    let ui_restrict = matches.get_one::<bool>("UI_RESTRICT").is_some();
+    let log_level = matches.get_one::<String>("CONSOLE_LOG_LEVEL").unwrap();
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
 
     //TODO! Replace with file based logger with public release.
@@ -327,14 +330,20 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         ui_trans_proxy,
         ui_restrict,
         trackers: (*TRACKERS).iter().map(String::from).collect(),
-        homepage: String::from(matches.value_of("HOMEPAGE").unwrap()),
-        lang: String::from(matches.value_of("LANGUAGE").unwrap()),
-        dist: String::from(matches.value_of("DIST_TYPE").unwrap()),
+        homepage: String::from(matches.get_one::<String>("HOMEPAGE").unwrap()),
+        lang: String::from(matches.get_one::<String>("LANGUAGE").unwrap()),
+        dist: String::from(matches.get_one::<String>("DIST_TYPE").unwrap()),
         use_block_storage,
-        access_key: String::from(matches.value_of("ACCESS_KEY").unwrap()),
-        size_limit: matches.value_of("SIZE_LIMIT").unwrap().parse()?,
-        file_size_limit: matches.value_of("FILE_SIZE_LIMIT").unwrap().parse()?,
-        site_peers_need: matches.value_of("SITE_PEERS_NEED").unwrap().parse()?,
+        access_key: String::from(matches.get_one::<String>("ACCESS_KEY").unwrap()),
+        size_limit: matches.get_one::<String>("SIZE_LIMIT").unwrap().parse()?,
+        file_size_limit: matches
+            .get_one::<String>("FILE_SIZE_LIMIT")
+            .unwrap()
+            .parse()?,
+        site_peers_need: matches
+            .get_one::<String>("SITE_PEERS_NEED")
+            .unwrap()
+            .parse()?,
     };
     Ok(env)
 }
