@@ -20,6 +20,7 @@ pub async fn serve_sitemedia(
     header_allow_ajax: bool,
     header_no_script: Option<bool>,
 ) -> HttpResponse {
+    trace!("Serving Site inner_path: {}", path);
     let header_no_script = header_no_script.unwrap_or(false);
     let res = parse_media_path(path);
     if res.is_err() {
