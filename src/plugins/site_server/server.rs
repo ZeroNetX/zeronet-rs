@@ -1,16 +1,14 @@
 use std::{
     collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
     str::FromStr,
     sync::{Arc, Mutex},
 };
 
 use actix::Addr;
-use actix_files::NamedFile;
 use actix_web::{
     body::BoxBody,
     dev::{ServiceFactory, ServiceRequest, ServiceResponse},
-    http::header::{self, HeaderMap, HeaderValue},
+    http::header::{self, HeaderMap},
     web::{get, Data, Query},
     App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -20,12 +18,11 @@ use regex::Regex;
 
 use crate::{
     controllers::{sites::SitesController, users::UserController},
-    core::{address::Address, error::Error},
     environment::ENV,
     header_name, header_value,
     plugins::{
         register_plugins,
-        site_server::{common::*, error::*, handlers::sites::*, media::*, wrapper::*},
+        site_server::{common::*, error::*, media::*, wrapper::*},
         websocket,
     },
 };
@@ -148,34 +145,11 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
         }
     }
 
-    if wrapper {
-        trace!(
-            "No valid nonce provided, serving wrapper for zero:://{}",
-            address
-        );
-        return serve_wrapper(req, data).await;
-    }
-
-    // TODO: allow nonce to be reused for any file within same zite
-    match serve_file(&req, data).await {
-        Ok(res) => {
-            let content_type = res.content_type().clone();
-            let type_ = content_type.type_();
-            let subtype = content_type.subtype();
-            let mut response = res.respond_to(&req);
-            if !(type_ == "text" && subtype == "html") {
-                response.headers_mut().append(
-                    header::ACCESS_CONTROL_ALLOW_ORIGIN,
-                    HeaderValue::from_static("*"),
-                );
-            }
-            response
-        }
-        Err(err) => {
-            error!("Serve Site:: Bad request {:?}", err);
-            HttpResponse::BadRequest().finish()
-        }
-    }
+    trace!(
+        "No valid nonce provided, serving wrapper for zero:://{}",
+        address
+    );
+    serve_wrapper(req, data, !wrapper).await
 }
 
 pub fn build_header(

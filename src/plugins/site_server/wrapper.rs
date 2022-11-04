@@ -1,20 +1,23 @@
 use std::{fs::File, io::Read, path::Path, str::FromStr};
 
-use actix_web::{HttpRequest, HttpResponse, Result};
+use actix_web::{body::BoxBody, HttpRequest, HttpResponse, Responder, Result};
 use log::*;
 use mime_guess::MimeGuess;
 use regex::Regex;
+use tokio::fs;
 use uuid::Uuid;
-use zerucontent::Content;
+use zerucontent::{Content, Number};
 
 use crate::{
     core::address::Address,
     environment::{DEF_TEMPLATES_PATH, ENV},
     plugins::site_server::{
+        file::serve_file,
         handlers::{
             sites::{AddWrapperKey, Lookup, SiteContent},
             users::UserSettings,
         },
+        media::parse_media_path,
         server::build_header,
     },
 };
@@ -46,6 +49,7 @@ struct WrapperData {
 pub async fn serve_wrapper(
     req: HttpRequest,
     data: actix_web::web::Data<ZeroServer>,
+    has_wrapper_nonce: bool,
 ) -> HttpResponse {
     let nonce = Uuid::new_v4().simple().to_string();
     {
@@ -85,33 +89,7 @@ pub async fn serve_wrapper(
         }
     };
     let (_, site) = query.expect("MailBox Closed");
-    let show_loadingscreen;
     let content = site.send(SiteContent(None)).await;
-    let title;
-    let content = if let Ok(Ok(content)) = content {
-        show_loadingscreen = String::from("false");
-        title = content.title.to_string();
-        content
-    } else {
-        show_loadingscreen = String::from("true");
-        title = format!("Loading {}...", address.address);
-        Content::default()
-    };
-    let mut meta_tags = String::new();
-    if !content.viewport.is_empty() {
-        let mut meta = String::new();
-        html_escape::encode_text_to_string(content.viewport, &mut meta);
-        meta_tags.push_str(&format!(
-            "<meta name=\"viewport\" id=\"viewport\" content=\"{}\">",
-            meta
-        ));
-    }
-    if !content.favicon.is_empty() {
-        let mut meta = String::new();
-        meta.push_str(&format!("/{}/", address_string));
-        html_escape::encode_text_to_string(content.favicon, &mut meta);
-        meta_tags.push_str(&format!("<link rel=\"icon\" href=\"{}\">", meta));
-    }
     let user_settings = data
         .user_controller
         .send(UserSettings {
@@ -131,6 +109,72 @@ pub async fn serve_wrapper(
         "light"
     };
     let themeclass = format!("theme-{}", theme);
+    let title;
+    let show_loadingscreen;
+    let content = if let Ok(Ok(content)) = content {
+        show_loadingscreen = String::from("false");
+        title = content.title.to_string();
+        content
+    } else {
+        show_loadingscreen = String::from("true");
+        title = format!("Loading {}...", address.address);
+        Content::default()
+    };
+    if has_wrapper_nonce {
+        let inner_path = &format!("/media/{}.{}", address.address, inner_path);
+        let (address, inner_path) = parse_media_path(&inner_path).unwrap();
+        let file_path = &ENV.data_path.join(address).join(&inner_path);
+        match serve_file(&req, file_path, None, Some(true), None, Some(false), None).await {
+            Ok((res, headers)) => {
+                let content_type = res.content_type().clone();
+                let type_ = content_type.type_();
+                let subtype = content_type.subtype();
+                let file_path = res.path().to_owned();
+                let response = res.respond_to(&req);
+                let is_html = type_ == "text" && subtype == "html";
+                let mut response = if is_html {
+                    let mut string = fs::read_to_string(file_path).await.unwrap();
+                    string = string.replace("{themeclass}", &themeclass);
+                    let modified = match content.modified {
+                        Number::Float(float) => float.to_string(),
+                        Number::Integer(integer) => integer.to_string(),
+                    };
+                    string = string.replace("{site_modified}", &modified);
+                    string = string.replace("{lang}", &ENV.lang);
+                    response.set_body(BoxBody::new(string))
+                } else {
+                    response
+                };
+                if let Some(headers_) = headers {
+                    let headers = response.headers_mut();
+                    headers.clear();
+                    for (key, value) in headers_.into_iter() {
+                        headers.append(key, value);
+                    }
+                }
+                return response;
+            }
+            Err(err) => {
+                error!("Serve Site:: Bad request {:?}", err);
+                return HttpResponse::BadRequest().finish();
+            }
+        }
+    };
+    let mut meta_tags = String::new();
+    if !content.viewport.is_empty() {
+        let mut meta = String::new();
+        html_escape::encode_text_to_string(content.viewport, &mut meta);
+        meta_tags.push_str(&format!(
+            "<meta name=\"viewport\" id=\"viewport\" content=\"{}\">",
+            meta
+        ));
+    }
+    if !content.favicon.is_empty() {
+        let mut meta = String::new();
+        meta.push_str(&format!("/{}/", address_string));
+        html_escape::encode_text_to_string(content.favicon, &mut meta);
+        meta_tags.push_str(&format!("<link rel=\"icon\" href=\"{}\">", meta));
+    }
 
     let mut body_style = String::new();
     if !content.background_color.is_empty() {
