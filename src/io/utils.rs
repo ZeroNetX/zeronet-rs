@@ -143,7 +143,13 @@ pub fn load_users_file() -> HashMap<String, User> {
                                                 "cert" => {
                                                     let cert_name =
                                                         value.as_str().unwrap().to_string();
-                                                    site_data.add_cert_provider(cert_name);
+                                                    if let Some(cert) = user.certs.get(&cert_name) {
+                                                        let cert = format!(
+                                                            "{}@{}",
+                                                            cert.auth_user_name, cert_name
+                                                        );
+                                                        site_data.add_cert_provider(cert);
+                                                    };
                                                 }
                                                 "index" => {
                                                     let index = value.as_i64().unwrap() as u32;
