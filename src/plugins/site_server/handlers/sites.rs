@@ -83,25 +83,20 @@ impl Handler<AddWrapperKey> for SitesController {
 }
 
 #[derive(Message)]
-#[rtype(result = "Result<String, Error>")]
-pub struct GetWrapperKey {
+#[rtype(result = "Result<(String, String), Error>")]
+pub struct GetSiteKeys {
     pub address: Address,
 }
 
-impl Handler<GetWrapperKey> for SitesController {
-    type Result = Result<String, Error>;
+impl Handler<GetSiteKeys> for SitesController {
+    type Result = Result<(String, String), Error>;
 
-    fn handle(&mut self, msg: GetWrapperKey, _ctx: &mut Context<Self>) -> Self::Result {
-        let nonces = self.nonce.to_owned();
-        let s = nonces.iter().find(|(_, a)| {
-            if &msg.address == *a {
-                return true;
-            }
-            false
-        });
-        match s {
-            Some((k, _)) => Ok(k.to_owned()),
-            None => Err(Error::WrapperKeyNotFound),
+    fn handle(&mut self, msg: GetSiteKeys, _ctx: &mut Context<Self>) -> Self::Result {
+        let ajax_key = self.ajax_keys.iter().find(|(_, a)| &msg.address == *a);
+        let nonce = self.nonce.iter().find(|(_, a)| &msg.address == *a);
+        match (nonce, ajax_key) {
+            (Some((n, _)), Some((a, _))) => Ok((n.to_owned(), a.to_owned())),
+            _ => Err(Error::WrapperKeyNotFound),
         }
     }
 }

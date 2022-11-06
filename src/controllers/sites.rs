@@ -38,6 +38,7 @@ pub async fn run() -> Result<Addr<SitesController>, Error> {
 pub struct SitesController {
     pub sites: HashMap<String, Site>,
     pub sites_addr: HashMap<Address, Addr<Site>>,
+    pub ajax_keys: HashMap<String, Address>,
     pub nonce: HashMap<String, Address>,
     pub sites_changed: u64,
     pub db_manager: DbManager,
@@ -49,6 +50,7 @@ impl SitesController {
             db_manager,
             sites: HashMap::new(),
             sites_addr: HashMap::new(),
+            ajax_keys: HashMap::new(),
             nonce: HashMap::new(),
             sites_changed: current_unix_epoch(),
         }
@@ -131,10 +133,14 @@ impl SitesController {
             let path = ENV.data_path.join(&address);
             if path.exists() {
                 let mut site = Site::new(&address, path).unwrap();
-                site.modify_storage(site_storage);
+                site.modify_storage(site_storage.clone());
                 let res = site.load_content().await;
                 if res.is_ok() {
-                    self.sites.insert(address, site);
+                    self.sites.insert(address, site.clone());
+                    self.nonce
+                        .insert(site_storage.keys.wrapper_key, site.addr());
+                    self.ajax_keys
+                        .insert(site_storage.keys.ajax_key, site.addr());
                 } else {
                     //TODO! Start Downloading Site Content
                     error!(

@@ -16,7 +16,7 @@ use crate::{
         common::get_nonce,
         file::serve_file,
         handlers::{
-            sites::{AddWrapperKey, Lookup, SiteContent},
+            sites::{GetSiteKeys, Lookup, SiteContent},
             users::UserSettings,
         },
         media::parse_media_path,
@@ -53,13 +53,6 @@ pub async fn serve_wrapper(
     data: actix_web::web::Data<ZeroServer>,
     has_wrapper_nonce: bool,
 ) -> HttpResponse {
-    let nonce = get_nonce(false, 64);
-    {
-        let mut nonces = data.wrapper_nonces.lock().unwrap();
-        nonces.insert(nonce.clone());
-        trace!("Valid nonces ({}): {:?}", nonces.len(), nonces);
-    }
-
     let address_string = req.match_info().query("address");
     let address = match Address::from_str(address_string) {
         Ok(a) => a,
@@ -77,10 +70,19 @@ pub async fn serve_wrapper(
 
     let result = data
         .site_controller
-        .send(AddWrapperKey::new(address.clone(), nonce.clone()));
+        .send(GetSiteKeys {
+            address: address.clone(),
+        })
+        .await;
 
-    if result.await.is_err() {
-        error!("Error sending wrapper key to site manager");
+    if result.is_err() {
+        error!("Error getting wrapper key to site manager");
+    }
+    let (nonce, ajax_key) = result.unwrap().unwrap();
+    {
+        let mut nonces = data.wrapper_nonces.lock().unwrap();
+        nonces.insert(nonce.clone());
+        trace!("Valid nonces ({}): {:?}", nonces.len(), nonces);
     }
     let site_controller = data.site_controller.clone();
     let query = match site_controller.send(Lookup::Address(address.clone())).await {
@@ -214,7 +216,7 @@ pub async fn serve_wrapper(
             meta_tags,
             query_string,
             wrapper_key: nonce.clone(),
-            ajax_key: String::from("ajax_key"), //TODO!: Need to Replace with real value
+            ajax_key,
             wrapper_nonce: nonce.clone(),
             postmessage_nonce_security,
             permissions: String::from("[]"), //TODO!: Need to Replace with permissions from site settings
