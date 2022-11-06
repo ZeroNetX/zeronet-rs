@@ -197,6 +197,12 @@ pub async fn serve_wrapper(
 
     let sandbox_permissions = "".into();
     let script_nonce = get_nonce(true, 64);
+    let mut query_string = req.query_string().to_owned();
+    if query_string.is_empty() {
+        query_string = format!("\\?wrapper_nonce\\={}", nonce.clone());
+    } else {
+        query_string = format!("\\?{}&wrapper_nonce\\={}", query_string, nonce.clone(),);
+    }
     let string = match render(
         &path,
         WrapperData {
@@ -206,7 +212,7 @@ pub async fn serve_wrapper(
             title,
             body_style,
             meta_tags,
-            query_string: format!("\\?wrapper_nonce\\={}", nonce.clone()),
+            query_string,
             wrapper_key: nonce.clone(),
             ajax_key: String::from("ajax_key"), //TODO!: Need to Replace with real value
             wrapper_nonce: nonce.clone(),
