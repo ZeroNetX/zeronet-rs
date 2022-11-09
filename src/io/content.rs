@@ -163,7 +163,7 @@ impl Site {
                 content_inner_path_dir + "/content.json"
             };
             let file_path = self.site_path().join(&content_inner_path);
-            let content = self.content(Some(inner_path));
+            let content = self.content(Some(&content_inner_path));
             if file_path.is_file() {
                 if let Some(content) = content {
                     let mut map = Map::new();
