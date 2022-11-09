@@ -167,26 +167,26 @@ impl Site {
             if file_path.is_file() {
                 if let Some(content) = content {
                     let mut map = Map::new();
-                    map["content_inner_path"] = Value::String(content_inner_path);
-                    map["relative_path"] = Value::String(file_name.into());
-                    map["optional"] = Value::Null;
+                    map.insert("content_inner_path".into(), json!(content_inner_path));
+                    map.insert("relative_path".into(), json!(file_name));
+                    map.insert("optional".into(), Value::Null);
                     if new_file {
                         break Some(map);
                     }
                     if !content.files.is_empty() && content.files.contains_key(file_name) {
-                        map["optional"] = Value::Bool(false);
+                        map.insert("optional".into(), json!(false));
                         let file = content.files.get(file_name).unwrap();
-                        map["size"] = json!(file.size);
-                        map["sha512"] = json!(file.sha512);
+                        map.insert("size".into(), json!(file.size));
+                        map.insert("sha512".into(), json!(file.sha512));
                         break Some(map);
                     }
                     if !content.files_optional.is_empty()
                         && content.files_optional.contains_key(file_name)
                     {
-                        map["optional"] = Value::Bool(true);
+                        map.insert("optional".into(), json!(true));
                         let file = content.files_optional.get(file_name).unwrap();
-                        map["size"] = json!(file.size);
-                        map["sha512"] = json!(file.sha512);
+                        map.insert("size".into(), json!(file.size));
+                        map.insert("sha512".into(), json!(file.sha512));
                         break Some(map);
                     }
                     if content.user_contents.is_some() {
