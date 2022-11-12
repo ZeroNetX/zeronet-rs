@@ -116,7 +116,7 @@ fn get_matches() -> ArgMatches {
         })
         .collect::<Vec<_>>();
     Command::new("ZeroNetX")
-        .version(&VERSION.as_str())
+        .version(VERSION.as_str())
         .author("PramUkesh <pramukesh@zeroid.bit>")
         .about("ZeroNet Protocol Implementation in Rust.")
         .args(&[
