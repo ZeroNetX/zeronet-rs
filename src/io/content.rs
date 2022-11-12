@@ -98,6 +98,8 @@ impl ContentMod for Site {
 }
 
 impl Site {
+    /// Get File Rules for Given inner_path
+    /// If inner_path doesn't end with "content.json"
     pub fn get_file_rules(&self, inner_path: &str) -> Option<Value> {
         let mut path = String::new();
         if !inner_path.ends_with("content.json") {
@@ -151,6 +153,9 @@ impl Site {
         None
     }
 
+    /// Get File Info for given inner_path
+    /// if new_file is true default content map values will be returned
+    /// Returns None if file not found
     fn get_file_info(&self, inner_path: &str, new_file: bool) -> Option<Map<String, Value>> {
         let mut path = inner_path.split('/').collect::<Vec<&str>>();
         let mut file_name = path.pop().unwrap();
