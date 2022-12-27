@@ -209,15 +209,15 @@ impl ConnectionController {
                     site.add_peer(peer);
                 }
                 //TODO! Only send connectable peers instead of all peers
-                let mut retrived = 0;
+                let mut retrieved = 0;
                 let peers = site
                     .peers
                     .iter()
                     .filter_map(|(key, peer)| {
                         if keys.contains(key) {
                             None
-                        } else if retrived < need {
-                            retrived += 1;
+                        } else if retrieved < need {
+                            retrieved += 1;
                             let packed = peer.clone().address().pack();
                             match peer.address() {
                                 PeerAddr::IPV4(_, _) => Some(("ipv4", packed)),

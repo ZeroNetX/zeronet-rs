@@ -471,7 +471,7 @@ class Wrapper
 		if @inner_loaded # Update site info
 			@reloadSiteInfo()
 
-		# If inner frame not loaded for 2 sec show peer informations on loading screen by loading site info
+		# If inner frame not loaded for 2 sec show peer information on loading screen by loading site info
 		setTimeout (=>
 			if not @site_info then @reloadSiteInfo()
 		), 2000
@@ -578,7 +578,7 @@ class Wrapper
 				@site_error = "No peers found"
 				@loading.printLine "No peers found"
 
-		if not @site_info and not @loading.screen_visible and $("#inner-iframe").attr("src").replace("?wrapper=False", "").replace(/\?wrapper_nonce=[A-Za-z0-9]+/, "").indexOf("?") == -1 # First site info and we are on mainpage (does not have other parameter thatn wrapper)
+		if not @site_info and not @loading.screen_visible and $("#inner-iframe").attr("src").replace("?wrapper=False", "").replace(/\?wrapper_nonce=[A-Za-z0-9]+/, "").indexOf("?") == -1 # First site info and we are on mainpage (does not have other parameter than wrapper)
 			if site_info.size_limit*1.1 < site_info.next_size_limit # Need upgrade soon
 				@displayConfirm "Running out of size limit (#{(site_info.settings.size/1024/1024).toFixed(1)}MB/#{site_info.size_limit}MB)", "Set limit to #{site_info.next_size_limit}MB", =>
 					@ws.cmd "siteSetLimit", [site_info.next_size_limit], (res) =>
