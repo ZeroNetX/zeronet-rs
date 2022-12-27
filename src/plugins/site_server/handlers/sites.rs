@@ -106,7 +106,7 @@ impl Handler<GetSiteKeys> for SitesController {
 /// match result {
 ///     Ok(true) => println!("File has been downloaded."),
 ///     Ok(false) => println!("File has been queued for download."),
-///     Err(_) => println!("An error occured!"),
+///     Err(_) => println!("An error occurred!"),
 /// }
 /// ```
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Message)]
