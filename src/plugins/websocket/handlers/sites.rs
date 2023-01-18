@@ -42,12 +42,13 @@ pub fn handle_site_info(
             error: String::from("Site info not found"),
         });
     }
-    if let Some(user_site_data) = block_on(ws.user_controller.send(UserSiteData {
+    if let Some(map) = block_on(ws.user_controller.send(UserSiteData {
         user_addr: String::from("current"),
         site_addr: ws.address.address.clone(),
     }))
     .unwrap()
     {
+        let user_site_data = map.values().last().unwrap();
         let mut site_info = result.unwrap();
         site_info.cert_user_id = user_site_data.get_cert_provider();
         if let Some(auth) = user_site_data.get_auth_pair() {

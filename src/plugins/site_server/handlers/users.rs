@@ -75,14 +75,14 @@ impl Handler<UserSettings> for UserController {
 }
 
 #[derive(Message)]
-#[rtype(result = "Option<SiteData>")]
+#[rtype(result = "Option<HashMap<String, SiteData>>")]
 pub struct UserSiteData {
     pub user_addr: String,
     pub site_addr: String,
 }
 
 impl Handler<UserSiteData> for UserController {
-    type Result = Option<SiteData>;
+    type Result = Option<HashMap<String, SiteData>>;
 
     fn handle(&mut self, msg: UserSiteData, _: &mut Self::Context) -> Self::Result {
         let user = match msg.user_addr.as_str() {
@@ -90,7 +90,22 @@ impl Handler<UserSiteData> for UserController {
             _ => self.get_user_mut(&msg.user_addr),
         };
         if let Some(user) = user {
-            Some(user.get_site_data(&msg.site_addr, true))
+            match msg.site_addr.as_str() {
+                "all" => {
+                    let map = user
+                        .sites
+                        .clone()
+                        .into_iter()
+                        .map(|(addr, site_data)| (addr, site_data))
+                        .collect::<HashMap<String, SiteData>>();
+                    Some(map)
+                }
+                addr => {
+                    let mut map = HashMap::<String, SiteData>::with_capacity(1);
+                    map.insert(addr.into(), user.get_site_data(addr, true));
+                    Some(map)
+                }
+            }
         } else {
             None
         }
