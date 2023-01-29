@@ -47,30 +47,32 @@ async fn main() -> Result<(), Error> {
                     add_peers_to_site(&mut site).await?;
                     let mut found_connectable_peer = false;
                     while !found_connectable_peer {
-                        let peer_id = site.peers.keys().next().unwrap().clone();
-                        let peer = site.peers.values_mut().next().unwrap();
-                        let conn = peer.connection_mut().unwrap();
-                        let mut protocol = net::Protocol::new(conn);
-                        use decentnet_protocol::{interface::RequestImpl, Either};
-                        let res = protocol
-                            .get_file(site_addr.into(), "content.json".into(), 0, 0, Some(1))
-                            .await;
-                        if let Ok(res) = res {
-                            match res {
-                                Either::Success(_) => {
-                                    found_connectable_peer = true;
-                                }
-                                Either::Error(err) => {
-                                    if err.error == "Unknown site" {
-                                        debug!("Site Not Served by Peer Querying Next Peer");
-                                    } else {
-                                        error!("Unknown Error : {}", err.error);
+                        if let Some(peer_id) = site.peers.keys().next() {
+                            let peer_id = peer_id.clone();
+                            let peer = site.peers.values_mut().next().unwrap();
+                            let conn = peer.connection_mut().unwrap();
+                            let mut protocol = net::Protocol::new(conn);
+                            use decentnet_protocol::{interface::RequestImpl, Either};
+                            let res = protocol
+                                .get_file(site_addr.into(), "content.json".into(), 0, 0, Some(1))
+                                .await;
+                            if let Ok(res) = res {
+                                match res {
+                                    Either::Success(_) => {
+                                        found_connectable_peer = true;
                                     }
-                                    site.peers.remove(&peer_id);
+                                    Either::Error(err) => {
+                                        if err.error == "Unknown site" {
+                                            debug!("Site Not Served by Peer Querying Next Peer");
+                                        } else {
+                                            error!("Unknown Error : {}", err.error);
+                                        }
+                                        site.peers.remove(&peer_id);
+                                    }
                                 }
+                            } else {
+                                error!("Communication Error {:#?}", res);
                             }
-                        } else {
-                            error!("Communication Error {:#?}", res);
                         }
                     }
                 }
