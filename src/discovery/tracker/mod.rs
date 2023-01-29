@@ -94,17 +94,21 @@ pub fn make_addr(addr: &str) -> Result<Addr, String> {
     } else {
         addr
     };
-    // resolve socketaddr
-    match addr.to_socket_addrs().unwrap().next() {
-        Some(s) => {
-            if udp {
-                Ok(Addr::Udp(s))
-            } else {
-                Ok(Addr::Http(s))
+    if let Ok(addrs) = addr.to_socket_addrs() {
+        // resolve socketaddr
+        let mut addrs = addrs.into_iter();
+        match addrs.next() {
+            Some(s) => {
+                if udp {
+                    return Ok(Addr::Udp(s));
+                } else {
+                    return Ok(Addr::Http(s));
+                }
             }
+            None => return Err("no addr resolved".to_string()),
         }
-        None => Err("no addr resolved".to_string()),
     }
+    Err(format!("no addr resolved for adddress: {}", addr))
 }
 
 pub async fn announce(

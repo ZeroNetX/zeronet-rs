@@ -23,10 +23,16 @@ impl Discovery for Site {
         let mut res_all = vec![];
         let mut futures = vec![];
         for tracker_addr in ENV.trackers.clone() {
-            let tracker_addr = make_addr(&tracker_addr).unwrap();
-            let info_hash = get_info_hash(self.address().to_string());
-            let res = announce(tracker_addr, info_hash, 0, &ENV.peer_id);
-            futures.push(res);
+            match make_addr(&tracker_addr) {
+                Ok(tracker_addr) => {
+                    let info_hash = get_info_hash(self.address().to_string());
+                    let res = announce(tracker_addr, info_hash, 0, &ENV.peer_id);
+                    futures.push(res);
+                }
+                Err(err) => {
+                    error!("Error : {err}");
+                }
+            }
         }
         let results = join_all(futures).await;
         for res in results {
