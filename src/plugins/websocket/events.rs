@@ -39,6 +39,7 @@ pub enum ServerEvent {
 }
 
 #[allow(clippy::enum_variant_names)]
+#[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[serde(rename_all = "camelCase")]

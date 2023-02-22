@@ -133,7 +133,7 @@ mod tests {
             let res = protocol.handshake().await;
             if let Err(err) = res {
                 println!("Error : {:?}", err);
-                assert!(false);
+                unimplemented!("Handle Error cases");
             } else {
                 println!("Handshake : {:?}", res.unwrap());
             }

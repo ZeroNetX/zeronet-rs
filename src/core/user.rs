@@ -544,7 +544,7 @@ mod tests {
         user.get_site_data(EXAMPLE_SITE, true);
         let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN);
 
-        assert_eq!(true, result);
+        assert!(result);
     }
 
     #[test]
@@ -553,7 +553,7 @@ mod tests {
 
         let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN);
 
-        assert_eq!(false, result);
+        assert!(!result);
     }
 
     #[test]

@@ -88,7 +88,7 @@ impl PluginManifest {
             match res {
                 Ok(_) => valid = true,
                 Err(e) => match e {
-                    CryptError::AddressMismatch(_) => valid = valid || false,
+                    CryptError::AddressMismatch(_) => {} //valid = valid || false
                     _ => return Err(Error::CryptError(e.to_string())),
                 },
             }

@@ -95,23 +95,23 @@ mod tests {
     #[test]
     fn test_creation() {
         let result = Address::from_str(ADDR);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_serialization() {
         let result = Address::from_str(ADDR);
-        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {:?}", result);
         let address = result.unwrap();
         let result = serde_json::to_string(&address);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         assert_eq!(result.unwrap(), "\"1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d\"");
     }
 
     #[test]
     fn test_get_address_hash() {
         let result = Address::from_str(ADDR);
-        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {:?}", result);
         let address_hash = result.unwrap().get_address_hash();
         let b = Vec::from(ADDR_BYTES_SHA256);
         assert_eq!(address_hash, b);
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn test_get_address_sha1() {
         let result = Address::from_str(ADDR);
-        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {:?}", result);
         let address_hash = result.unwrap().get_address_sha1();
         let b = Vec::from(ADDR_BYTES_SHA1);
         assert_eq!(address_hash, b);
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn test_get_address_short() {
         let result = Address::from_str(ADDR);
-        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {:?}", result);
         let address_hash = result.unwrap().get_address_short();
         assert_eq!(&address_hash, "1HELLo...2Ri9d");
     }

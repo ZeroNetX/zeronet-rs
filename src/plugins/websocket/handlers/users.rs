@@ -96,6 +96,7 @@ pub fn handle_user_set_global_settings(
     if let Value::Array(value) = command.params.clone() {
         let content_map = value.first();
         if let Some(Value::Object(settings)) = content_map {
+            #[allow(clippy::unnecessary_to_owned)]
             let settings = settings
                 .to_owned()
                 .into_iter()
