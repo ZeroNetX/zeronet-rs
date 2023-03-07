@@ -77,7 +77,7 @@ dependencies = [
  "actix-service",
  "actix-utils",
  "ahash",
- "base64",
+ "base64 0.13.0",
  "bitflags",
  "brotli",
  "bytes",
@@ -386,6 +386,12 @@ name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
+
+[[package]]
+name = "base64"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
 
 [[package]]
 name = "bech32"
@@ -790,7 +796,7 @@ version = "0.1.0"
 source = "git+https://github.com/decentnetwork/decentnet_protocol.git#0bde4c5e600f5487c58cd1a25e094ab23e7c943e"
 dependencies = [
  "async-trait",
- "base64",
+ "base64 0.13.0",
  "koibumi-base32",
  "rmp-serde",
  "serde",
@@ -2890,7 +2896,7 @@ dependencies = [
  "actix-web-actors",
  "async-recursion",
  "async-trait",
- "base64",
+ "base64 0.21.0",
  "bincode",
  "bitcoin 0.29.2",
  "clap",
@@ -2935,7 +2941,7 @@ name = "zeronet_cryptography"
 version = "0.2.0"
 source = "git+https://github.com/decentnetwork/zeronet_cryptography.git#750d47698c45946f0f60a033553088ef995f3c22"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "bitcoin 0.25.2",
  "hex",
  "ripemd160",
@@ -2949,7 +2955,7 @@ name = "zeronet_protocol"
 version = "0.1.10"
 source = "git+https://github.com/decentnetwork/zeronet_protocol.git?branch=decentnet#9ce8fabb17b7426a601f46136297de581d691413"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "decentnet_protocol",
  "futures",
  "itertools",

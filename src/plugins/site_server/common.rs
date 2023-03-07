@@ -2,6 +2,7 @@ use actix_web::{
     http::header::{self, AsHeaderName, HeaderValue},
     HttpRequest, HttpResponse,
 };
+use base64::{engine::general_purpose, Engine as _};
 use rand::{rngs::OsRng, Rng};
 use regex::Regex;
 
@@ -89,7 +90,11 @@ pub fn get_nonce(need_base_64: bool, length: usize) -> String {
     let mut rand = OsRng::default();
     rand.fill(&mut bytes);
     if need_base_64 {
-        let rand_str = base64::encode(bytes).chars().take(length).collect();
+        let rand_str = general_purpose::STANDARD
+            .encode(bytes)
+            .chars()
+            .take(length)
+            .collect();
         rand_str
     } else {
         let rand_str = hex::encode(bytes).chars().take(length).collect();
