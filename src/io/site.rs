@@ -229,7 +229,7 @@ impl Site {
             tasks.push(task);
         }
         let mut res = join_all(tasks).await;
-        let errs = res.drain_filter(|res| !res.is_ok()).collect::<Vec<_>>();
+        let errs = res.extract_if(|res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
             error!("{:?}", err);
         }
@@ -240,7 +240,7 @@ impl Site {
             .collect::<Vec<_>>();
         let mut content_res = join_all(user_data).await;
         let errs = content_res
-            .drain_filter(|res| !res.is_ok())
+            .extract_if(|res| !res.is_ok())
             .collect::<Vec<_>>();
         for err in errs {
             error!("{:?}", err.err());
@@ -261,7 +261,7 @@ impl Site {
             }
         });
         let mut res = join_all(files).await;
-        let errs = res.drain_filter(|res| !res.is_ok()).collect::<Vec<_>>();
+        let errs = res.extract_if(|res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
             error!("Downloading Site Files Error: {:?}", err);
         }
@@ -326,7 +326,7 @@ impl Site {
         }
         //TODO!: Verify includes, user data files
         let mut res = join_all(tasks).await;
-        let errs = res.drain_filter(|res| res.is_err()).collect::<Vec<_>>();
+        let errs = res.extract_if(|res| res.is_err()).collect::<Vec<_>>();
         for err in &errs {
             error!("{:?}", err);
         }

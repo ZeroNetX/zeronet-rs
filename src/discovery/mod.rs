@@ -41,7 +41,7 @@ impl Discovery for Site {
             } else {
                 let mut _res: Vec<Peer> = res
                     .unwrap()
-                    .drain_filter(|a| a.port > 1) //consider ips with no port
+                    .extract_if(|a| a.port > 1) //consider ips with no port
                     .collect::<Vec<_>>()
                     .iter()
                     .map(|p: &IpPort| Peer::new(PeerAddr::parse(p.to_string()).unwrap()))

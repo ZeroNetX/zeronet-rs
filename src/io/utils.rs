@@ -317,7 +317,7 @@ pub async fn load_peers() -> Vec<String> {
     for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
         peers.push(String::from_utf8(peer.to_vec()).unwrap());
     }
-    peers.drain_filter(|peer| !peer.is_empty()).collect()
+    peers.extract_if(|peer| !peer.is_empty()).collect()
 }
 
 pub fn load_trackers() -> Vec<String> {
@@ -330,5 +330,5 @@ pub fn load_trackers() -> Vec<String> {
     for peer in buf.split(|b| (b == b"\n".first().unwrap()) || (b == b"\r".first().unwrap())) {
         trackers.push(String::from_utf8(peer.to_vec()).unwrap());
     }
-    trackers.drain_filter(|peer| !peer.is_empty()).collect()
+    trackers.extract_if(|peer| !peer.is_empty()).collect()
 }
