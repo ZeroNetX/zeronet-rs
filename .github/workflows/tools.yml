@@ -10,7 +10,7 @@ env:
 jobs:
   test-desktop:
     name: Build and test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         args: [
@@ -41,7 +41,7 @@ jobs:
     - run: cargo test --workspace ${{ matrix.args }}
 
   check-clippy:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
 
     - name: Cancel Previous Runs
@@ -68,7 +68,7 @@ jobs:
         args: --all-features
 
   rustfmt:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
 
     - name: Cancel Previous Runs
