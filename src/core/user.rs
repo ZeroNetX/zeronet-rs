@@ -317,15 +317,15 @@ impl User {
     /// Get data for a new, unique site
     ///
     /// Return: [site_address, bip32_index, {"auth_address": "1AddR", "auth_privatekey": "xxx", "privatekey": "xxx"}]
-    pub fn get_new_site_data(&mut self, without_seed: bool) -> SiteData {
+    pub fn get_new_site_data(&mut self, with_seed: bool) -> SiteData {
         let (site_privkey, site_address, bip32_idx) = loop {
-            if without_seed {
-                let keypair = self.generate_site_keypair();
+            if with_seed {
+                let keypair = self.get_site_keypair_from_seed(&self.master_seed, None);
                 if self.sites.get(&keypair.1).is_none() {
                     break keypair;
                 }
             } else {
-                let keypair = self.get_site_keypair_from_seed(&self.master_seed, None);
+                let keypair = self.generate_site_keypair();
                 if self.sites.get(&keypair.1).is_none() {
                     break keypair;
                 }
@@ -508,7 +508,7 @@ mod tests {
     #[test]
     fn test_get_new_site_data() {
         let mut user = User::from_seed(SEED.to_string());
-        let site_data = user.get_new_site_data(false);
+        let site_data = user.get_new_site_data(true);
         let (_privkey, address, index) =
             user.get_site_keypair_from_seed(&user.master_seed, site_data.index);
 
