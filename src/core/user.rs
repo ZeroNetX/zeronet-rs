@@ -202,11 +202,7 @@ impl User {
     }
 
     fn get_site_keypair_from_seed(&self, seed: &str, index: Option<u32>) -> (String, String, u32) {
-        let index = if let Some(index) = index {
-            index
-        } else {
-            thread_rng().gen_range(0..29639936)
-        };
+        let index = index.unwrap_or(thread_rng().gen_range(0..29639936));
         let privkey = zeronet_cryptography::hd_privkey(seed, index);
         let wif_privkey = zeronet_cryptography::privkey_to_wif(privkey);
         let address = zeronet_cryptography::privkey_to_pubkey(&wif_privkey).unwrap();
