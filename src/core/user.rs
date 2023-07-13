@@ -320,7 +320,7 @@ impl User {
             } else {
                 self.generate_site_keypair()
             };
-            
+
             if self.sites.get(&keypair.1).is_none() {
                 break keypair;
             }
