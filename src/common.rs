@@ -18,7 +18,7 @@ use crate::{
 pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), Error> {
     let site_data;
     if use_master_seed {
-        site_data = user.get_new_site_data();
+        site_data = user.get_new_site_data(false);
         info!("\n");
         info!(
             "Site Private Key : {:?} <<< Store this to Safe Place",

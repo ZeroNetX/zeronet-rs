@@ -214,6 +214,14 @@ impl User {
         (wif_privkey, address, index)
     }
 
+    fn generate_site_keypair(&self) -> (String, String, u32) {
+        let (privkey, address) = zeronet_cryptography::create();
+        let wif_privkey = zeronet_cryptography::privkey_to_wif(privkey);
+        let index = Self::get_address_auth_index(&address);
+
+        (wif_privkey, address, index)
+    }
+
     /// Creates a new user from a seed
     pub fn from_seed(master_seed: String) -> User {
         let privkey = zeronet_cryptography::seed_to_privkey(&master_seed).unwrap();
@@ -309,15 +317,22 @@ impl User {
     /// Get data for a new, unique site
     ///
     /// Return: [site_address, bip32_index, {"auth_address": "1AddR", "auth_privatekey": "xxx", "privatekey": "xxx"}]
-    pub fn get_new_site_data(&mut self) -> SiteData {
-        //TODO: Add option to get a new site without master seed
-        let (site_privkey, site_address, bip32_idx) =
-            self.get_site_keypair_from_seed(&self.master_seed, None);
+    pub fn get_new_site_data(&mut self, without_seed: bool) -> SiteData {
+        let (site_privkey, site_address, bip32_idx) = loop {
+            if without_seed {
+                let keypair = self.generate_site_keypair();
+                if self.sites.get(&keypair.1).is_none() {
+                    break keypair;
+                }
+            } else {
+                let keypair = self.get_site_keypair_from_seed(&self.master_seed, None);
+                if self.sites.get(&keypair.1).is_none() {
+                    break keypair;
+                }
+            }
 
-        if let Some(_site_address) = self.sites.get(&site_address.to_string()) {
-            // TODO: do the whole process again instead of warning
-            info!("Random error: site exist!");
-        }
+            info!("Info: Site already exists, creating a new one");
+        };
 
         let site_data = self
             .get_site_data(&site_address, true)
@@ -407,8 +422,13 @@ impl User {
 
     /// Set active cert for a site
     fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
-        //TODO! Check if Cert actually exists
         let mut site_data = self.get_site_data(address, true);
+
+        if let Some(domain) = site_data.get_cert_provider() {
+            if self.certs.get(&domain).is_some() {
+                warn!("Warning: Cert already exists");
+            }
+        }
 
         if let Some(provider) = provider {
             site_data.add_cert_provider(provider.to_string());
@@ -488,7 +508,7 @@ mod tests {
     #[test]
     fn test_get_new_site_data() {
         let mut user = User::from_seed(SEED.to_string());
-        let site_data = user.get_new_site_data();
+        let site_data = user.get_new_site_data(false);
         let (_privkey, address, index) =
             user.get_site_keypair_from_seed(&user.master_seed, site_data.index);
 
