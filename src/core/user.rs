@@ -315,16 +315,14 @@ impl User {
     /// Return: [site_address, bip32_index, {"auth_address": "1AddR", "auth_privatekey": "xxx", "privatekey": "xxx"}]
     pub fn get_new_site_data(&mut self, with_seed: bool) -> SiteData {
         let (site_privkey, site_address, bip32_idx) = loop {
-            if with_seed {
-                let keypair = self.get_site_keypair_from_seed(&self.master_seed, None);
-                if self.sites.get(&keypair.1).is_none() {
-                    break keypair;
-                }
+            let keypair = if with_seed {
+                self.get_site_keypair_from_seed(&self.master_seed, None)
             } else {
-                let keypair = self.generate_site_keypair();
-                if self.sites.get(&keypair.1).is_none() {
-                    break keypair;
-                }
+                self.generate_site_keypair()
+            };
+            
+            if self.sites.get(&keypair.1).is_none() {
+                break keypair;
             }
 
             info!("Info: Site already exists, creating a new one");
