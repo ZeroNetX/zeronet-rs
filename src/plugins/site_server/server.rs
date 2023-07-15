@@ -57,6 +57,7 @@ pub async fn run(
     site_controller: Addr<SitesController>,
     user_controller: Addr<UserController>,
 ) -> std::io::Result<()> {
+    info!("Ui Listening On: {}:{}", ENV.ui_ip, ENV.ui_port);
     let nonces = Arc::new(Mutex::new(HashSet::new()));
     HttpServer::new(move || {
         let shared_data = ZeroServer {
