@@ -124,7 +124,14 @@ pub async fn udp_announce(
     let bytes = socket.recv_from(&mut resp_buf).await?.0;
 
     resp_buf.truncate(bytes);
-    resp_buf.drain(0..20);
+
+    let drain_range = if resp_buf.len() >= 20 {
+        20
+    } else {
+        resp_buf.len()
+    };
+
+    resp_buf.drain(0..drain_range);
 
     // deserialize and return peers
     Ok(IpPort::from_bytes(&resp_buf))
