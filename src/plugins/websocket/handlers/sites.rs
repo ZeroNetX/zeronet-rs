@@ -222,10 +222,11 @@ pub fn handle_site_list_modified_files(
     unimplemented!("Please File a Bug Report")
 }
 
-pub fn handle_site_pause(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+pub fn handle_site_pause(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
     let res = block_on(ws.site_controller.send(SitePauseRequest {
         address: ws.address.address.clone(),
     }))?;
+    ws.update_websocket();
     if res.is_err() {
         return Err(Error {
             error: format!("Unknown site: {}", ws.address.address),
