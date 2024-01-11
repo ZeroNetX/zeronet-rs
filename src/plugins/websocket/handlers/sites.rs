@@ -40,11 +40,7 @@ pub fn handle_cert_select(
     unimplemented!("Please File a Bug Report")
 }
 
-pub fn handle_site_info(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     let site_info_req = SiteInfoRequest {};
     let result = block_on(ws.site_addr.send(site_info_req))?;
     if result.is_err() {
@@ -77,11 +73,7 @@ pub fn handle_site_info(
     }
 }
 
-pub fn handle_db_query(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling DBQuery {:?}", command.cmd);
     match &command.params {
         Value::Array(inner_path) => {
@@ -117,7 +109,6 @@ pub fn handle_db_query(
 }
 
 pub fn handle_channel_join(
-    _: &ZeruWebsocket,
     ctx: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
@@ -147,11 +138,7 @@ pub fn handle_channel_join(
     command.respond("ok")
 }
 
-pub fn handle_site_list(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_site_list(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling SiteList : {:?}", command.params);
     let mut connecting = false;
     if let Value::Object(map) = &command.params {
@@ -167,7 +154,6 @@ pub fn handle_site_list(
 
 pub fn handle_channel_join_all_site(
     _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
     debug!("Handling ChannelJoinAllsite request using dummy response");

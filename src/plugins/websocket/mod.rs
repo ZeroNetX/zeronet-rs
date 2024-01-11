@@ -5,7 +5,6 @@ pub mod request;
 pub mod response;
 
 use futures::executor::block_on;
-pub use handlers::tracker::SiteAnnounce;
 use serde_json::json;
 
 use std::collections::HashMap;
@@ -299,15 +298,15 @@ impl ZeruWebsocket {
                 ServerInfo => handle_server_info(self, ctx, command),
                 CertAdd => handle_cert_add(self, ctx, command),
                 CertSelect => handle_cert_select(self, ctx, command),
-                SiteInfo => handle_site_info(self, ctx, command),
+                SiteInfo => handle_site_info(self, command),
                 SiteSign => handle_site_sign(self, ctx, command),
                 SitePublish => handle_site_publish(self, ctx, command),
                 SiteUpdate => handle_site_update(self, ctx, command),
                 SiteBadFiles => handle_site_bad_files(self, command),
                 SiteListModifiedFiles => handle_site_list_modified_files(self, ctx, command),
                 SiteReload => handle_site_reload(self, ctx, command),
-                ChannelJoin => handle_channel_join(self, ctx, command),
-                DbQuery => handle_db_query(self, ctx, command),
+                ChannelJoin => handle_channel_join(ctx, command),
+                DbQuery => handle_db_query(self, command),
 
                 FileGet => handle_file_get(self, ctx, command),
                 FileNeed => handle_file_need(self, ctx, command),
@@ -317,9 +316,9 @@ impl ZeruWebsocket {
                 FileDelete => handle_file_delete(self, ctx, command),
                 FileList => handle_file_list(self, ctx, command),
                 DirList => handle_dir_list(self, ctx, command),
-                UserGetSettings => handle_user_get_settings(self, ctx, command),
-                UserSetSettings => handle_user_set_settings(self, ctx, command),
-                UserGetGlobalSettings => handle_user_get_global_settings(self, ctx, command),
+                UserGetSettings => handle_user_get_settings(self, command),
+                UserSetSettings => handle_user_set_settings(self, command),
+                UserGetGlobalSettings => handle_user_get_global_settings(self, command),
                 AnnouncerInfo => handle_announcer_info(self, ctx, command),
             }
         } else if let CommandType::Admin(cmd) = &command.cmd {
@@ -330,9 +329,9 @@ impl ZeruWebsocket {
             }
             match cmd {
                 AnnouncerStats => handle_announcer_stats(self, ctx, command),
-                ChannelJoinAllsite => handle_channel_join_all_site(self, ctx, command),
-                SiteList => handle_site_list(self, ctx, command),
-                UserSetGlobalSettings => handle_user_set_global_settings(self, ctx, command),
+                ChannelJoinAllsite => handle_channel_join_all_site(self, command),
+                SiteList => handle_site_list(self, command),
+                UserSetGlobalSettings => handle_user_set_global_settings(self, command),
                 SiteSetSettingsValue => handle_site_set_settings_value(self, command),
                 SitePause => handle_site_pause(self, command),
                 SiteResume => handle_site_resume(self, command),

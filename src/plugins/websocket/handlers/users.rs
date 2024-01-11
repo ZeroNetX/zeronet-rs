@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
@@ -23,11 +22,7 @@ pub fn get_current_user(ws: &ZeruWebsocket) -> Result<User, Error> {
     }
 }
 
-pub fn handle_user_get_settings(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_user_get_settings(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     let result = block_on(ws.user_controller.send(UserSettings {
         user_addr: String::from("current"),
         site_addr: ws.address.clone().address,
@@ -46,11 +41,7 @@ pub fn handle_user_get_settings(
     command.respond(map)
 }
 
-pub fn handle_user_set_settings(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_user_set_settings(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     warn!("Handling UserGetSettings with dummy response");
     // TODO: actually return user settings
     let user = get_current_user(ws)?;
@@ -80,7 +71,6 @@ pub fn handle_user_set_settings(
 
 pub fn handle_user_get_global_settings(
     ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
     let user = get_current_user(ws)?;
@@ -89,7 +79,6 @@ pub fn handle_user_get_global_settings(
 
 pub fn handle_user_set_global_settings(
     ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
     info!("Handling UserSetGlobalSettings");
@@ -125,7 +114,6 @@ pub fn handle_user_set_global_settings(
 
 pub fn _handle_user_show_master_seed(
     ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
     let user = get_current_user(ws)?;

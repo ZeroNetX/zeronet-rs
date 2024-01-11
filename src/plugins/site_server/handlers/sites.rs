@@ -14,7 +14,6 @@ use crate::{
         error::Error,
         site::{models::SiteInfo, Site},
     },
-    plugins::core::permission,
 };
 
 impl Actor for Site {
