@@ -178,10 +178,7 @@ pub struct ServerInfo {
     user_settings: HashMap<String, serde_json::Value>,
 }
 
-fn handle_ping(
-    _: &mut ws::WebsocketContext<ZeruWebsocket>,
-    req: &Command,
-) -> Result<Message, Error> {
+fn handle_ping(req: &Command) -> Result<Message, Error> {
     trace!("Handling ping");
     let pong = String::from("pong");
     req.respond(pong)
@@ -263,7 +260,7 @@ impl ZeruWebsocket {
         );
         let response = if let CommandType::UiServer(cmd) = &command.cmd {
             match cmd {
-                Ping => handle_ping(ctx, command),
+                Ping => handle_ping(command),
                 ServerInfo => handle_server_info(self, ctx, command),
                 CertAdd => handle_cert_add(self, ctx, command),
                 CertSelect => handle_cert_select(self, ctx, command),
