@@ -308,8 +308,8 @@ impl ZeruWebsocket {
                 ChannelJoin => handle_channel_join(ctx, command),
                 DbQuery => handle_db_query(self, command),
 
-                FileGet => handle_file_get(self, ctx, command),
-                FileNeed => handle_file_need(self, ctx, command),
+                FileGet => handle_file_get(self, command),
+                FileNeed => handle_file_need(self, command),
                 FileRules => handle_file_rules(self, ctx, command),
                 FileQuery => handle_file_query(self, ctx, command),
                 FileWrite => handle_file_write(self, ctx, command),

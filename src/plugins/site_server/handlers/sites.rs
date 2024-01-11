@@ -131,6 +131,25 @@ impl Handler<FileGetRequest> for Site {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Message)]
+#[rtype(result = "Result<bool, Error>")]
+pub struct FileNeedRequest {
+    pub inner_path: String,
+    #[serde(default)]
+    pub timeout: usize,
+    #[serde(default)]
+    pub priority: usize,
+}
+
+impl Handler<FileNeedRequest> for Site {
+    type Result = Result<bool, Error>;
+
+    fn handle(&mut self, msg: FileNeedRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        let res = block_on(self.need_file(msg.inner_path, None, None));
+        res
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Message)]
 #[rtype(result = "Option<Value>")]
 pub struct FileRulesRequest {
     #[serde(default)]

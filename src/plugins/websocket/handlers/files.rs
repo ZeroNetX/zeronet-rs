@@ -8,22 +8,23 @@ use serde_json::{json, Value};
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
     environment::ENV,
-    plugins::site_server::handlers::sites::{FileGetRequest, FileRulesRequest},
+    plugins::site_server::handlers::sites::{FileGetRequest, FileNeedRequest, FileRulesRequest},
 };
 
-pub fn handle_file_need(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_file_need(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    trace!("Handling FileNeed request");
+    let msg: FileNeedRequest = match serde_json::from_value(cmd.params.clone()) {
+        Ok(m) => m,
+        Err(e) => {
+            error!("{:?}", e);
+            FileNeedRequest::default()
+        }
+    };
+    let _ = block_on(ws.site_addr.send(msg))?;
+    cmd.respond("ok")
 }
 
-pub fn handle_file_get(
-    ws: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    command: &Command,
-) -> Result<Message, Error> {
+pub fn handle_file_get(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling FileGet request {:?}", command);
     let msg: FileGetRequest = match serde_json::from_value(command.params.clone()) {
         Ok(m) => m,
@@ -69,7 +70,7 @@ pub fn handle_file_rules(
             }
         },
     };
-    let mut rules = block_on(ws.site_addr.send(msg))?;
+    let mut rules = block_on(ws.site_addr.send(msg.clone()))?;
     if rules.is_none() {
         //TODO! Don't Send Empty Rules
         // return Err(Error {
@@ -77,7 +78,11 @@ pub fn handle_file_rules(
         // });
         rules = Some(json!({"":""}));
     }
-    command.respond(rules.unwrap())
+    let rules = rules.unwrap();
+    if msg.inner_path.ends_with("content.json") {
+        // TODO!: current_size value
+    }
+    command.respond(rules)
 }
 
 pub fn handle_file_query(
