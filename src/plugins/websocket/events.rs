@@ -53,6 +53,16 @@ pub enum EventType {
     SiteInfo(SiteInfo),
 }
 
+impl Handler<ServerEvent> for WebsocketController {
+    type Result = ();
+
+    fn handle(&mut self, msg: ServerEvent, _: &mut Self::Context) {
+        for addr in &self.listeners {
+            addr.do_send(msg.clone());
+        }
+    }
+}
+
 impl Handler<ServerEvent> for ZeruWebsocket {
     type Result = ();
 
