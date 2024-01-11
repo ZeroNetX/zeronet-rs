@@ -70,7 +70,11 @@ impl Handler<RegisterChannels> for ZeruWebsocket {
 
     fn handle(&mut self, msg: RegisterChannels, _ctx: &mut Self::Context) -> Self::Result {
         trace!("RegisteringChannels: {:?}", &msg.0);
-        self.channels = msg.0;
+        for channel in msg.0 {
+            if !self.channels.contains(&channel) {
+                self.channels.push(channel);
+            }
+        }
         Ok(())
     }
 }

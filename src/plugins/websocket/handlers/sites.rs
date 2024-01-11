@@ -122,23 +122,29 @@ pub fn handle_channel_join(
     command: &Command,
 ) -> Result<Message, Error> {
     trace!("Handling ChannelJoin request");
-    if let Some(channels) = command.params.as_object() {
-        if let Some(channels) = channels.get("channels") {
-            if let Some(channels) = channels.as_array() {
-                let mut channels_list: Vec<String> = Vec::new();
+    let channel = &command.params;
+    let mut list = vec![];
+    match channel {
+        Value::Object(map) => {
+            if let Some(Value::Array(channels)) = map.get("channels") {
                 for channel in channels {
                     if let Some(channel) = channel.as_str() {
-                        channels_list.push(channel.to_string());
+                        list.push(channel.to_string());
                     }
                 }
-                ctx.address().do_send(RegisterChannels(channels_list));
-                return command.respond("ok");
             }
         }
+        Value::String(channel) => {
+            list.push(channel.to_string());
+        }
+        _ => {
+            return Err(Error {
+                error: String::from("Invalid params"),
+            })
+        }
     }
-    Err(Error {
-        error: String::from("Invalid params"),
-    })
+    ctx.address().do_send(RegisterChannels(list));
+    command.respond("ok")
 }
 
 pub fn handle_site_list(
