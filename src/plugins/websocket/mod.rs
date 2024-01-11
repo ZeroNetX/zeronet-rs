@@ -302,6 +302,9 @@ impl ZeruWebsocket {
                 SitePause => handle_site_pause(self, command),
                 SiteResume => handle_site_resume(self, command),
                 SiteDelete => handle_site_delete(self, command),
+                PermissionAdd => handle_permission_add(self, command),
+                PermissionRemove => handle_permission_remove(self, command),
+                PermissionDetails => handle_permission_details(command),
                 _ => {
                     debug!("Unhandled Admin command: {:?}", command.cmd);
                     return Err(Error {

@@ -30,6 +30,13 @@ lazy_static! {
     pub static ref DEF_LOG_DIR: String = CURRENT_DIR.join("log").to_str().unwrap().to_string();
     pub static ref USER_STORAGE: HashMap<String, User> = load_users_file();
     pub static ref SITE_STORAGE: HashMap<String, SiteStorage> = load_sites_file();
+    pub static ref SITE_PERMISSIONS_DETAILS: HashMap<String, String> = {
+        let mut map = HashMap::new();
+        map.insert("ADMIN".into(), "Modify your client's configuration and access all site".into());
+        map.insert("NOSANDBOX".into(), "Modify your client's configuration and access all site".into());
+        map.insert("PushNotification".into(), "Send notifications".into());
+        map
+    };
     pub static ref MATCHES: ArgMatches = get_matches();
     pub static ref SUB_CMDS: Vec<String> =
         vec![

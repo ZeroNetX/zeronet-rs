@@ -14,6 +14,7 @@ use crate::{
         error::Error,
         site::{models::SiteInfo, Site},
     },
+    plugins::core::permission,
 };
 
 impl Actor for Site {
@@ -362,6 +363,56 @@ impl Handler<SiteSetSettingsValueRequest> for SitesController {
     ) -> Self::Result {
         if let Some(site) = self.sites.get_mut(&msg.address) {
             site.storage.plugin_storage.data.insert(msg.key, msg.value);
+            Ok(())
+        } else {
+            Err(Error::SiteNotFound)
+        }
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct SitePermissionAddRequest {
+    pub address: String,
+    pub permission: String,
+}
+
+impl Handler<SitePermissionAddRequest> for SitesController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: SitePermissionAddRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        if let Some(site) = self.sites.get_mut(&msg.address) {
+            let permissions = &mut site.storage.settings.permissions;
+            if !permissions.contains(&msg.permission) {
+                permissions.push(msg.permission);
+            }
+            Ok(())
+        } else {
+            Err(Error::SiteNotFound)
+        }
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct SitePermissionRemoveRequest {
+    pub address: String,
+    pub permission: String,
+}
+
+impl Handler<SitePermissionRemoveRequest> for SitesController {
+    type Result = Result<(), Error>;
+
+    fn handle(
+        &mut self,
+        msg: SitePermissionRemoveRequest,
+        _ctx: &mut Context<Self>,
+    ) -> Self::Result {
+        if let Some(site) = self.sites.get_mut(&msg.address) {
+            let permissions = &mut site.storage.settings.permissions;
+            if permissions.contains(&msg.permission) {
+                permissions.retain(|x| x != &msg.permission);
+            }
             Ok(())
         } else {
             Err(Error::SiteNotFound)

@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
+    environment::SITE_PERMISSIONS_DETAILS,
     plugins::site_server::handlers::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
         users::UserSiteData,
@@ -14,8 +15,8 @@ use crate::{
     plugins::{
         site_server::handlers::{
             sites::{
-                SiteBadFilesRequest, SiteDeleteRequest, SitePauseRequest, SiteResumeRequest,
-                SiteSetSettingsValueRequest,
+                SiteBadFilesRequest, SiteDeleteRequest, SitePauseRequest, SitePermissionAddRequest,
+                SitePermissionRemoveRequest, SiteResumeRequest, SiteSetSettingsValueRequest,
             },
             users::UserSiteDataDeleteRequest,
         },
@@ -274,6 +275,45 @@ pub fn handle_site_set_settings_value(ws: &ZeruWebsocket, cmd: &Command) -> Resu
         });
     }
     cmd.respond("ok")
+}
+
+pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let params = cmd.params.as_str().unwrap();
+    let res = block_on(ws.site_controller.send(SitePermissionAddRequest {
+        address: ws.address.address.clone(),
+        permission: params.to_string(),
+    }))?;
+    if res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("ok")
+}
+
+pub fn handle_permission_remove(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let params = cmd.params.as_str().unwrap();
+    let res = block_on(ws.site_controller.send(SitePermissionRemoveRequest {
+        address: ws.address.address.clone(),
+        permission: params.to_string(),
+    }))?;
+    if res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("ok")
+}
+
+pub fn handle_permission_details(cmd: &Command) -> Result<Message, Error> {
+    let key = cmd.params.as_str().unwrap();
+    let details = SITE_PERMISSIONS_DETAILS
+        .get(key)
+        .cloned()
+        .ok_or_else(|| Error {
+            error: format!("Unknown permission: {}", key),
+        });
+    cmd.respond(details?)
 }
 
 #[derive(Serialize)]
