@@ -268,7 +268,7 @@ impl ZeruWebsocket {
                 SiteSign => handle_site_sign(self, ctx, command),
                 SitePublish => handle_site_publish(self, ctx, command),
                 SiteUpdate => handle_site_update(self, ctx, command),
-                SiteBadFiles => handle_site_bad_files(self, ctx, command),
+                SiteBadFiles => handle_site_bad_files(self, command),
                 SiteListModifiedFiles => handle_site_list_modified_files(self, ctx, command),
                 SiteReload => handle_site_reload(self, ctx, command),
                 ChannelJoin => handle_channel_join(self, ctx, command),

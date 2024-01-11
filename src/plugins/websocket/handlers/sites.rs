@@ -11,7 +11,7 @@ use crate::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
         users::UserSiteData,
     },
-    plugins::websocket::events::RegisterChannels,
+    plugins::{site_server::handlers::sites::SiteBadFiles, websocket::events::RegisterChannels},
 };
 
 pub fn handle_cert_add(
@@ -140,9 +140,9 @@ pub fn handle_site_list(
     let mut connecting = false;
     if let Value::Object(map) = &command.params {
         if let Some(Value::Bool(value)) = map.get("connecting_sites") {
-            connecting =  *value;
+            connecting = *value;
         }
-    } 
+    }
     let sites = block_on(ws.site_controller.send(SiteInfoListRequest { connecting }))
         .unwrap()
         .unwrap();
@@ -190,12 +190,12 @@ pub fn handle_site_update(
     unimplemented!("Please File a Bug Report")
 }
 
-pub fn handle_site_bad_files(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_site_bad_files(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    trace!("Handling SiteBadFiles request");
+    let bad_files = block_on(ws.site_controller.send(SiteBadFiles {
+        address: ws.address.address.clone(),
+    }))?;
+    cmd.respond(bad_files)
 }
 
 pub fn handle_site_list_modified_files(

@@ -201,7 +201,7 @@ impl Handler<SiteInfoRequest> for Site {
         };
         
         storage.keys.wrapper_key = "".to_string();
-        
+
         Ok(SiteInfo {
             address_hash: self.addr().get_address_hash().to_hex(),
             address: self.address(),
@@ -263,5 +263,21 @@ impl Handler<DBQueryRequest> for SitesController {
     fn handle(&mut self, msg: DBQueryRequest, _ctx: &mut Context<Self>) -> Self::Result {
         let conn = self.db_manager.get_db(&msg.address).unwrap();
         block_on(Self::db_query(conn, &msg.query, msg.params))
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Vec<String>")]
+pub struct SiteBadFiles {
+    pub address: String,
+}
+
+impl Handler<SiteBadFiles> for SitesController {
+    type Result = Vec<String>;
+
+    fn handle(&mut self, msg: SiteBadFiles, _ctx: &mut Context<Self>) -> Self::Result {
+        let site = self.sites.get(&msg.address).unwrap();
+        let res = site.storage.cache.bad_files.keys().map(|x| x.to_string()).collect();
+        res
     }
 }
