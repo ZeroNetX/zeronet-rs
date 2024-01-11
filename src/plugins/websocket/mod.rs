@@ -27,6 +27,7 @@ use crate::{
     controllers::{sites::SitesController, users::UserController},
     core::{address::Address, site::Site},
     environment::{Environment, ENV},
+    header_name,
     plugins::site_server::{
         handlers::sites::{Lookup, SiteInfoRequest},
         server::ZeroServer,
@@ -50,7 +51,29 @@ pub async fn serve_websocket(
     controller_data: Data<Addr<WebsocketController>>,
     stream: Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
-    info!("Serving websocket");
+    if !req.headers().contains_key(header_name!("upgrade")) {
+        return Ok(error404(&req, Some("Not a websocket request!")));
+    }
+    trace!("Serving websocket");
+    let origin = req
+        .headers()
+        .get(header_name!("origin"))
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+    let host = req
+        .headers()
+        .get(header_name!("host"))
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("");
+    let origin_host = origin.split("://").collect::<Vec<&str>>()[1];
+    if origin_host != host {
+        //TODO!: and origin_host not in allowed_ws_origins
+        let msg = format!(
+            "Invalid origin: {} (host: {}, allowed: missing_impl)",
+            origin, host
+        );
+        return Ok(error403(&req, Some(&msg)));
+    }
     let wrapper_key = query.get("wrapper_key").unwrap();
     let future = data
         .site_controller
@@ -58,8 +81,8 @@ pub async fn serve_websocket(
     let (address, addr) = match future.await {
         Ok(Ok(resp)) => resp,
         _ => {
-            warn!("Websocket established, but wrapper key invalid");
-            return Ok(HttpResponse::Ok().body("Invalid wrapper key"));
+            let msg = format!("Wrapper key not found: {}", wrapper_key);
+            return Ok(error403(&req, Some(&msg)));
         }
     };
 
