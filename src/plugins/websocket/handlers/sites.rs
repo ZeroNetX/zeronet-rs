@@ -13,7 +13,10 @@ use crate::{
     },
     plugins::{
         site_server::handlers::{
-            sites::{SiteBadFilesRequest, SiteDeleteRequest, SitePauseRequest, SiteResumeRequest},
+            sites::{
+                SiteBadFilesRequest, SiteDeleteRequest, SitePauseRequest, SiteResumeRequest,
+                SiteSetSettingsValueRequest,
+            },
             users::UserSiteDataDeleteRequest,
         },
         websocket::events::RegisterChannels,
@@ -250,6 +253,27 @@ pub fn handle_site_delete(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, 
         });
     }
     cmd.respond("Deleted")
+}
+
+pub fn handle_site_set_settings_value(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let params = cmd.params.as_array().unwrap();
+    let key = params[0].as_str().unwrap();
+    if key != "modified_files_notification" {
+        return Err(Error {
+            error: format!("Can't change this key"),
+        });
+    }
+    let res = block_on(ws.site_controller.send(SiteSetSettingsValueRequest {
+        address: ws.address.address.clone(),
+        key: key.to_string(),
+        value: params[1].clone(),
+    }))?;
+    if res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("ok")
 }
 
 #[derive(Serialize)]

@@ -343,3 +343,28 @@ impl Handler<SiteDeleteRequest> for SitesController {
         }
     }
 }
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct SiteSetSettingsValueRequest {
+    pub address: String,
+    pub key: String,
+    pub value: Value,
+}
+
+impl Handler<SiteSetSettingsValueRequest> for SitesController {
+    type Result = Result<(), Error>;
+
+    fn handle(
+        &mut self,
+        msg: SiteSetSettingsValueRequest,
+        _ctx: &mut Context<Self>,
+    ) -> Self::Result {
+        if let Some(site) = self.sites.get_mut(&msg.address) {
+            site.storage.plugin_storage.data.insert(msg.key, msg.value);
+            Ok(())
+        } else {
+            Err(Error::SiteNotFound)
+        }
+    }
+}

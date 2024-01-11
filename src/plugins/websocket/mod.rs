@@ -298,6 +298,7 @@ impl ZeruWebsocket {
                 ChannelJoinAllsite => handle_channel_join_all_site(self, ctx, command),
                 SiteList => handle_site_list(self, ctx, command),
                 UserSetGlobalSettings => handle_user_set_global_settings(self, ctx, command),
+                SiteSetSettingsValue => handle_site_set_settings_value(self, command),
                 SitePause => handle_site_pause(self, command),
                 SiteResume => handle_site_resume(self, command),
                 SiteDelete => handle_site_delete(self, command),
