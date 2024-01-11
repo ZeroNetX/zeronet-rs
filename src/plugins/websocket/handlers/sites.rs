@@ -76,24 +76,25 @@ pub fn handle_db_query(
     match &command.params {
         Value::Array(inner_path) => {
             if let Some(query) = inner_path[0].as_str() {
-                let params = inner_path.get(1);
-                if params.is_none() {
-                    let res = block_on(ws.site_controller.send(DBQueryRequest {
-                        address: ws.address.address.clone(),
-                        query: query.to_string(),
-                    }))
-                    .unwrap()
-                    .unwrap();
-                    return command.respond(res);
+                let stmt_type = query.split_whitespace().next().unwrap();
+                if stmt_type.to_uppercase() != "SELECT" {
+                    return Err(Error {
+                        error: String::from("Only SELECT queries are allowed"),
+                    });
                 }
-                error!("{:?}", command);
-                return Err(Error {
-                    error: String::from("params are not implemented yet"),
-                });
+                let params = inner_path.get(1).cloned();
+                let res = block_on(ws.site_controller.send(DBQueryRequest {
+                    address: ws.address.address.clone(),
+                    query: query.to_string(),
+                    params,
+                }))
+                .unwrap()
+                .unwrap();
+                return command.respond(res);
             }
             error!("{:?}", command);
             Err(Error {
-                error: String::from("params are not implemented yet"),
+                error: String::from("expecting query, failed to parse"),
             })
         }
         _ => {

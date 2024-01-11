@@ -57,7 +57,7 @@ pub async fn db_query(
     db_manager.insert_schema(&site.address(), schema);
     db_manager.connect_db(&site.address())?;
     let conn = db_manager.get_db(&site.address()).unwrap();
-    let res = SitesController::db_query(conn, query).await?;
+    let res = SitesController::db_query(conn, query, None).await?;
     for row in res {
         info!("{:#?}", row);
     }

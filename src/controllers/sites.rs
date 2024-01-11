@@ -172,8 +172,14 @@ impl SitesController {
     pub async fn db_query(
         conn: &mut Connection,
         query: &str,
+        params: Option<Value>,
     ) -> Result<Vec<Map<String, Value>>, Error> {
-        let mut stmt = conn.prepare(query).unwrap();
+        let (query, params) = if let Some(params) = params {
+            Self::parse_query(query, params)
+        } else {
+            (query.to_string(), json!([]))
+        };
+        let mut stmt = conn.prepare(&query).unwrap();
         let count = stmt.column_count();
         let names = {
             stmt.column_names()
@@ -182,7 +188,7 @@ impl SitesController {
                 .collect::<Vec<String>>()
         };
         let res = stmt
-            .query_map(params![], |row| {
+            .query_map(params![params], |row| {
                 let mut data_map = Map::new();
                 let mut i = 0;
                 loop {

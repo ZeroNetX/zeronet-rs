@@ -256,6 +256,7 @@ impl Handler<SiteInfoListRequest> for SitesController {
 pub struct DBQueryRequest {
     pub address: String,
     pub query: String,
+    pub params: Option<Value>,
 }
 
 impl Handler<DBQueryRequest> for SitesController {
@@ -263,6 +264,6 @@ impl Handler<DBQueryRequest> for SitesController {
 
     fn handle(&mut self, msg: DBQueryRequest, _ctx: &mut Context<Self>) -> Self::Result {
         let conn = self.db_manager.get_db(&msg.address).unwrap();
-        block_on(Self::db_query(conn, &msg.query))
+        block_on(Self::db_query(conn, &msg.query, msg.params))
     }
 }
