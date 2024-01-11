@@ -31,8 +31,9 @@ impl Handler<RegisterWSClient> for WebsocketController {
     }
 }
 
-#[derive(Serialize, Deserialize, Message)]
+#[derive(Serialize, Deserialize, Message, Clone)]
 #[rtype(result = "()")]
+#[serde(untagged)]
 #[serde(rename_all = "camelCase")]
 pub enum ServerEvent {
     Event { cmd: String, params: EventType },
@@ -40,7 +41,7 @@ pub enum ServerEvent {
 
 #[allow(clippy::enum_variant_names)]
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 #[serde(rename_all = "camelCase")]
 pub enum EventType {

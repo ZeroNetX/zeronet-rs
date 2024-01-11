@@ -52,7 +52,7 @@ pub fn handle_announcer_stats(
     command.respond(stats)
 }
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct AnnouncerStats {
     pub status: String,
     pub num_request: usize,

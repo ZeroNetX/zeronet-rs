@@ -147,13 +147,13 @@ pub enum WrapperCommandType {
     WrapperClosedWebsocket,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ServerPortOpened {
     ipv4: bool,
     ipv6: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ServerInfo {
     ip_external: bool,
     port_opened: ServerPortOpened,
