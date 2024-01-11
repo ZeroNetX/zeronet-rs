@@ -2,9 +2,11 @@ use std::collections::HashMap;
 
 use actix::{Actor, Addr};
 use futures::executor::block_on;
+use itertools::Itertools;
 use log::*;
+use regex::Regex;
 use rusqlite::{params, Connection};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
 use crate::{
     core::{
@@ -199,5 +201,263 @@ impl SitesController {
             .unwrap();
         let res = res.filter_map(|e| e.ok()).collect::<Vec<_>>();
         Ok(res)
+    }
+
+    pub fn parse_query(query: &str, params: Value) -> (String, Value) {
+        if !params.is_object() {
+            return (query.to_string(), params);
+        }
+        let params = params.as_object().unwrap();
+        let query_type = query.split_whitespace().next().unwrap().to_uppercase();
+        let mut new_query = String::from(query);
+        let mut new_params = vec![];
+        if query.contains('?') {
+            let query_types = ["SELECT", "DELETE", "UPDATE"];
+            if query_types.contains(&query_type.as_str()) {
+                let mut query_wheres = vec![];
+                let mut values = vec![];
+                for (key, value) in params.iter() {
+                    if let Value::Array(value) = value {
+                        let operator = if key.starts_with("not__") {
+                            "NOT IN"
+                        } else {
+                            "IN"
+                        };
+                        let field = if key.starts_with("not__") {
+                            key.strip_prefix("not__").unwrap()
+                        } else {
+                            key
+                        };
+                        let query_values = if value.len() > 100 {
+                            let s = value
+                                .iter()
+                                .map(|value| Self::sqlquote(value.clone()))
+                                .join(", ");
+                            s
+                        } else {
+                            let placeholders = vec!["?"; value.len()].join(", ");
+                            new_params.extend(value.iter().map(|v| v.to_string()));
+                            values.extend(value.iter().cloned());
+                            placeholders
+                        };
+                        query_wheres.push(format!("{} {} ({})", field, operator, query_values));
+                    } else {
+                        let (key, operator) = if key.starts_with("not__") {
+                            (key.replace("not__", ""), "!=")
+                        } else if key.ends_with("__like") {
+                            (key.replace("__like", ""), "LIKE")
+                        } else if key.ends_with('>') {
+                            (key.replace('>', ""), ">")
+                        } else if key.ends_with('<') {
+                            (key.replace('<', ""), "<")
+                        } else {
+                            (key.to_string(), "=")
+                        };
+                        query_wheres.push(format!("{key} {operator} ?"));
+                        values.push(value.clone());
+                        new_params.push(value.to_string());
+                    }
+                }
+
+                let wheres = if query_wheres.is_empty() {
+                    String::from("1")
+                } else {
+                    query_wheres.join(" AND ")
+                };
+
+                let re = Regex::new(r"(.*)[?]").unwrap();
+                let wheres = format!("$1 {}", wheres);
+
+                new_query = re.replace(&query, &wheres).into();
+            } else {
+                let keys = params
+                    .keys()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                let values = vec!["?"; params.len()].join(", ");
+                let keysvalues = format!("({}) VALUES ({})", keys, values);
+
+                let re = Regex::new(r"\?").unwrap();
+                new_query = re.replace_all(&new_query, &keysvalues).to_string();
+                new_params = params.values().map(|v| v.to_string()).collect();
+            }
+            (new_query, json!(new_params))
+        } else if query.contains(':') {
+            let mut new_params_map = Map::new();
+            for (key, value) in params {
+                if let Value::Array(value) = value {
+                    for (idx, val) in value.iter().enumerate() {
+                        new_params_map.insert(format!("{}__{}", key, idx), val.clone());
+                    }
+                    let new_names = (0..value.len())
+                        .map(|idx| format!(":{}__{}", key, idx))
+                        .collect::<Vec<String>>();
+                    let key = regex::escape(&key);
+                    let re = Regex::new(&format!(r":{}([)\s]|$)", key)).unwrap();
+                    let replacement = format!("({})$1", new_names.join(", "));
+                    new_query = re.replace_all(&query, replacement.as_str()).into();
+                } else {
+                    new_params_map.insert(key.to_string(), value.clone());
+                }
+            }
+
+            (new_query, json!(new_params_map))
+        } else {
+            unreachable!("Unknown query format");
+        }
+    }
+
+    fn sqlquote(value: Value) -> String {
+        if let Value::Number(value) = value {
+            format!("{}", value)
+        } else if let Value::String(value) = value {
+            return format!("'{}'", value.replace('\'', "''"));
+        } else {
+            unimplemented!("Value type not implemented yet");
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::controllers::sites::SitesController;
+
+    #[test]
+    fn test_sql_quote() {
+        use super::*;
+
+        let value = json!(123);
+        let res = SitesController::sqlquote(value);
+        assert_eq!(res, "123", "Should return quoted string");
+
+        let value = json!("123");
+        let res = SitesController::sqlquote(value);
+        assert_eq!(res, "'123'", "Should return quoted string");
+
+        let value = json!("123 '123");
+        let res = SitesController::sqlquote(value);
+        assert_eq!(res, "'123 ''123'", "Should return quoted string");
+
+        let value = json!("1'2'3");
+        let res = SitesController::sqlquote(value);
+        assert_eq!(res, "'1''2''3'", "Should return quoted string");
+    }
+
+    #[test]
+    fn test_parse_query_with_non_object_params() {
+        let query = "SELECT * FROM table";
+        let params = json!(42);
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, query);
+        assert_eq!(new_params, json!(42));
+    }
+
+    #[test]
+    fn test_parse_query_with_empty_params() {
+        let query = "SELECT * FROM table WHERE ?";
+        let params = json!({});
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "SELECT * FROM table WHERE  1");
+        assert_eq!(new_params, json!([]));
+    }
+
+    #[test]
+    fn test_parse_query_with_select_query() {
+        let query = "SELECT * FROM table WHERE ?";
+        let params = json!({
+            "id": [1, 2, 3]
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "SELECT * FROM table WHERE  id IN (?, ?, ?)");
+        assert_eq!(new_params, json!(["1", "2", "3"]));
+    }
+
+    #[test]
+    fn test_parse_query_with_update_query() {
+        let query = "UPDATE table SET ? WHERE id = 1";
+        let params = json!({
+            "name": "New Name"
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "UPDATE table SET  name = ? WHERE id = 1");
+        assert_eq!(new_params, json!(["\"New Name\""]));
+    }
+
+    #[test]
+    fn test_parse_query_with_delete_query() {
+        let query = "DELETE FROM table WHERE ?";
+        let params = json!({
+            "id": [1, 2, 3]
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "DELETE FROM table WHERE  id IN (?, ?, ?)");
+        assert_eq!(new_params, json!(["1", "2", "3"]));
+    }
+
+    #[test]
+    #[should_panic(expected = "Unknown query format")]
+    fn test_parse_query_with_unknown_format() {
+        let query = "UNKNOWN QUERY FORMAT";
+        let params = json!({});
+        let _ = SitesController::parse_query(query, params);
+    }
+
+    #[test]
+    fn test_parse_query_with_multiple_params() {
+        let query = "UPDATE table WHERE ?";
+        let params = json!({
+            "name": "New Name",
+            "id": 1
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "UPDATE table WHERE  id = ? AND name = ?");
+        assert_eq!(new_params, json!(["1", "\"New Name\"",]));
+    }
+
+    #[test]
+    fn test_parse_query_with_colon_params() {
+        let query = "SELECT * FROM table WHERE id = :id";
+        let params = json!({
+            "id": 1
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "SELECT * FROM table WHERE id = :id");
+        assert_eq!(new_params, json!({"id": 1}));
+    }
+
+    #[test]
+    fn test_parse_query_with_multiple_colon_params() {
+        let query = "UPDATE table SET name = :name WHERE id = :id";
+        let params = json!({
+            "name": "New Name",
+            "id": 1
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "UPDATE table SET name = :name WHERE id = :id");
+        assert_eq!(new_params, json!({"id": 1, "name": "New Name"}));
+    }
+
+    #[test]
+    fn test_parse_query_with_missing_colon_param() {
+        let query = "SELECT * FROM table WHERE id = :id";
+        let params = json!({});
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "SELECT * FROM table WHERE id = :id");
+        assert_eq!(new_params, json!({}));
+    }
+
+    #[test]
+    fn test_parse_query_with_insert_query() {
+        let query = "INSERT INTO table bio ?";
+        let params = json!({
+            "name": ["John", "Doe"],
+            "age": [32, 30]
+        });
+        let (new_query, new_params) = SitesController::parse_query(query, params);
+        assert_eq!(new_query, "INSERT INTO table bio (age, name) VALUES (?, ?)");
+        assert_eq!(new_params, json!(["[32,30]", "[\"John\",\"Doe\"]"]));
     }
 }
