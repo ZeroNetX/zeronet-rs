@@ -6,6 +6,7 @@ pub mod response;
 
 use futures::executor::block_on;
 pub use handlers::tracker::SiteAnnounce;
+use serde_json::json;
 
 use std::collections::HashMap;
 
@@ -19,7 +20,7 @@ use log::*;
 use serde::{Deserialize, Serialize};
 
 use self::{
-    events::WebsocketController,
+    events::{EventType, ServerEvent, WebsocketController},
     handlers::{files::*, sites::*, tracker::*, users::*},
     request::CommandType,
 };
@@ -32,7 +33,13 @@ use crate::{
         handlers::sites::{Lookup, SiteInfoRequest},
         server::ZeroServer,
     },
-    plugins::{site_server::server::AppEntryImpl, websocket::events::RegisterWSClient},
+    plugins::{
+        site_server::{
+            error::{error403, error404},
+            server::AppEntryImpl,
+        },
+        websocket::events::RegisterWSClient,
+    },
 };
 use error::Error;
 use request::{AdminCommandType::*, Command, UiServerCommandType::*};
@@ -90,6 +97,7 @@ pub async fn serve_websocket(
     let websocket = ZeruWebsocket {
         site_controller: data.site_controller.clone(),
         user_controller: data.user_controller.clone(),
+        ws_controller: controller_data.get_ref().clone(),
         site_addr: addr,
         address,
         channels: vec![],
@@ -104,6 +112,7 @@ pub async fn serve_websocket(
 pub struct ZeruWebsocket {
     site_controller: Addr<SitesController>,
     user_controller: Addr<UserController>,
+    ws_controller: Addr<WebsocketController>,
     site_addr: actix::Addr<Site>,
     address: Address,
     channels: Vec<String>,
@@ -351,6 +360,55 @@ impl ZeruWebsocket {
         let j = serde_json::to_string(&response?)?;
         ctx.text(j);
 
+        Ok(())
+    }
+
+    fn update_websocket(&mut self) {
+        self.on_event("siteChanged", &json!([])).unwrap();
+    }
+
+    fn on_event(&mut self, channel: &str, params: &serde_json::Value) -> Result<(), Error> {
+        if !self.channels.contains(&channel.to_string()) {
+            return Ok(());
+        }
+        let params = params.as_array().unwrap();
+        for listener in &self.channels.clone() {
+            if listener == "siteChanged" {
+                let site_info = block_on(self.site_addr.send(SiteInfoRequest()))
+                    .unwrap()
+                    .unwrap();
+                self.send_event(EventType::SiteInfo(site_info))?;
+            } else if listener == "serverChanged" {
+                let server_info = server_info(self)?;
+                if params.len() > 0 {
+                    //TODO!: Implement handling of serverChanged params
+                }
+                self.send_event(EventType::ServerInfo(server_info))?;
+            } else if listener == "announcerChanged" {
+                let address: String = params[0].as_str().unwrap().to_string();
+                let announcer_info = EventType::AnnouncerInfo {
+                    address,
+                    stats: HashMap::new(),
+                };
+                if params.len() > 0 {
+                    //TODO!: Implement handling of announcerChanged params
+                }
+                self.send_event(announcer_info)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn send_event(&mut self, event: EventType) -> Result<(), Error> {
+        let event_name = match event {
+            EventType::AnnouncerInfo { .. } => "setAnnouncerInfo",
+            EventType::ServerInfo(_) => "setServerInfo",
+            EventType::SiteInfo(_) => "setSiteInfo",
+        };
+        let _ = self.ws_controller.do_send(ServerEvent::Event {
+            cmd: event_name.to_string(),
+            params: event,
+        });
         Ok(())
     }
 }
