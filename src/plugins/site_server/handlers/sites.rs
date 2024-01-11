@@ -14,7 +14,6 @@ use crate::{
         error::Error,
         site::{models::SiteInfo, Site},
     },
-    environment::ENV,
 };
 
 impl Actor for Site {
@@ -192,33 +191,32 @@ impl Handler<SiteInfoRequest> for Site {
                 }
             }
         }
-        let size_limit = self.storage.settings.size_limit;
-        let size_limit = if size_limit == 0 {
-            ENV.size_limit
-        } else {
-            size_limit
-        };
-        let next_size_limit = size_limit; //TODO!: Need to modify next_size_limit
+        let size_limit = self.get_size_limit();
+        let next_size_limit = self.get_next_size_limit();
         let mut storage = self.storage.clone();
-        storage.settings.size_limit = size_limit;
-
+        let peers = if storage.settings.serving {
+            self.peers.len() + 1
+        }  else {
+            self.peers.len()
+        };
+        
+        storage.keys.wrapper_key = "".to_string();
+        
         Ok(SiteInfo {
-            auth_address: String::from(""),
             address_hash: self.addr().get_address_hash().to_hex(),
-            cert_user_id: None,
             address: self.address(),
             address_short: self.addr().get_address_short(),
             settings: storage.clone(),
-            content_updated: 0f64,
+            content_updated: 0f64, //TODO: replace content last updated time
             bad_files: storage.cache.bad_files.len(),
             size_limit,
             next_size_limit,
-            peers: self.peers.len() + 1,
+            peers,
             started_task_num: 0,
             tasks: 0,
             workers: 0,
             content,
-            privatekey: false,
+            ..Default::default()
         })
     }
 }
