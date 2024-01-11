@@ -5,6 +5,7 @@
 pub enum Error {
     AddressError(String),
     SiteNotFound,
+    UserNotFound,
     Err(String),
     IOError(String),
     FileNotFound(String),

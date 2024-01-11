@@ -12,7 +12,7 @@ use crate::{
         users::UserSiteData,
     },
     plugins::{
-        site_server::handlers::sites::{SiteBadFilesRequest, SitePauseRequest},
+        site_server::handlers::{sites::{SiteBadFilesRequest, SitePauseRequest, SiteDeleteRequest}, users::UserSiteDataDeleteRequest},
         websocket::events::RegisterChannels,
     },
 };
@@ -221,12 +221,20 @@ pub fn handle_site_pause(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, E
     cmd.respond("Paused")
 }
 
-pub fn handle_site_delete(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_site_delete(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let res = block_on(ws.site_controller.send(SiteDeleteRequest {
+        address: ws.address.address.clone(),
+    }))?;
+    let data_res  = block_on(ws.user_controller.send(UserSiteDataDeleteRequest {
+        user_addr: String::from("current"),
+        site_addr: ws.address.address.clone(),
+    }))?;
+    if data_res.is_err() | res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("Deleted")
 }
 
 #[derive(Serialize)]

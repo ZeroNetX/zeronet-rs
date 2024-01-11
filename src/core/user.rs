@@ -289,7 +289,7 @@ impl User {
         }
     }
 
-    fn delete_site_data(&mut self, address: &str) {
+    pub fn delete_site_data(&mut self, address: &str) {
         if self.sites.remove(address).is_some() {
             #[cfg(feature = "userio")]
             #[cfg(not(test))]

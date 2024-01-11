@@ -10,6 +10,7 @@ use crate::{
         address::Address,
         io::UserIO,
         user::{models::SiteData, User},
+        error::Error,
     },
 };
 
@@ -108,6 +109,30 @@ impl Handler<UserSiteData> for UserController {
             }
         } else {
             None
+        }
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct UserSiteDataDeleteRequest {
+    pub user_addr: String,
+    pub site_addr: String,
+}
+
+impl Handler<UserSiteDataDeleteRequest> for UserController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: UserSiteDataDeleteRequest, _: &mut Self::Context) -> Self::Result {
+        let user = match msg.user_addr.as_str() {
+            "current" => Some(self.current_mut()),
+            _ => self.get_user_mut(&msg.user_addr),
+        };
+        if let Some(user) = user {
+            user.delete_site_data(&msg.site_addr);
+            Ok(())
+        } else {
+            Err(Error::UserNotFound)
         }
     }
 }

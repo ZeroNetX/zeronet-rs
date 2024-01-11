@@ -299,7 +299,7 @@ impl ZeruWebsocket {
                 SiteList => handle_site_list(self, ctx, command),
                 UserSetGlobalSettings => handle_user_set_global_settings(self, ctx, command),
                 SitePause => handle_site_pause(self, command),
-                SiteDelete => handle_site_delete(self, ctx, command),
+                SiteDelete => handle_site_delete(self, command),
                 _ => {
                     debug!("Unhandled Admin command: {:?}", command.cmd);
                     return Err(Error {
