@@ -137,16 +137,12 @@ pub fn handle_site_list(
     command: &Command,
 ) -> Result<Message, Error> {
     trace!("Handling SiteList : {:?}", command.params);
-    let connecting = if let Value::Object(map) = &command.params {
-        let res = if let Some(Value::Bool(value)) = map.get("connecting_sites") {
-            *value
-        } else {
-            false
-        };
-        res
-    } else {
-        false
-    };
+    let mut connecting = false;
+    if let Value::Object(map) = &command.params {
+        if let Some(Value::Bool(value)) = map.get("connecting_sites") {
+            connecting =  *value;
+        }
+    } 
     let sites = block_on(ws.site_controller.send(SiteInfoListRequest { connecting }))
         .unwrap()
         .unwrap();
