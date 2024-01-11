@@ -281,3 +281,22 @@ impl Handler<SiteBadFilesRequest> for SitesController {
         res
     }
 }
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct SitePauseRequest {
+    pub address: String,
+}
+
+impl Handler<SitePauseRequest> for SitesController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: SitePauseRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        if let Some(site) = self.sites.get_mut(&msg.address) {
+            site.storage.settings.serving = false;
+            Ok(())
+        } else {
+            Err(Error::SiteNotFound)
+        }
+    }
+}

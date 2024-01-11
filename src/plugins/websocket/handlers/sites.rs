@@ -12,7 +12,8 @@ use crate::{
         users::UserSiteData,
     },
     plugins::{
-        site_server::handlers::sites::SiteBadFilesRequest, websocket::events::RegisterChannels,
+        site_server::handlers::sites::{SiteBadFilesRequest, SitePauseRequest},
+        websocket::events::RegisterChannels,
     },
 };
 
@@ -208,12 +209,16 @@ pub fn handle_site_list_modified_files(
     unimplemented!("Please File a Bug Report")
 }
 
-pub fn handle_site_pause(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_site_pause(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let res = block_on(ws.site_controller.send(SitePauseRequest {
+        address: ws.address.address.clone(),
+    }))?;
+    if res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("Paused")
 }
 
 pub fn handle_site_delete(

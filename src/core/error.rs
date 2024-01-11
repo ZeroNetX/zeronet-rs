@@ -4,6 +4,7 @@
 #[derive(Debug)]
 pub enum Error {
     AddressError(String),
+    SiteNotFound,
     Err(String),
     IOError(String),
     FileNotFound(String),
