@@ -12,7 +12,10 @@ use crate::{
         users::UserSiteData,
     },
     plugins::{
-        site_server::handlers::{sites::{SiteBadFilesRequest, SitePauseRequest, SiteDeleteRequest}, users::UserSiteDataDeleteRequest},
+        site_server::handlers::{
+            sites::{SiteBadFilesRequest, SiteDeleteRequest, SitePauseRequest, SiteResumeRequest},
+            users::UserSiteDataDeleteRequest,
+        },
         websocket::events::RegisterChannels,
     },
 };
@@ -221,11 +224,23 @@ pub fn handle_site_pause(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, E
     cmd.respond("Paused")
 }
 
+pub fn handle_site_resume(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let res = block_on(ws.site_controller.send(SiteResumeRequest {
+        address: ws.address.address.clone(),
+    }))?;
+    if res.is_err() {
+        return Err(Error {
+            error: format!("Unknown site: {}", ws.address.address),
+        });
+    }
+    cmd.respond("Resumed")
+}
+
 pub fn handle_site_delete(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
     let res = block_on(ws.site_controller.send(SiteDeleteRequest {
         address: ws.address.address.clone(),
     }))?;
-    let data_res  = block_on(ws.user_controller.send(UserSiteDataDeleteRequest {
+    let data_res = block_on(ws.user_controller.send(UserSiteDataDeleteRequest {
         user_addr: String::from("current"),
         site_addr: ws.address.address.clone(),
     }))?;

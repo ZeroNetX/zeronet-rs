@@ -8,9 +8,9 @@ use crate::{
     controllers::users::UserController,
     core::{
         address::Address,
+        error::Error,
         io::UserIO,
         user::{models::SiteData, User},
-        error::Error,
     },
 };
 

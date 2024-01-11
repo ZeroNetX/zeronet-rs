@@ -309,6 +309,25 @@ impl Handler<SitePauseRequest> for SitesController {
 
 #[derive(Message)]
 #[rtype(result = "Result<(), Error>")]
+pub struct SiteResumeRequest {
+    pub address: String,
+}
+
+impl Handler<SiteResumeRequest> for SitesController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: SiteResumeRequest, _ctx: &mut Context<Self>) -> Self::Result {
+        if let Some(site) = self.sites.get_mut(&msg.address) {
+            site.storage.settings.serving = false;
+            Ok(())
+        } else {
+            Err(Error::SiteNotFound)
+        }
+    }
+}
+
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
 pub struct SiteDeleteRequest {
     pub address: String,
 }
