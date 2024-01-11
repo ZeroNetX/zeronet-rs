@@ -7,6 +7,8 @@ use std::{
 };
 use zerucontent::Content;
 
+use crate::environment::ENV;
+
 use self::models::SiteStorage;
 use super::{address::Address as Addr, error::Error, peer::Peer};
 
@@ -146,5 +148,28 @@ impl Site {
 
     pub fn modify_storage(&mut self, storage: SiteStorage) {
         self.storage = storage;
+    }
+
+    pub fn get_size(&self) -> usize {
+        self.storage.stats.size
+    }
+
+    pub fn get_size_limit(&self) -> usize {
+        let size_limit = self.storage.settings.size_limit;
+        if size_limit == 0 {
+            ENV.size_limit
+        } else {
+            size_limit
+        }
+    }
+
+    pub fn get_next_size_limit(&self) -> usize {
+        let size_limits: [i32; 12] = [25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+        let size = (self.get_size() as f32 * 1.2) as i32;
+        let limit = size_limits
+            .iter()
+            .find(|&&x| x *1024 * 1024 > size )
+            .unwrap_or(&999999);
+        *limit as usize
     }
 }
