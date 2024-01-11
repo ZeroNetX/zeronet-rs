@@ -415,7 +415,7 @@ impl User {
     }
 
     /// Set active cert for a site
-    fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
+    pub fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
         let mut site_data = self.get_site_data(address, true);
 
         if let Some(domain) = site_data.get_cert_provider() {

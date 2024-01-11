@@ -35,6 +35,31 @@ impl Handler<UserRequest> for UserController {
     }
 }
 
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct UserSetSiteCertRequest {
+    pub user_addr: String,
+    pub site_addr: String,
+    pub provider: String,
+}
+
+impl Handler<UserSetSiteCertRequest> for UserController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: UserSetSiteCertRequest, _: &mut Self::Context) -> Self::Result {
+        let user = match msg.user_addr.as_str() {
+            "current" => Some(self.current_mut()),
+            address => self.get_user_mut(address),
+        };
+        if let Some(user) = user {
+            user.set_cert(&msg.site_addr, Some(&msg.provider));
+            Ok(())
+        } else {
+            Err(Error::UserNotFound)
+        }
+    }
+}
+
 #[derive(Message, Default)]
 #[rtype(result = "Option<HashMap<String, Value>>")]
 pub struct UserSettings {

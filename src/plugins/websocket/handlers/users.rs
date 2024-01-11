@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
-use serde_json::Value;
+use serde_json::{json, Map, Value};
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
     core::user::User,
-    plugins::site_server::handlers::users::{UserRequest, UserSettings},
+    plugins::site_server::handlers::users::{UserRequest, UserSetSiteCertRequest, UserSettings},
 };
 
 pub fn get_current_user(ws: &ZeruWebsocket) -> Result<User, Error> {
@@ -130,4 +130,40 @@ pub fn _handle_user_show_master_seed(
 ) -> Result<Message, Error> {
     let user = get_current_user(ws)?;
     command.respond(user.get_master_seed())
+}
+
+pub fn handle_cert_set(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    let site = ws.address.address.clone();
+    let provider = command.params[0].as_str().unwrap().to_string();
+    let _ = block_on(ws.user_controller.send(UserSetSiteCertRequest {
+        user_addr: String::from("current"),
+        site_addr: site,
+        provider,
+    }))?;
+    command.respond("ok")
+}
+
+pub fn handle_cert_list(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    let user = get_current_user(ws)?;
+    let site = ws.address.address.clone();
+    let curr_site_auth_addr = user
+        .sites
+        .get(&site)
+        .unwrap()
+        .get_auth_pair()
+        .unwrap()
+        .auth_address;
+    let mut certs = vec![];
+    for (domain, cert) in user.certs {
+        let auth_addr = cert.get_auth_pair().auth_address;
+        let map = json!({
+            "auth_address": auth_addr,
+            "auth_type": cert.auth_type,
+            "auth_user_name": cert.auth_user_name,
+            "domain": domain,
+            "selected": auth_addr == curr_site_auth_addr,
+        });
+        certs.push(map);
+    }
+    command.respond(certs)
 }
