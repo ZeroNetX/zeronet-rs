@@ -174,6 +174,7 @@ impl SitesController {
         query: &str,
         params: Option<Value>,
     ) -> Result<Vec<Map<String, Value>>, Error> {
+        let has_params = params.is_some();
         let (query, params) = if let Some(params) = params {
             Self::parse_query(query, params)
         } else {
@@ -187,8 +188,12 @@ impl SitesController {
                 .map(|s| s.to_string())
                 .collect::<Vec<String>>()
         };
-        let res = stmt
-            .query_map(params![params], |row| {
+        let res = if has_params {
+            stmt.query(params![params])
+        } else {
+            stmt.query(params![])
+        };
+        let res = res?.mapped( |row| {
                 let mut data_map = Map::new();
                 let mut i = 0;
                 loop {
@@ -203,8 +208,7 @@ impl SitesController {
                     }
                 }
                 Ok(data_map)
-            })
-            .unwrap();
+            });
         let res = res.filter_map(|e| e.ok()).collect::<Vec<_>>();
         Ok(res)
     }

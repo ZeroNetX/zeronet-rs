@@ -15,6 +15,7 @@ pub enum Error {
     MsgPackDecoding(rmp_serde::decode::Error),
     MailboxError,
     ParseError,
+    SqliteError(rusqlite::Error),
 }
 
 impl From<std::io::Error> for Error {
@@ -86,5 +87,11 @@ impl From<std::num::ParseIntError> for Error {
 impl From<zerucontent::ErrorKind> for Error {
     fn from(err: zerucontent::ErrorKind) -> Error {
         Error::Err(format!("{:?}", err))
+    }
+}
+
+impl From<rusqlite::Error> for Error {
+    fn from(err: rusqlite::Error) -> Error {
+        Error::SqliteError(err)
     }
 }
