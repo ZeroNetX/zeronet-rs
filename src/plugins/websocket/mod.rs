@@ -190,10 +190,14 @@ fn handle_server_info(
     req: &Command,
 ) -> Result<Message, Error> {
     trace!("Handling ServerInfo request");
+    req.respond(server_info(ws)?)
+}
+
+fn server_info(ws: &mut ZeruWebsocket) -> Result<ServerInfo, Error> {
     //TODO!: Replace Defaults with actual values
     let user = handlers::users::get_current_user(ws)?;
     let env: Environment = (*ENV).clone();
-    let server_info = ServerInfo {
+    Ok(ServerInfo {
         ip_external: false,
         port_opened: ServerPortOpened {
             ipv4: true,
@@ -218,8 +222,7 @@ fn handle_server_info(
         multiuser: false,
         master_address: user.master_address,
         user_settings: user.settings,
-    };
-    req.respond(server_info)
+    })
 }
 
 fn handle_error(
