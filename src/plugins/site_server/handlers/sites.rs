@@ -268,14 +268,14 @@ impl Handler<DBQueryRequest> for SitesController {
 
 #[derive(Message)]
 #[rtype(result = "Vec<String>")]
-pub struct SiteBadFiles {
+pub struct SiteBadFilesRequest {
     pub address: String,
 }
 
-impl Handler<SiteBadFiles> for SitesController {
+impl Handler<SiteBadFilesRequest> for SitesController {
     type Result = Vec<String>;
 
-    fn handle(&mut self, msg: SiteBadFiles, _ctx: &mut Context<Self>) -> Self::Result {
+    fn handle(&mut self, msg: SiteBadFilesRequest, _ctx: &mut Context<Self>) -> Self::Result {
         let site = self.sites.get(&msg.address).unwrap();
         let res = site.storage.cache.bad_files.keys().map(|x| x.to_string()).collect();
         res

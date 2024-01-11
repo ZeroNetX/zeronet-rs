@@ -11,7 +11,9 @@ use crate::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
         users::UserSiteData,
     },
-    plugins::{site_server::handlers::sites::SiteBadFiles, websocket::events::RegisterChannels},
+    plugins::{
+        site_server::handlers::sites::SiteBadFilesRequest, websocket::events::RegisterChannels,
+    },
 };
 
 pub fn handle_cert_add(
@@ -192,7 +194,7 @@ pub fn handle_site_update(
 
 pub fn handle_site_bad_files(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
     trace!("Handling SiteBadFiles request");
-    let bad_files = block_on(ws.site_controller.send(SiteBadFiles {
+    let bad_files = block_on(ws.site_controller.send(SiteBadFilesRequest {
         address: ws.address.address.clone(),
     }))?;
     cmd.respond(bad_files)
