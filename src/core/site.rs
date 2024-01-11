@@ -164,11 +164,13 @@ impl Site {
     }
 
     pub fn get_next_size_limit(&self) -> usize {
-        let size_limits: [i32; 12] = [25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
+        let size_limits: [i32; 12] = [
+            25, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000,
+        ];
         let size = (self.get_size() as f32 * 1.2) as i32;
         let limit = size_limits
             .iter()
-            .find(|&&x| x *1024 * 1024 > size )
+            .find(|&&x| x * 1024 * 1024 > size)
             .unwrap_or(&999999);
         *limit as usize
     }

@@ -193,22 +193,22 @@ impl SitesController {
         } else {
             stmt.query(params![])
         };
-        let res = res?.mapped( |row| {
-                let mut data_map = Map::new();
-                let mut i = 0;
-                loop {
-                    while let Ok(value) = row.get::<_, rusqlite::types::Value>(i) {
-                        let name = names.get(i).unwrap().to_string();
-                        i += 1;
-                        let value = to_json_value(&value);
-                        data_map.insert(name, value);
-                    }
-                    if i == count {
-                        break;
-                    }
+        let res = res?.mapped(|row| {
+            let mut data_map = Map::new();
+            let mut i = 0;
+            loop {
+                while let Ok(value) = row.get::<_, rusqlite::types::Value>(i) {
+                    let name = names.get(i).unwrap().to_string();
+                    i += 1;
+                    let value = to_json_value(&value);
+                    data_map.insert(name, value);
                 }
-                Ok(data_map)
-            });
+                if i == count {
+                    break;
+                }
+            }
+            Ok(data_map)
+        });
         let res = res.filter_map(|e| e.ok()).collect::<Vec<_>>();
         Ok(res)
     }

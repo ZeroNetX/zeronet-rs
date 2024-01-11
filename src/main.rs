@@ -35,7 +35,9 @@ async fn main() -> Result<(), Error> {
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
     if let Some((cmd, args)) = sub_cmd {
-        if cmd.starts_with("site") && let Some(mut site_args) = args.get_many::<String>("site") {
+        if cmd.starts_with("site")
+            && let Some(mut site_args) = args.get_many::<String>("site")
+        {
             let site_addr = site_args.next().unwrap();
             let mut site = Site::new(site_addr, (ENV.data_path.clone()).join(site_addr))?;
             if let Some(storage) = site_storage.get(site_addr).cloned() {
@@ -131,7 +133,9 @@ async fn main() -> Result<(), Error> {
             storage.settings.serving = true;
             site.modify_storage(storage);
             site.save_storage().await?;
-        } else if cmd.starts_with("peer") && let Some(mut peer_args) = args.get_many::<String>("peer") {
+        } else if cmd.starts_with("peer")
+            && let Some(mut peer_args) = args.get_many::<String>("peer")
+        {
             let peer = peer_args.next().unwrap();
             info!("{:?}", peer);
             match cmd {
@@ -182,14 +186,16 @@ async fn main() -> Result<(), Error> {
                     warn!("Unknown command: {}", cmd);
                 }
             }
-        }  else if cmd.starts_with("plugin") {
+        } else if cmd.starts_with("plugin") {
             match cmd {
                 "pluginSign" => {
                     let mut args = args.get_many::<String>("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await;
                     let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
-                    if manifest.is_ok() &&  let Some(private_key) = args.next() {
+                    if manifest.is_ok()
+                        && let Some(private_key) = args.next()
+                    {
                         let manifest = manifest.unwrap().sign_plugin(private_key).await.unwrap();
                         let contents = serde_json::to_string_pretty(&manifest).unwrap();
                         tokio::fs::write(manifest_path, contents).await?;
@@ -201,7 +207,7 @@ async fn main() -> Result<(), Error> {
                     let mut args = args.get_many::<String>("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await.unwrap();
-                    let verified = manifest.verify_plugin().await.unwrap_or(false) ;
+                    let verified = manifest.verify_plugin().await.unwrap_or(false);
                     println!("Plugin Verified : {}", verified);
                 }
                 _ => {
