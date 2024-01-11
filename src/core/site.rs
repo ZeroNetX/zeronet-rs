@@ -14,6 +14,7 @@ use super::{address::Address as Addr, error::Error, peer::Peer};
 
 pub mod models {
     use serde::{Deserialize, Serialize};
+    use serde_json::Value;
     use std::collections::{BTreeMap, HashMap};
 
     use crate::utils::is_default;
@@ -35,6 +36,7 @@ pub mod models {
         pub workers: usize,
         pub content: serde_json::Value,
         pub privatekey: bool,
+        pub event: Option<Value>
     }
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]

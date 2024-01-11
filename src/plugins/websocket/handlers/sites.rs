@@ -3,7 +3,7 @@ use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
 use crate::{
@@ -65,6 +65,11 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
                 site_info.privatekey = true;
             }
         }
+        if let Value::Object(params) = &command.params {
+            if let Some(Value::String(path)) = params.get("file_status") {
+                site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
+            }
+        } 
         command.respond(site_info)
     } else {
         Err(Error {
