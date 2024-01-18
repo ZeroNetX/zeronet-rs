@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use actix::{Actor, Context, Handler, Message};
 use futures::executor::block_on;
+use serde::Deserialize;
 use serde_json::Value;
 
 use crate::{
@@ -54,6 +55,39 @@ impl Handler<UserSetSiteCertRequest> for UserController {
         if let Some(user) = user {
             user.set_cert(&msg.site_addr, Some(&msg.provider));
             Ok(())
+        } else {
+            Err(Error::UserNotFound)
+        }
+    }
+}
+
+#[derive(Message, Deserialize)]
+#[rtype(result = "Result<bool, Error>")]
+pub struct UserCertAddRequest {
+    #[serde(default)]
+    pub user_addr: String,
+    pub domain: String,
+    pub auth_type: String,
+    pub auth_user_name: String,
+    pub cert: String,
+}
+
+impl Handler<UserCertAddRequest> for UserController {
+    type Result = Result<bool, Error>;
+
+    fn handle(&mut self, msg: UserCertAddRequest, _: &mut Self::Context) -> Self::Result {
+        let user = match msg.user_addr.as_str() {
+            "current" => Some(self.current_mut()),
+            address => self.get_user_mut(address),
+        };
+        if let Some(user) = user {
+            user.add_cert(
+                &msg.domain,
+                &msg.auth_type,
+                &msg.auth_user_name,
+                &msg.cert,
+                &msg.cert,
+            )
         } else {
             Err(Error::UserNotFound)
         }
