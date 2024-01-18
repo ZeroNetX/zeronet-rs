@@ -365,14 +365,14 @@ impl User {
     }
 
     /// Add cert for the user
-    fn add_cert(
+    pub fn add_cert(
         &mut self,
         auth_address: &str,
         domain: &str,
         auth_type: &str,
         auth_username: &str,
         cert_sign: &str,
-    ) -> bool {
+    ) -> Result<bool, Error> {
         let auth_pair: Option<AuthPair> = self.sites.values().find_map(|site_data| {
             let auth_pair = site_data.get_auth_pair()?;
             if auth_pair.auth_address == auth_address {
@@ -382,7 +382,7 @@ impl User {
         });
 
         if auth_pair.is_none() {
-            return false;
+            return Ok(false);
         }
 
         let cert_node = Cert::new(
@@ -395,9 +395,9 @@ impl User {
         let cert = self.certs.get(domain);
 
         if cert.is_some() && (cert != Some(&cert_node)) {
-            false
-        // } else if cert == Some(&cert_node) {
-        //     false
+            Ok(false)
+        } else if cert == Some(&cert_node) {
+            Err(Error::CertAlreadyExists)
         } else {
             self.certs.insert(domain.to_string(), cert_node);
 
@@ -405,7 +405,7 @@ impl User {
             #[cfg(not(test))]
             block_on(self.save());
 
-            true
+            Ok(true)
         }
     }
 
@@ -556,7 +556,7 @@ mod tests {
         let mut user = User::from_seed(SEED.to_string());
 
         user.get_site_data(EXAMPLE_SITE, true);
-        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN);
+        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN).unwrap();
 
         assert!(result);
     }
@@ -565,7 +565,7 @@ mod tests {
     fn test_add_cert_auth_not_exist() {
         let mut user = User::from_seed(SEED.to_string());
 
-        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN);
+        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN).unwrap();
 
         assert!(!result);
     }
