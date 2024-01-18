@@ -362,8 +362,13 @@ impl ZeruWebsocket {
         Ok(())
     }
 
-    fn update_websocket(&mut self) {
-        self.on_event("siteChanged", &json!([])).unwrap();
+    fn update_websocket(&mut self, params: Option<serde_json::Value>) {
+        let params = if let Some(params) = params {
+            params
+        } else {
+            json!([])
+        };
+        self.on_event("siteChanged", &params).unwrap();
     }
 
     fn on_event(&mut self, channel: &str, params: &serde_json::Value) -> Result<(), Error> {

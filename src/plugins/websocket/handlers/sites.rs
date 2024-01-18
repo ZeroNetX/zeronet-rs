@@ -217,7 +217,7 @@ pub fn handle_site_pause(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messag
     let res = block_on(ws.site_controller.send(SitePauseRequest {
         address: ws.address.address.clone(),
     }))?;
-    ws.update_websocket();
+    ws.update_websocket(None);
     if res.is_err() {
         return Err(Error {
             error: format!("Unknown site: {}", ws.address.address),
