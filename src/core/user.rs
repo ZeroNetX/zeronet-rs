@@ -410,8 +410,12 @@ impl User {
     }
 
     /// Remove cert from user
-    fn delete_cert(&mut self, domain: &str) {
+    pub fn delete_cert(&mut self, domain: &str) {
         self.certs.remove(domain);
+
+        #[cfg(feature = "userio")]
+        #[cfg(not(test))]
+        block_on(self.save());
     }
 
     /// Set active cert for a site

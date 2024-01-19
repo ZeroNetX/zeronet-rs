@@ -94,6 +94,30 @@ impl Handler<UserCertAddRequest> for UserController {
     }
 }
 
+#[derive(Message)]
+#[rtype(result = "Result<(), Error>")]
+pub struct UserCertDeleteRequest {
+    pub user_addr: String,
+    pub domain: String,
+}
+
+impl Handler<UserCertDeleteRequest> for UserController {
+    type Result = Result<(), Error>;
+
+    fn handle(&mut self, msg: UserCertDeleteRequest, _: &mut Self::Context) -> Self::Result {
+        let user = match msg.user_addr.as_str() {
+            "current" => Some(self.current_mut()),
+            address => self.get_user_mut(address),
+        };
+        if let Some(user) = user {
+            user.delete_cert(&msg.domain);
+            Ok(())
+        } else {
+            Err(Error::UserNotFound)
+        }
+    }
+}
+
 #[derive(Message, Default)]
 #[rtype(result = "Option<HashMap<String, Value>>")]
 pub struct UserSettings {
