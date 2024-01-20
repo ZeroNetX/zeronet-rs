@@ -560,7 +560,9 @@ mod tests {
         let mut user = User::from_seed(SEED.to_string());
 
         user.get_site_data(EXAMPLE_SITE, true);
-        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN).unwrap();
+        let result = user
+            .add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN)
+            .unwrap();
 
         assert!(result);
     }
@@ -569,7 +571,9 @@ mod tests {
     fn test_add_cert_auth_not_exist() {
         let mut user = User::from_seed(SEED.to_string());
 
-        let result = user.add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN).unwrap();
+        let result = user
+            .add_cert(AUTH_ADDR, CERT_DOMAIN, CERT_TYPE, CERT_USERNAME, CERT_SIGN)
+            .unwrap();
 
         assert!(!result);
     }

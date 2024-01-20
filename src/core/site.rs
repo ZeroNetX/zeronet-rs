@@ -36,7 +36,7 @@ pub mod models {
         pub workers: usize,
         pub content: serde_json::Value,
         pub privatekey: bool,
-        pub event: Option<Value>
+        pub event: Option<Value>,
     }
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
