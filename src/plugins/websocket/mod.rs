@@ -272,6 +272,18 @@ fn handle_error(
 }
 
 impl ZeruWebsocket {
+    fn respond(
+        &mut self,
+        ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
+        msg: &mut Message,
+    ) -> Result<(), Error> {
+        msg.id = self.next_message_id;
+        self.next_message_id += 1;
+        let j = serde_json::to_string(&msg)?;
+        ctx.text(j);
+        Ok(())
+    }
+
     fn is_admin_site(&mut self) -> Result<bool, Error> {
         let site = block_on(self.site_addr.send(SiteInfoRequest {}))??;
         let res = site
@@ -355,11 +367,8 @@ impl ZeruWebsocket {
             //     error: "Unhandled Plugin command".to_string(),
             // });
         };
-
-        let j = serde_json::to_string(&response?)?;
-        ctx.text(j);
-
-        Ok(())
+        let mut msg = response?;
+        self.respond(ctx, &mut msg)
     }
 
     fn update_websocket(&mut self, params: Option<serde_json::Value>) {

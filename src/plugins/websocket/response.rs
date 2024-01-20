@@ -6,6 +6,8 @@ use crate::utils::is_default;
 pub struct Message {
     cmd: MessageType,
     #[serde(skip_serializing_if = "is_default")]
+    pub id: usize,
+    #[serde(skip_serializing_if = "is_default")]
     to: isize,
     result: serde_json::Value,
 }
@@ -25,6 +27,7 @@ impl Message {
             cmd: MessageType::Response,
             to: id,
             result: body,
+            id: 0,
         }
     }
 
@@ -33,6 +36,7 @@ impl Message {
             cmd: MessageType::InjectScript,
             to: id,
             result: body,
+            id: 0,
         }
     }
 }
