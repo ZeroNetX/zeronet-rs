@@ -354,7 +354,7 @@ impl User {
     /// Get BIP32 address from site address
     ///
     /// Return: BIP32 auth address
-    fn get_auth_address(&mut self, address: &str, create: bool) -> Option<String> {
+    pub fn get_auth_address(&mut self, address: &str, create: bool) -> Option<String> {
         let auth_pair = self.get_auth_pair(address, create)?;
         Some(auth_pair.auth_address)
     }

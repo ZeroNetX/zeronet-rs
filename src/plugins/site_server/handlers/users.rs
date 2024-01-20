@@ -61,11 +61,14 @@ impl Handler<UserSetSiteCertRequest> for UserController {
     }
 }
 
-#[derive(Message, Deserialize)]
+#[derive(Message, Deserialize, Clone)]
 #[rtype(result = "Result<bool, Error>")]
 pub struct UserCertAddRequest {
     #[serde(default)]
+    #[serde(skip_deserializing)]
     pub user_addr: String,
+    #[serde(skip_deserializing)]
+    pub site_addr: String,
     pub domain: String,
     pub auth_type: String,
     pub auth_user_name: String,
@@ -81,11 +84,12 @@ impl Handler<UserCertAddRequest> for UserController {
             address => self.get_user_mut(address),
         };
         if let Some(user) = user {
+            let auth_address = user.get_auth_address(&msg.site_addr, false).unwrap();
             user.add_cert(
+                &auth_address,
                 &msg.domain,
                 &msg.auth_type,
                 &msg.auth_user_name,
-                &msg.cert,
                 &msg.cert,
             )
         } else {
