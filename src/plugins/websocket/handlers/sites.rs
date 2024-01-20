@@ -32,12 +32,108 @@ pub fn handle_cert_add(
     unimplemented!("Please File a Bug Report")
 }
 
-pub fn handle_cert_select(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let params = cmd.params.as_array().unwrap();
+    let accepted_providers = params[0].as_array();
+    let accepted_pattern = if let Some(Value::String(pattern)) = params.get(2) {
+        Some(pattern)
+    } else {
+        None
+    };
+    let accept_any = if let Some(Value::Bool(value)) = params.get(1) {
+        *value
+    } else {
+        accepted_providers.is_none() || accepted_pattern.is_none()
+    };
+    let site_data = block_on(ws.user_controller.send(UserSiteData {
+        user_addr: String::from("current"),
+        site_addr: ws.address.address.clone(),
+    }))?
+    .unwrap();
+    let site_data = site_data.get(ws.address.address.as_str()).unwrap();
+    let auth_addr = site_data.get_auth_pair().unwrap().auth_address;
+
+    let mut providers = vec![];
+    providers.push(vec![
+        "".to_string(),
+        "No certificate".to_string(),
+        "".to_string(),
+    ]);
+    let mut active = String::new();
+    let user = get_current_user(ws)?;
+    for (provider, cert) in &user.certs {
+        if auth_addr == cert.get_auth_pair().auth_address
+            && Some(provider.clone()) == site_data.get_cert_provider()
+        {
+            active = provider.clone();
+        }
+        let title = format!("{}@{}", cert.auth_user_name, provider);
+        let accepted_pattern_match = if let Some(accepted_pattern) = accepted_pattern {
+            let regex = regex::Regex::new(accepted_pattern);
+            if let Ok(regex) = regex {
+                regex.is_match(&provider)
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+        if let Some(accepted_providers) = accepted_providers {
+            if accepted_providers.contains(&json!(provider)) {
+                providers.push(vec![provider.clone(), title, "".to_string()]);
+            }
+        } else if accept_any || accepted_pattern_match {
+            providers.push(vec![provider.clone(), title, "".to_string()]);
+        } else {
+            providers.push(vec![provider.clone(), title, "disabled".to_string()]);
+        }
+    }
+    let mut body = String::from( "<span style='padding-bottom: 5px; display: inline-block'>Select account you want to use in this site:</span>");
+
+    for c in providers {
+        let provider = &c[0];
+        let account = &c[1];
+        let css = &c[2];
+        let (css, title) = if provider == &active {
+            let css = format!("{} active", css);
+            let title = format!("<b>{}</b> <small>currently selected</small>", account);
+            (css, title)
+        } else {
+            (css.to_string(), format!("<b>{}</b>", account))
+        };
+        body += &format!(
+            "<a href='#Select+account' class='select select-close cert {}' title='{}'>{}</a>",
+            css, provider, title
+        );
+    }
+    if let Some(providers) = accepted_providers {
+        providers.iter().for_each(|provider| {
+            if let Value::String(provider) = provider {
+                if !user.certs.contains_key(provider.as_str()) {
+                    body += "<div style='background-color: #F7F7F7; margin-right: -30px'>";
+                    body += &format!(
+                        "<a href='/{}' target='_top' class='select'>
+                            <small style='float: right; margin-right: 40px; margin-top: -1px'>
+                            Register &raquo;</small>{}</a>",
+                        provider, provider
+                    );
+                    body += "</div>";
+                }
+            }
+        });
+    }
+    let script = format!(
+        "
+    $(\".notification .select.cert\").on(\"click\", function() {{
+    $(\".notification .select\").removeClass('active')
+    zeroframe.response({}, this.title)
+    return false
+    }})
+    ",
+        ws.next_message_id
+    );
+    ws.send_notification(json!(["ask", body])); //TODO!: Need callback for response
+    cmd.inject_script(script)
 }
 
 pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {

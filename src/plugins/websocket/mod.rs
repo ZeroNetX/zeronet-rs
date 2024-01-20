@@ -297,7 +297,7 @@ impl ZeruWebsocket {
                 Ping => handle_ping(command),
                 ServerInfo => handle_server_info(self, ctx, command),
                 CertAdd => handle_cert_add(self, ctx, command),
-                CertSelect => handle_cert_select(self, ctx, command),
+                CertSelect => handle_cert_select(self, command),
                 SiteInfo => handle_site_info(self, command),
                 SiteSign => handle_site_sign(self, ctx, command),
                 SitePublish => handle_site_publish(self, ctx, command),
@@ -414,5 +414,12 @@ impl ZeruWebsocket {
             params: event,
         });
         Ok(())
+    }
+
+    fn send_notification(&mut self, params: serde_json::Value) {
+        let _ = self.ws_controller.do_send(ServerEvent::Notification {
+            cmd: "notification".to_string(),
+            params,
+        });
     }
 }
