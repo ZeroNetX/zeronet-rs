@@ -137,4 +137,9 @@ impl Command {
         let resp = Message::inject_script(self.id, serde_json::to_value(body)?);
         Ok(resp)
     }
+
+    pub fn command(&self) -> Result<Message, Error> {
+        let resp = Message::command();
+        Ok(resp)
+    }
 }

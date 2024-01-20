@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use actix::prelude::*;
 use log::*;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::core::{error::Error, site::models::SiteInfo};
 
@@ -38,6 +39,7 @@ impl Handler<RegisterWSClient> for WebsocketController {
 pub enum ServerEvent {
     Event { cmd: String, params: EventType },
     Notification { cmd: String, params: Value },
+    Confirm { cmd: String, params: Value },
 }
 
 #[allow(clippy::enum_variant_names)]

@@ -5,7 +5,7 @@ pub mod request;
 pub mod response;
 
 use futures::executor::block_on;
-use serde_json::json;
+use serde_json::{json, Value};
 
 use std::collections::HashMap;
 
@@ -100,6 +100,8 @@ pub async fn serve_websocket(
         site_addr: addr,
         address,
         channels: vec![],
+        next_message_id: 0,
+        waiting_callbacks: HashMap::new(),
     };
     let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
         .start_with_addr()
@@ -108,6 +110,8 @@ pub async fn serve_websocket(
     Ok(res)
 }
 
+type WaitingCallback = Box<dyn FnOnce(&mut ZeruWebsocket, serde_json::Value) -> ()>;
+
 pub struct ZeruWebsocket {
     site_controller: Addr<SitesController>,
     user_controller: Addr<UserController>,
@@ -115,6 +119,8 @@ pub struct ZeruWebsocket {
     site_addr: actix::Addr<Site>,
     address: Address,
     channels: Vec<String>,
+    next_message_id: usize,
+    waiting_callbacks: HashMap<usize, WaitingCallback>,
 }
 
 impl Actor for ZeruWebsocket {
@@ -284,6 +290,33 @@ impl ZeruWebsocket {
         Ok(())
     }
 
+    fn cmd(
+        &mut self,
+        cmd: &str,
+        params: Value,
+        callback: Option<WaitingCallback>,
+    ) -> Result<(), Error> {
+        let id = self.next_message_id;
+        self.next_message_id += 1;
+        if let Some(callback) = callback {
+            self.waiting_callbacks.insert(id, callback);
+        }
+        match cmd {
+            "confirm" => {
+                self.confirm(params);
+                return Ok(());
+            }
+            _ => unimplemented!("Command not implemented: {}", cmd),
+        }
+    }
+
+    fn confirm(&mut self, params: Value) {
+        self.ws_controller.do_send(ServerEvent::Confirm {
+            cmd: "confirm".to_string(),
+            params,
+        });
+    }
+
     fn is_admin_site(&mut self) -> Result<bool, Error> {
         let site = block_on(self.site_addr.send(SiteInfoRequest {}))??;
         let res = site
@@ -368,6 +401,9 @@ impl ZeruWebsocket {
             // });
         };
         let mut msg = response?;
+        if msg.is_command() {
+            return Ok(());
+        }
         self.respond(ctx, &mut msg)
     }
 
