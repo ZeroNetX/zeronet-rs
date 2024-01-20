@@ -375,12 +375,14 @@ impl ZeruWebsocket {
         if !self.channels.contains(&channel.to_string()) {
             return Ok(());
         }
+        let add_params = params;
         let params = params.as_array().unwrap();
         for listener in &self.channels.clone() {
             if listener == "siteChanged" {
-                let site_info = block_on(self.site_addr.send(SiteInfoRequest()))
+                let mut site_info = block_on(self.site_addr.send(SiteInfoRequest()))
                     .unwrap()
                     .unwrap();
+                site_info.event = Some(add_params.clone());
                 self.send_event(EventType::SiteInfo(site_info))?;
             } else if listener == "serverChanged" {
                 let server_info = server_info(self)?;
