@@ -497,6 +497,7 @@ impl ZeruWebsocket {
             EventType::SiteInfo(_) => "setSiteInfo",
         };
         let _ = self.ws_controller.do_send(ServerEvent::Event {
+            id: self.next_message_id,
             cmd: event_name.to_string(),
             params: event,
         });
