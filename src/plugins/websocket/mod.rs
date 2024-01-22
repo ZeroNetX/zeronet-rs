@@ -511,6 +511,7 @@ impl ZeruWebsocket {
             cmd: event_name.to_string(),
             params: event,
         });
+        self.next_message_id += 1;
         Ok(())
     }
 

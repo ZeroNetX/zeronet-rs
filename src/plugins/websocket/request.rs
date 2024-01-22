@@ -134,8 +134,8 @@ impl Command {
         Ok(resp)
     }
 
-    pub fn inject_script<T: Serialize>(&self, body: T) -> Result<Message, Error> {
-        let resp = Message::inject_script(self.id, serde_json::to_value(body)?);
+    pub fn inject_script<T: Serialize>(&self, id: isize, body: T) -> Result<Message, Error> {
+        let resp = Message::inject_script(id, serde_json::to_value(body)?);
         Ok(resp)
     }
 

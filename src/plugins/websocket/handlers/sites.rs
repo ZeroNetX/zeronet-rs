@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use super::{
     super::{error::Error, request::Command, response::Message, ZeruWebsocket},
-    users::get_current_user,
+    users::{get_current_user, handle_cert_set},
 };
 use crate::{
     environment::SITE_PERMISSIONS_DETAILS,
@@ -200,18 +200,27 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
             }
         });
     }
-    let script = format!(
+
+    let _ = ws.cmd(
+        "notification",
+        json!(["ask", body]),
+        Some(Box::new(move |ws, cmd| Some(handle_cert_set(ws, cmd)))),
+        None,
+    );
+    let script = notification_script_template(ws.next_message_id - 1);
+    cmd.inject_script(ws.next_message_id as isize, script)
+}
+
+fn notification_script_template(id: usize) -> String {
+    format!(
         "
     $(\".notification .select.cert\").on(\"click\", function() {{
     $(\".notification .select\").removeClass('active')
     zeroframe.response({}, this.title)
     return false
-    }})
-    ",
-        ws.next_message_id
-    );
-    ws.send_notification(json!(["ask", body])); //TODO!: Need callback for response
-    cmd.inject_script(script)
+    }})",
+        id
+    )
 }
 
 pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
