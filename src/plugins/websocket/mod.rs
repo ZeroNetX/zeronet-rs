@@ -312,12 +312,17 @@ impl ZeruWebsocket {
         cmd: &str,
         params: Value,
         callback: Option<WaitingCallback>,
+        callback_data: Option<Value>,
     ) -> Result<(), Error> {
         let id = self.next_message_id;
         self.next_message_id += 1;
         if let Some(callback) = callback {
             trace!("Adding callback for id: {}", id);
             self.waiting_callbacks.insert(id, callback);
+        }
+        if let Some(callback_data) = callback_data {
+            trace!("Adding callback data for id: {}", id);
+            self.callback_data.insert(id, callback_data);
         }
         match cmd {
             "confirm" => {
