@@ -489,8 +489,9 @@ impl ZeruWebsocket {
                 let mut site_info = block_on(self.site_addr.send(SiteInfoRequest()))
                     .unwrap()
                     .unwrap();
+                let site_info = append_user_site_data(&self, &mut site_info).unwrap();
                 site_info.event = Some(add_params.clone());
-                self.send_event(EventType::SiteInfo(site_info))?;
+                self.send_event(EventType::SiteInfo(site_info.clone()))?;
             } else if listener == "serverChanged" {
                 let server_info = server_info(self)?;
                 if params.len() > 0 {

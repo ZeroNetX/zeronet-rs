@@ -10,6 +10,7 @@ use super::{
     users::{get_current_user, handle_cert_set},
 };
 use crate::{
+    core::site::models::SiteInfo,
     environment::SITE_PERMISSIONS_DETAILS,
     plugins::site_server::handlers::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
@@ -259,18 +260,37 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
             error: String::from("Site info not found"),
         });
     }
+    let mut site_info = result.unwrap();
+    if let Some(site_info) = append_user_site_data(ws, &mut site_info) {
+        if let Value::Object(params) = &command.params {
+            if let Some(Value::String(path)) = params.get("file_status") {
+                site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
+            }
+        }
+        command.respond(site_info)
+    } else {
+        Err(Error {
+            error: String::from("Site info not found"),
+        })
+    }
+}
+
+pub fn append_user_site_data<'a>(
+    ws: &ZeruWebsocket,
+    site_info: &'a mut SiteInfo,
+) -> Option<&'a mut SiteInfo> {
     if let Some(map) = block_on(ws.user_controller.send(UserSiteData {
         user_addr: String::from("current"),
-        site_addr: ws.address.address.clone(),
+        site_addr: site_info.address.clone(),
     }))
     .unwrap()
     {
         let user_site_data = map.values().last().unwrap();
-        let mut site_info = result.unwrap();
         if let Some(provider) = user_site_data.get_cert_provider() {
-            let user = get_current_user(ws)?;
-            let user_name = &user.certs.get(&provider).unwrap().auth_user_name;
-            site_info.cert_user_id = Some(format!("{}@{}", user_name, provider));
+            let user = get_current_user(ws).unwrap();
+            if let Some(cert) = &user.certs.get(&provider) {
+                site_info.cert_user_id = Some(format!("{}@{}", cert.auth_user_name, provider));
+            }
         }
         if let Some(auth) = user_site_data.get_auth_pair() {
             site_info.auth_address = auth.auth_address;
@@ -280,22 +300,14 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
                 site_info.privatekey = true;
             }
         }
-        if let Value::Object(params) = &command.params {
-            if let Some(Value::String(path)) = params.get("file_status") {
-                site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
-            }
-        }
         #[cfg(debug_assertions)]
         {
             site_info.size_limit = 25;
             site_info.next_size_limit = 25;
         }
-        command.respond(site_info)
-    } else {
-        Err(Error {
-            error: String::from("Site info not found"),
-        })
+        return Some(site_info);
     }
+    None
 }
 
 pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
