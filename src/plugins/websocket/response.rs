@@ -37,18 +37,22 @@ impl Message {
         }
     }
 
-    pub fn inject_script(id: isize, body: serde_json::Value) -> Message {
+    pub fn inject_script() -> Message {
         Message {
             cmd: MessageType::InjectScript,
-            to: id,
+            to: 0,
             result: json!(null),
             id: 0,
-            params: body,
+            params: json!(null),
         }
     }
 
     pub fn is_command(&self) -> bool {
         self.cmd == MessageType::Command
+    }
+
+    pub fn is_inject_script(&self) -> bool {
+        self.cmd == MessageType::InjectScript
     }
 
     pub fn command() -> Message {

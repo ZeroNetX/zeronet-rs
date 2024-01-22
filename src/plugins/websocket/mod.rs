@@ -333,6 +333,10 @@ impl ZeruWebsocket {
                 self.send_notification(id, params);
                 return Ok(());
             }
+            "injectScript" => {
+                self.inject_script(id, params);
+                return Ok(());
+            }
             _ => unimplemented!("Command not implemented: {}", cmd),
         }
     }
@@ -340,6 +344,14 @@ impl ZeruWebsocket {
     fn confirm(&mut self, id: usize, params: Value) {
         self.ws_controller.do_send(ServerEvent::Confirm {
             cmd: "confirm".to_string(),
+            id,
+            params,
+        });
+    }
+
+    fn inject_script(&mut self, id: usize, params: Value) {
+        self.ws_controller.do_send(ServerEvent::Notification {
+            cmd: "injectScript".to_string(),
             id,
             params,
         });
@@ -450,7 +462,7 @@ impl ZeruWebsocket {
             // });
         };
         let mut msg = response?;
-        if msg.is_command() {
+        if msg.is_command() || msg.is_inject_script() {
             return Ok(());
         }
         self.respond(ctx, &mut msg)
