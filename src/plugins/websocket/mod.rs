@@ -157,7 +157,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                                 return;
                             }
                         };
-                        if let Err(err) =  self.handle_response(&cmd_res) {
+                        if let Err(err) =  self.handle_response(ctx, &cmd_res) {
                             error!("Error handling response: {:?}", err);
                         }
                         return;
@@ -355,7 +355,7 @@ impl ZeruWebsocket {
         Ok(res)
     }
 
-    fn handle_response(&mut self, response: &CommandResponse) -> Result<(), Error> {
+    fn handle_response(&mut self, ctx: &mut ws::WebsocketContext<ZeruWebsocket>, response: &CommandResponse) -> Result<(), Error> {
         trace!("Handling response: {:?}", response);
         let id = response.to as usize;
         let callback = self.waiting_callbacks.remove(&id);
@@ -368,8 +368,8 @@ impl ZeruWebsocket {
                 wrapper_nonce: String::new(),
             };
             let res = callback(self, &command);
-            if let Some(res) = res {
-                let _ = command.respond(res?);
+            if let Some(Ok(mut res)) = res {
+                return self.respond(ctx, &mut res);
             }
         } else {
             error!("No callback found for response: {:?}", response);
