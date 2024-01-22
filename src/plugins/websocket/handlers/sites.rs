@@ -239,7 +239,11 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
     {
         let user_site_data = map.values().last().unwrap();
         let mut site_info = result.unwrap();
-        site_info.cert_user_id = user_site_data.get_cert_provider();
+        if let Some(provider) = user_site_data.get_cert_provider() {
+            let user = get_current_user(ws)?;
+            let user_name = &user.certs.get(&provider).unwrap().auth_user_name;
+            site_info.cert_user_id = Some(format!("{}@{}", user_name, provider));
+        }
         if let Some(auth) = user_site_data.get_auth_pair() {
             site_info.auth_address = auth.auth_address;
         }

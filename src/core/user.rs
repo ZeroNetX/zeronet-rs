@@ -125,8 +125,8 @@ pub mod models {
             self.cert_provider.clone()
         }
 
-        pub fn add_cert_provider(&mut self, cert_provider: String) {
-            self.cert_provider = Some(cert_provider);
+        pub fn add_cert_provider(&mut self, cert_provider: &str) {
+            self.cert_provider = Some(cert_provider.into());
         }
 
         pub fn delete_cert_provider(&mut self) {
@@ -431,7 +431,7 @@ impl User {
         }
 
         if let Some(provider) = provider {
-            site_data.add_cert_provider(provider.to_string());
+            site_data.add_cert_provider(provider);
         } else if site_data.get_cert_provider().is_none() {
             site_data.delete_cert_provider();
         }
