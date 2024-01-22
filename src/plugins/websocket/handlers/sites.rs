@@ -3,9 +3,12 @@ use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
 use serde::Serialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
-use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
+use super::{
+    super::{error::Error, request::Command, response::Message, ZeruWebsocket},
+    users::get_current_user,
+};
 use crate::{
     environment::SITE_PERMISSIONS_DETAILS,
     plugins::site_server::handlers::{
@@ -165,7 +168,7 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
             if let Some(Value::String(path)) = params.get("file_status") {
                 site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
             }
-        } 
+        }
         command.respond(site_info)
     } else {
         Err(Error {
