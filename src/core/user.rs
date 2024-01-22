@@ -74,6 +74,7 @@ pub mod models {
         #[serde(skip_serializing_if = "Option::is_none")]
         pub index: Option<u32>,
         #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(rename = "cert")]
         cert_provider: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         #[serde(flatten)]
@@ -420,8 +421,8 @@ impl User {
     }
 
     /// Set active cert for a site
-    pub fn set_cert(&mut self, address: &str, provider: Option<&str>) -> SiteData {
-        let mut site_data = self.get_site_data(address, true);
+    pub fn set_cert(&mut self, address: &str, provider: Option<&str>) {
+        let mut site_data = self.sites.get_mut(address).unwrap();
 
         if let Some(domain) = site_data.get_cert_provider() {
             if self.certs.get(&domain).is_some() {
@@ -438,8 +439,6 @@ impl User {
         #[cfg(feature = "userio")]
         #[cfg(not(test))]
         block_on(self.save());
-
-        site_data
     }
 
     /// Get cert for the site address
@@ -583,7 +582,8 @@ mod tests {
     fn test_set_cert() {
         let mut user = User::from_seed(SEED.to_string());
 
-        let result = user.set_cert(EXAMPLE_SITE, Some(CERT_DOMAIN));
+        user.set_cert(EXAMPLE_SITE, Some(CERT_DOMAIN));
+        let result = user.get_site_data(EXAMPLE_SITE, false);
 
         assert_eq!(Some(CERT_DOMAIN.to_string()), result.get_cert_provider());
     }
