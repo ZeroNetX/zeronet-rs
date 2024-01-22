@@ -581,6 +581,7 @@ mod tests {
     #[test]
     fn test_set_cert() {
         let mut user = User::from_seed(SEED.to_string());
+        user.get_site_data(EXAMPLE_SITE, true);
 
         user.set_cert(EXAMPLE_SITE, Some(CERT_DOMAIN));
         let result = user.get_site_data(EXAMPLE_SITE, false);
@@ -591,6 +592,7 @@ mod tests {
     #[test]
     fn test_get_auth_privkey_with_cert() {
         let mut user = User::from_seed(SEED.to_string());
+        user.get_site_data(EXAMPLE_SITE, true);
 
         user.set_cert(EXAMPLE_SITE, Some(CERT_DOMAIN));
 
