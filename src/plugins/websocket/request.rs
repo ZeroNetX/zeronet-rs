@@ -6,6 +6,7 @@ use crate::utils::is_default;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum CommandType {
+    Response,
     UiServer(UiServerCommandType),
     Admin(AdminCommandType),
     Plugin(PluginCommands),
@@ -142,4 +143,11 @@ impl Command {
         let resp = Message::command();
         Ok(resp)
     }
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CommandResponse {
+    pub cmd: String,
+    pub id: isize,
+    pub to: isize,
+    pub result: serde_json::Value,
 }

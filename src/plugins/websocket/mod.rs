@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use self::{
     events::{EventType, ServerEvent, WebsocketController},
     handlers::{files::*, sites::*, tracker::*, users::*},
-    request::CommandType,
+    request::{CommandResponse, CommandType},
 };
 use crate::{
     controllers::{sites::SitesController, users::UserController},
@@ -106,6 +106,7 @@ pub async fn serve_websocket(
         channels: vec![],
         next_message_id: 1,
         waiting_callbacks: HashMap::new(),
+        callback_data: HashMap::new(),
     };
     let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
         .start_with_addr()
@@ -114,7 +115,8 @@ pub async fn serve_websocket(
     Ok(res)
 }
 
-type WaitingCallback = Box<dyn FnOnce(&mut ZeruWebsocket, serde_json::Value) -> ()>;
+type WaitingCallback =
+    Box<dyn FnOnce(&mut ZeruWebsocket, &Command) -> Option<Result<Message, Error>>>;
 
 pub struct ZeruWebsocket {
     site_controller: Addr<SitesController>,
@@ -125,6 +127,7 @@ pub struct ZeruWebsocket {
     channels: Vec<String>,
     next_message_id: usize,
     waiting_callbacks: HashMap<usize, WaitingCallback>,
+    callback_data: HashMap<usize, serde_json::Value>,
 }
 
 impl Actor for ZeruWebsocket {
@@ -143,11 +146,20 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                 trace!("Incoming Raw message: {:?}", text);
                 let command: Command = match serde_json::from_str(&text) {
                     Ok(c) => c,
-                    Err(e) => {
-                        error!(
-                            "Could not deserialize incoming message: {:?} ({:?})",
-                            text, e
-                        );
+                    Err(_) => {
+                        let cmd_res: CommandResponse = match serde_json::from_str(&text) {
+                            Ok(cmd_res) => cmd_res,
+                            Err(e) => {
+                                error!(
+                                    "Could not deserialize incoming message: {:?} ({:?})",
+                                    text, e
+                                );
+                                return;
+                            }
+                        };
+                        if let Err(err) =  self.handle_response(&cmd_res) {
+                            error!("Error handling response: {:?}", err);
+                        }
                         return;
                     }
                 };
@@ -331,6 +343,28 @@ impl ZeruWebsocket {
             .permissions
             .contains(&("ADMIN".to_string()));
         Ok(res)
+    }
+
+    fn handle_response(&mut self, response: &CommandResponse) -> Result<(), Error> {
+        trace!("Handling response: {:?}", response);
+        let id = response.to as usize;
+        let callback = self.waiting_callbacks.remove(&id);
+        if let Some(callback) = callback {
+            let data = self.callback_data.remove(&id).unwrap_or(response.result.clone());
+            let command = Command {
+                cmd: CommandType::Response,
+                params: data,
+                id: response.id,
+                wrapper_nonce: String::new(),
+            };
+            let res = callback(self, &command);
+            if let Some(res) = res {
+                let _ = command.respond(res?);
+            }
+        } else {
+            error!("No callback found for response: {:?}", response);
+        }
+        return Ok(());
     }
 
     fn handle_command(
