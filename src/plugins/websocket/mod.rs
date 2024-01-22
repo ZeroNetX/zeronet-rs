@@ -64,16 +64,16 @@ pub async fn serve_websocket(
     trace!("Serving websocket");
     #[cfg(not(debug_assertions))]
     {
-    let origin = req
-        .headers()
-        .get(header_name!("origin"))
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("");
-    let host = req
-        .headers()
-        .get(header_name!("host"))
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("");
+        let origin = req
+            .headers()
+            .get(header_name!("origin"))
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
+        let host = req
+            .headers()
+            .get(header_name!("host"))
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("");
         let origin_host = origin.split("://").collect::<Vec<&str>>()[1];
         if origin_host != host {
             //TODO!: and origin_host not in allowed_ws_origins
@@ -157,7 +157,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                                 return;
                             }
                         };
-                        if let Err(err) =  self.handle_response(ctx, &cmd_res) {
+                        if let Err(err) = self.handle_response(ctx, &cmd_res) {
                             error!("Error handling response: {:?}", err);
                         }
                         return;
@@ -367,12 +367,19 @@ impl ZeruWebsocket {
         Ok(res)
     }
 
-    fn handle_response(&mut self, ctx: &mut ws::WebsocketContext<ZeruWebsocket>, response: &CommandResponse) -> Result<(), Error> {
+    fn handle_response(
+        &mut self,
+        ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
+        response: &CommandResponse,
+    ) -> Result<(), Error> {
         trace!("Handling response: {:?}", response);
         let id = response.to as usize;
         let callback = self.waiting_callbacks.remove(&id);
         if let Some(callback) = callback {
-            let data = self.callback_data.remove(&id).unwrap_or(response.result.clone());
+            let data = self
+                .callback_data
+                .remove(&id)
+                .unwrap_or(response.result.clone());
             let command = Command {
                 cmd: CommandType::Response,
                 params: data,
@@ -396,7 +403,8 @@ impl ZeruWebsocket {
     ) -> Result<(), Error> {
         trace!(
             "Handling command: {:?} with params: {:?}",
-            command.cmd, command.params
+            command.cmd,
+            command.params
         );
         let response = if let CommandType::UiServer(cmd) = &command.cmd {
             match cmd {
