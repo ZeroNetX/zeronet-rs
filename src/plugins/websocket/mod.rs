@@ -61,6 +61,8 @@ pub async fn serve_websocket(
         return Ok(error404(&req, Some("Not a websocket request!")));
     }
     trace!("Serving websocket");
+    #[cfg(not(debug_assertions))]
+    {
     let origin = req
         .headers()
         .get(header_name!("origin"))
@@ -71,14 +73,15 @@ pub async fn serve_websocket(
         .get(header_name!("host"))
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
-    let origin_host = origin.split("://").collect::<Vec<&str>>()[1];
-    if origin_host != host {
-        //TODO!: and origin_host not in allowed_ws_origins
-        let msg = format!(
-            "Invalid origin: {} (host: {}, allowed: missing_impl)",
-            origin, host
-        );
-        return Ok(error403(&req, Some(&msg)));
+        let origin_host = origin.split("://").collect::<Vec<&str>>()[1];
+        if origin_host != host {
+            //TODO!: and origin_host not in allowed_ws_origins
+            let msg = format!(
+                "Invalid origin: {} (host: {}, allowed: missing_impl)",
+                origin, host
+            );
+            return Ok(error403(&req, Some(&msg)));
+        }
     }
     let wrapper_key = query.get("wrapper_key").unwrap();
     let future = data

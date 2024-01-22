@@ -169,6 +169,11 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
                 site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
             }
         }
+        #[cfg(debug_assertions)]
+        {
+            site_info.size_limit = 25;
+            site_info.next_size_limit = 25;
+        }
         command.respond(site_info)
     } else {
         Err(Error {
