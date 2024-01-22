@@ -121,6 +121,7 @@ pub fn _handle_user_show_master_seed(
 }
 
 pub fn handle_cert_set(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    trace!("Handling CertSet with command: {:?}", command);
     let site = ws.address.address.clone();
     let provider = command.params[0].as_str().unwrap().to_string();
     let _ = block_on(ws.user_controller.send(UserSetSiteCertRequest {

@@ -140,6 +140,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
         match msg.unwrap() {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Text(text) => {
+                trace!("Incoming Raw message: {:?}", text);
                 let command: Command = match serde_json::from_str(&text) {
                     Ok(c) => c,
                     Err(e) => {
@@ -303,6 +304,7 @@ impl ZeruWebsocket {
         let id = self.next_message_id;
         self.next_message_id += 1;
         if let Some(callback) = callback {
+            trace!("Adding callback for id: {}", id);
             self.waiting_callbacks.insert(id, callback);
         }
         match cmd {
@@ -338,8 +340,7 @@ impl ZeruWebsocket {
     ) -> Result<(), Error> {
         trace!(
             "Handling command: {:?} with params: {:?}",
-            command.cmd,
-            command.params
+            command.cmd, command.params
         );
         let response = if let CommandType::UiServer(cmd) = &command.cmd {
             match cmd {
@@ -421,6 +422,7 @@ impl ZeruWebsocket {
     }
 
     fn on_event(&mut self, channel: &str, params: &serde_json::Value) -> Result<(), Error> {
+        trace!("Sending event: {} with params: {:?}", channel, params);
         if !self.channels.contains(&channel.to_string()) {
             return Ok(());
         }
