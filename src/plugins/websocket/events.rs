@@ -38,8 +38,8 @@ impl Handler<RegisterWSClient> for WebsocketController {
 #[serde(rename_all = "camelCase")]
 pub enum ServerEvent {
     Event { cmd: String, params: EventType },
-    Notification { cmd: String, params: Value },
-    Confirm { cmd: String, params: Value },
+    Notification { cmd: String, id: usize, params: Value },
+    Confirm { cmd: String, id: usize, params: Value },
 }
 
 #[allow(clippy::enum_variant_names)]

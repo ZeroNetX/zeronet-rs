@@ -2,15 +2,18 @@ use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use futures::executor::block_on;
 use log::*;
-use serde::Serialize;
-use serde_json::{Value, json};
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
-use super::super::{error::Error, request::Command, response::Message, ZeruWebsocket};
+use super::{
+    super::{error::Error, request::Command, response::Message, ZeruWebsocket},
+    users::{get_current_user, handle_cert_set},
+};
 use crate::{
     environment::SITE_PERMISSIONS_DETAILS,
     plugins::site_server::handlers::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
-        users::UserSiteData,
+        users::{UserCertAddRequest, UserCertDeleteRequest, UserSetSiteCertRequest, UserSiteData},
     },
     plugins::{
         site_server::handlers::{
@@ -24,26 +27,105 @@ use crate::{
     },
 };
 
-pub fn handle_cert_add(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_cert_add(ws: &mut ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    let mut msg: UserCertAddRequest = serde_json::from_value(command.params.clone()).unwrap();
+    let domain = msg.domain.clone();
+    msg.user_addr = String::from("current");
+    msg.site_addr = ws.address.address.clone();
+    let res = block_on(ws.user_controller.send(msg.clone()))?;
+    match res {
+        Err(_) => command.respond("Not changed"),
+        Ok(false) => {
+            let user = get_current_user(ws)?;
+            let current_cert = user.certs.get(&domain).unwrap();
+            let body = format!(
+                "Your current certificate: <b>{}/{}@{}</b>",
+                current_cert.auth_type, current_cert.auth_user_name, domain,
+            );
+            let txt = format!(
+                "Change it to {}/{}@{}",
+                msg.auth_type, msg.auth_user_name, domain
+            );
+            let _ = ws.cmd(
+                "confirm",
+                json!([body, txt,]),
+                Some(Box::new(move |ws, cmd| cert_add_confirm(ws, cmd))),
+                Some(command.params.clone()),
+            );
+            command.command()
+        }
+        Ok(true) => {
+            let _ = ws.cmd(
+                "notification",
+                json!([
+                    "done",
+                    format!(
+                        "New certificate added: <b>{}/{}@{}</b>",
+                        msg.auth_type, msg.auth_user_name, domain
+                    )
+                ]),
+                None,
+                None,
+            );
+            let msg = UserSetSiteCertRequest {
+                user_addr: String::from("current"),
+                site_addr: ws.address.address.clone(),
+                provider: domain.clone(),
+            };
+            let _ = block_on(ws.user_controller.send(msg))?;
+            ws.update_websocket(Some(json!(vec!["cert_changed", &domain])));
+            command.respond("ok")
+        }
+    }
+}
+
+fn cert_add_confirm(ws: &mut ZeruWebsocket, cmd: &Command) -> Option<Result<Message, Error>> {
+    let params = cmd.params.clone();
+    let user = String::from("current");
+    let mut add_msg: UserCertAddRequest = serde_json::from_value(params.clone()).unwrap();
+    add_msg.user_addr = user.clone();
+    add_msg.site_addr = ws.address.address.clone();
+
+    let msg = UserCertDeleteRequest {
+        user_addr: user.clone(),
+        domain: add_msg.domain.clone(),
+    };
+    let _ = block_on(ws.user_controller.send(msg)).unwrap();
+    let res = block_on(ws.user_controller.send(add_msg.clone())).unwrap();
+    assert!(res.is_ok());
+    assert!(res.unwrap());
+    let _ = ws.cmd(
+        "notification",
+        json!([
+            "done",
+            format!(
+                "Certificate changed to: <b>{}/{}@{}</b>",
+                add_msg.auth_type, add_msg.auth_user_name, add_msg.domain
+            )
+        ]),
+        None,
+        None,
+    );
+    ws.update_websocket(Some(json!(vec!["cert_changed", &add_msg.domain])));
+    Some(cmd.respond("ok"))
+}
+
+#[derive(Deserialize, Debug)]
+struct CertSelectRequest {
+    #[serde(default)]
+    accepted_providers: Vec<String>,
+    accepted_pattern: Option<String>,
+    accept_any: bool,
 }
 
 pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
-    let params = cmd.params.as_array().unwrap();
-    let accepted_providers = params[0].as_array();
-    let accepted_pattern = if let Some(Value::String(pattern)) = params.get(2) {
-        Some(pattern)
-    } else {
-        None
-    };
-    let accept_any = if let Some(Value::Bool(value)) = params.get(1) {
-        *value
-    } else {
-        accepted_providers.is_none() || accepted_pattern.is_none()
+    let CertSelectRequest {
+        accepted_providers,
+        accepted_pattern,
+        mut accept_any,
+    } = serde_json::from_value(cmd.params.clone()).unwrap();
+    if !accept_any {
+        accept_any = accepted_providers.is_empty() || accepted_pattern.is_none();
     };
     let site_data = block_on(ws.user_controller.send(UserSiteData {
         user_addr: String::from("current"),
@@ -68,7 +150,7 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
             active = provider.clone();
         }
         let title = format!("{}@{}", cert.auth_user_name, provider);
-        let accepted_pattern_match = if let Some(accepted_pattern) = accepted_pattern {
+        let accepted_pattern_match = if let Some(accepted_pattern) = &accepted_pattern {
             let regex = regex::Regex::new(accepted_pattern);
             if let Ok(regex) = regex {
                 regex.is_match(&provider)
@@ -78,10 +160,8 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
         } else {
             false
         };
-        if let Some(accepted_providers) = accepted_providers {
-            if accepted_providers.contains(&json!(provider)) {
-                providers.push(vec![provider.clone(), title, "".to_string()]);
-            }
+        if accepted_providers.contains(&provider) {
+            providers.push(vec![provider.clone(), title, "".to_string()]);
         } else if accept_any || accepted_pattern_match {
             providers.push(vec![provider.clone(), title, "".to_string()]);
         } else {
@@ -106,34 +186,40 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
             css, provider, title
         );
     }
-    if let Some(providers) = accepted_providers {
-        providers.iter().for_each(|provider| {
-            if let Value::String(provider) = provider {
-                if !user.certs.contains_key(provider.as_str()) {
-                    body += "<div style='background-color: #F7F7F7; margin-right: -30px'>";
-                    body += &format!(
-                        "<a href='/{}' target='_top' class='select'>
+
+    accepted_providers.iter().for_each(|provider| {
+        if !user.certs.contains_key(provider.as_str()) {
+            body += "<div style='background-color: #F7F7F7; margin-right: -30px'>";
+            body += &format!(
+                "<a href='/{}' target='_top' class='select'>
                             <small style='float: right; margin-right: 40px; margin-top: -1px'>
                             Register &raquo;</small>{}</a>",
-                        provider, provider
-                    );
-                    body += "</div>";
-                }
-            }
-        });
-    }
-    let script = format!(
+                provider, provider
+            );
+            body += "</div>";
+        }
+    });
+
+    let _ = ws.cmd(
+        "notification",
+        json!(["ask", body]),
+        Some(Box::new(move |ws, cmd| Some(handle_cert_set(ws, cmd)))),
+        None,
+    );
+    let script = notification_script_template(ws.next_message_id - 1);
+    cmd.inject_script(ws.next_message_id as isize, script)
+}
+
+fn notification_script_template(id: usize) -> String {
+    format!(
         "
     $(\".notification .select.cert\").on(\"click\", function() {{
     $(\".notification .select\").removeClass('active')
     zeroframe.response({}, this.title)
     return false
-    }})
-    ",
-        ws.next_message_id
-    );
-    ws.send_notification(json!(["ask", body])); //TODO!: Need callback for response
-    cmd.inject_script(script)
+    }})",
+        id
+    )
 }
 
 pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
@@ -165,7 +251,12 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
             if let Some(Value::String(path)) = params.get("file_status") {
                 site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
             }
-        } 
+        }
+        #[cfg(debug_assertions)]
+        {
+            site_info.size_limit = 25;
+            site_info.next_size_limit = 25;
+        }
         command.respond(site_info)
     } else {
         Err(Error {

@@ -3,17 +3,19 @@ use serde_json::json;
 
 use crate::utils::is_default;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Message {
     cmd: MessageType,
-    #[serde(skip_serializing_if = "is_default")]
     pub id: usize,
     #[serde(skip_serializing_if = "is_default")]
     to: isize,
+    #[serde(skip_serializing_if = "is_default")]
     result: serde_json::Value,
+    #[serde(skip_serializing_if = "is_default")]
+    params: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum MessageType {
     Command,
@@ -30,6 +32,7 @@ impl Message {
             to: id,
             result: body,
             id: 0,
+            params: json!(null),
         }
     }
 
@@ -37,8 +40,9 @@ impl Message {
         Message {
             cmd: MessageType::InjectScript,
             to: id,
-            result: body,
+            result: json!(null),
             id: 0,
+            params: body,
         }
     }
 
@@ -46,11 +50,16 @@ impl Message {
         self.cmd == MessageType::Command
     }
 
+    pub fn is_inject_script(&self) -> bool {
+        self.cmd == MessageType::InjectScript
+    }
+
     pub fn command() -> Message {
         Message {
             cmd: MessageType::Command,
             to: 0,
             result: json!(null),
+            params: json!(null),
             id: 0,
         }
     }

@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 use self::{
     events::{EventType, ServerEvent, WebsocketController},
     handlers::{files::*, sites::*, tracker::*, users::*},
-    request::CommandType,
+    request::{CommandResponse, CommandType},
 };
 use crate::{
     controllers::{sites::SitesController, users::UserController},
@@ -48,6 +48,7 @@ pub fn register_site_plugins<T: AppEntryImpl>(app: App<T>) -> App<T> {
     let websocket_controller = WebsocketController { listeners: vec![] }.start();
     app.app_data(Data::new(websocket_controller))
         .service(scope("/ZeroNet-Internal").route("/Websocket", get().to(serve_websocket)))
+        .route("/Websocket", get().to(serve_websocket))
 }
 
 pub async fn serve_websocket(
@@ -71,14 +72,17 @@ pub async fn serve_websocket(
         .get(header_name!("host"))
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
-    let origin_host = origin.split("://").collect::<Vec<&str>>()[1];
-    if origin_host != host {
-        //TODO!: and origin_host not in allowed_ws_origins
-        let msg = format!(
-            "Invalid origin: {} (host: {}, allowed: missing_impl)",
-            origin, host
-        );
-        return Ok(error403(&req, Some(&msg)));
+    let origin_host = origin.split("://").collect::<Vec<&str>>();
+    if !ENV.debug {
+        let origin_host = origin_host[1];
+        if origin_host != host {
+            //TODO!: and origin_host not in allowed_ws_origins
+            let msg = format!(
+                "Invalid origin: {} (host: {}, allowed: missing_impl)",
+                origin, host
+            );
+            return Ok(error403(&req, Some(&msg)));
+        }
     }
     let wrapper_key = query.get("wrapper_key").unwrap();
     let future = data
@@ -100,8 +104,9 @@ pub async fn serve_websocket(
         site_addr: addr,
         address,
         channels: vec![],
-        next_message_id: 0,
+        next_message_id: 1,
         waiting_callbacks: HashMap::new(),
+        callback_data: HashMap::new(),
     };
     let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
         .start_with_addr()
@@ -110,7 +115,8 @@ pub async fn serve_websocket(
     Ok(res)
 }
 
-type WaitingCallback = Box<dyn FnOnce(&mut ZeruWebsocket, serde_json::Value) -> ()>;
+type WaitingCallback =
+    Box<dyn FnOnce(&mut ZeruWebsocket, &Command) -> Option<Result<Message, Error>>>;
 
 pub struct ZeruWebsocket {
     site_controller: Addr<SitesController>,
@@ -121,6 +127,7 @@ pub struct ZeruWebsocket {
     channels: Vec<String>,
     next_message_id: usize,
     waiting_callbacks: HashMap<usize, WaitingCallback>,
+    callback_data: HashMap<usize, serde_json::Value>,
 }
 
 impl Actor for ZeruWebsocket {
@@ -136,13 +143,21 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
         match msg.unwrap() {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Text(text) => {
+                error!("Incoming message: {:?}", text);
                 let command: Command = match serde_json::from_str(&text) {
                     Ok(c) => c,
-                    Err(e) => {
-                        error!(
-                            "Could not deserialize incoming message: {:?} ({:?})",
-                            text, e
-                        );
+                    Err(_) => {
+                        let cmd_res: CommandResponse = match serde_json::from_str(&text) {
+                            Ok(cmd_res) => cmd_res,
+                            Err(e) => {
+                                error!(
+                                    "Could not deserialize incoming message: {:?} ({:?})",
+                                    text, e
+                                );
+                                return;
+                            }
+                        };
+                        self.handle_response(&cmd_res).unwrap();
                         return;
                     }
                 };
@@ -295,24 +310,35 @@ impl ZeruWebsocket {
         cmd: &str,
         params: Value,
         callback: Option<WaitingCallback>,
+        callback_data: Option<Value>,
     ) -> Result<(), Error> {
         let id = self.next_message_id;
         self.next_message_id += 1;
         if let Some(callback) = callback {
+            error!("Adding callback for id: {}", id);
             self.waiting_callbacks.insert(id, callback);
+        }
+        if let Some(callback_data) = callback_data {
+            trace!("Adding callback data for id: {}", id);
+            self.callback_data.insert(id, callback_data);
         }
         match cmd {
             "confirm" => {
-                self.confirm(params);
+                self.confirm(id, params);
+                return Ok(());
+            }
+            "notification" => {
+                self.send_notification(id, params);
                 return Ok(());
             }
             _ => unimplemented!("Command not implemented: {}", cmd),
         }
     }
 
-    fn confirm(&mut self, params: Value) {
+    fn confirm(&mut self, id: usize, params: Value) {
         self.ws_controller.do_send(ServerEvent::Confirm {
             cmd: "confirm".to_string(),
+            id,
             params,
         });
     }
@@ -327,6 +353,28 @@ impl ZeruWebsocket {
         Ok(res)
     }
 
+    fn handle_response(&mut self, response: &CommandResponse) -> Result<(), Error> {
+        error!("Handling response: {:?}", response);
+        let id = response.to as usize;
+        let callback = self.waiting_callbacks.remove(&id);
+        if let Some(callback) = callback {
+            let data = self.callback_data.remove(&id).unwrap_or(response.result.clone());
+            let command = Command {
+                cmd: CommandType::UiServer(SiteInfo),
+                params: data,
+                id: response.id,
+                wrapper_nonce: String::new(),
+            };
+            let res = callback(self, &command);
+            if let Some(res) = res {
+                let _ = command.respond(res?);
+            }
+        } else {
+            error!("No callback found for response: {:?}", response);
+        }
+        return Ok(());
+    }
+
     fn handle_command(
         &mut self,
         ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
@@ -334,14 +382,13 @@ impl ZeruWebsocket {
     ) -> Result<(), Error> {
         trace!(
             "Handling command: {:?} with params: {:?}",
-            command.cmd,
-            command.params
+            command.cmd, command.params
         );
         let response = if let CommandType::UiServer(cmd) = &command.cmd {
             match cmd {
                 Ping => handle_ping(command),
                 ServerInfo => handle_server_info(self, ctx, command),
-                CertAdd => handle_cert_add(self, ctx, command),
+                CertAdd => handle_cert_add(self, command),
                 CertSelect => handle_cert_select(self, command),
                 SiteInfo => handle_site_info(self, command),
                 SiteSign => handle_site_sign(self, ctx, command),
@@ -393,6 +440,16 @@ impl ZeruWebsocket {
                     });
                 }
             }
+        } else if let CommandType::Response(response) = &command.cmd {
+            error!("Unhandled Response: {:?}", response);
+            let callback = self.waiting_callbacks.remove(&0);
+            if let Some(callback) = callback {
+                let res = callback(self, command);
+                if let Some(res) = res {
+                    let _ = command.respond(res?);
+                }
+            }
+            return Ok(());
         } else {
             debug!("Unhandled Plugin command: {:?}", command.cmd);
             command.respond("ok")
@@ -417,6 +474,7 @@ impl ZeruWebsocket {
     }
 
     fn on_event(&mut self, channel: &str, params: &serde_json::Value) -> Result<(), Error> {
+        error!("Handling event: {} with params: {:?}", channel, params);
         if !self.channels.contains(&channel.to_string()) {
             return Ok(());
         }
@@ -463,9 +521,10 @@ impl ZeruWebsocket {
         Ok(())
     }
 
-    fn send_notification(&mut self, params: serde_json::Value) {
+    fn send_notification(&mut self, id: usize, params: serde_json::Value) {
         let _ = self.ws_controller.do_send(ServerEvent::Notification {
             cmd: "notification".to_string(),
+            id,
             params,
         });
     }

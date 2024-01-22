@@ -120,14 +120,17 @@ pub fn _handle_user_show_master_seed(
     command.respond(user.get_master_seed())
 }
 
-pub fn handle_cert_set(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+pub fn handle_cert_set(ws: &mut ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    error!("Handling CertSet with command: {:?}", command);
     let site = ws.address.address.clone();
-    let provider = command.params[0].as_str().unwrap().to_string();
+    let provider = command.params.as_str().unwrap().to_string();
     let _ = block_on(ws.user_controller.send(UserSetSiteCertRequest {
         user_addr: String::from("current"),
         site_addr: site,
-        provider,
+        provider: provider.clone(),
     }))?;
+    error!("Cert set: {}", provider);
+    ws.update_websocket(Some(json!(vec!["cert_changed", &provider])));
     command.respond("ok")
 }
 

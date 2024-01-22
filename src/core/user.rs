@@ -36,6 +36,7 @@ pub mod models {
 
     #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
     pub struct Cert {
+        #[serde(flatten)]
         auth_pair: AuthPair,
         pub auth_type: String,
         pub auth_user_name: String,

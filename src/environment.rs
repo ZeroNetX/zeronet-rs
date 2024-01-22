@@ -104,6 +104,8 @@ pub struct Environment {
     pub size_limit: usize,
     pub file_size_limit: usize,
     pub site_peers_need: usize,
+    #[cfg(debug_assertions)]
+    pub debug: bool,
 }
 
 fn get_matches() -> ArgMatches {
@@ -351,6 +353,8 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
             .get_one::<String>("SITE_PEERS_NEED")
             .unwrap()
             .parse()?,
+        #[cfg(debug_assertions)]
+        debug: true,
     };
     Ok(env)
 }
