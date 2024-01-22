@@ -1,6 +1,18 @@
 # Changelog
 
-## [0.1.3] - Unreleased
+## [0.2.0] - 2024-01-23
+- impl handle_site_bad_files
+- impl handle_cert_(set/list)
+- handle /Websocket route with serve_websocket
+- handle_file_(get\need) improvements
+- improve serve_websocket security
+- impl handle_cert_select fn
+- DBQueryRequest & SitesController::db_query > change method/struct sig to accept params
+- SitesController::parse_query and tests
+- Add a info log when UiServer starts
+- UserSiteData handler 
+- Fix Sites sub dir serving
+- Several Internal changes and bug fixes, See [diff](https://github.com/ZeroNetX/zeronet-rs/compare/v0.1.3...v0.2.0) for full commit changes. 
 
 ## [0.1.2] - 2022-08-26
 
