@@ -104,7 +104,7 @@ pub async fn serve_websocket(
         site_addr: addr,
         address,
         channels: vec![],
-        next_message_id: 0,
+        next_message_id: 1,
         waiting_callbacks: HashMap::new(),
     };
     let (addr, res) = WsResponseBuilder::new(websocket, &req, stream)
