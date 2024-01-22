@@ -326,16 +326,21 @@ impl ZeruWebsocket {
         }
         match cmd {
             "confirm" => {
-                self.confirm(params);
+                self.confirm(id, params);
+                return Ok(());
+            }
+            "notification" => {
+                self.send_notification(id, params);
                 return Ok(());
             }
             _ => unimplemented!("Command not implemented: {}", cmd),
         }
     }
 
-    fn confirm(&mut self, params: Value) {
+    fn confirm(&mut self, id: usize, params: Value) {
         self.ws_controller.do_send(ServerEvent::Confirm {
             cmd: "confirm".to_string(),
+            id,
             params,
         });
     }
@@ -385,7 +390,7 @@ impl ZeruWebsocket {
             match cmd {
                 Ping => handle_ping(command),
                 ServerInfo => handle_server_info(self, ctx, command),
-                CertAdd => handle_cert_add(self, ctx, command),
+                CertAdd => handle_cert_add(self, command),
                 CertSelect => handle_cert_select(self, command),
                 SiteInfo => handle_site_info(self, command),
                 SiteSign => handle_site_sign(self, ctx, command),
@@ -509,9 +514,10 @@ impl ZeruWebsocket {
         Ok(())
     }
 
-    fn send_notification(&mut self, params: serde_json::Value) {
+    fn send_notification(&mut self, id: usize, params: serde_json::Value) {
         let _ = self.ws_controller.do_send(ServerEvent::Notification {
             cmd: "notification".to_string(),
+            id,
             params,
         });
     }

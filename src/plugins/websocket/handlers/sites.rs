@@ -13,7 +13,7 @@ use crate::{
     environment::SITE_PERMISSIONS_DETAILS,
     plugins::site_server::handlers::{
         sites::{DBQueryRequest, SiteInfoListRequest, SiteInfoRequest},
-        users::UserSiteData,
+        users::{UserCertAddRequest, UserCertDeleteRequest, UserSetSiteCertRequest, UserSiteData},
     },
     plugins::{
         site_server::handlers::{
@@ -27,12 +27,87 @@ use crate::{
     },
 };
 
-pub fn handle_cert_add(
-    _: &ZeruWebsocket,
-    _: &mut WebsocketContext<ZeruWebsocket>,
-    _: &Command,
-) -> Result<Message, Error> {
-    unimplemented!("Please File a Bug Report")
+pub fn handle_cert_add(ws: &mut ZeruWebsocket, command: &Command) -> Result<Message, Error> {
+    let mut msg: UserCertAddRequest = serde_json::from_value(command.params.clone()).unwrap();
+    let domain = msg.domain.clone();
+    msg.user_addr = String::from("current");
+    msg.site_addr = ws.address.address.clone();
+    let res = block_on(ws.user_controller.send(msg.clone()))?;
+    match res {
+        Err(_) => command.respond("Not changed"),
+        Ok(false) => {
+            let user = get_current_user(ws)?;
+            let current_cert = user.certs.get(&domain).unwrap();
+            let body = format!(
+                "Your current certificate: <b>{}/{}@{}</b>",
+                current_cert.auth_type, current_cert.auth_user_name, domain,
+            );
+            let txt = format!(
+                "Change it to {}/{}@{}",
+                msg.auth_type, msg.auth_user_name, domain
+            );
+            let _ = ws.cmd(
+                "confirm",
+                json!([body, txt,]),
+                Some(Box::new(move |ws, cmd| cert_add_confirm(ws, cmd))),
+                Some(command.params.clone()),
+            );
+            command.command()
+        }
+        Ok(true) => {
+            let _ = ws.cmd(
+                "notification",
+                json!([
+                    "done",
+                    format!(
+                        "New certificate added: <b>{}/{}@{}</b>",
+                        msg.auth_type, msg.auth_user_name, domain
+                    )
+                ]),
+                None,
+                None,
+            );
+            let msg = UserSetSiteCertRequest {
+                user_addr: String::from("current"),
+                site_addr: ws.address.address.clone(),
+                provider: domain.clone(),
+            };
+            let _ = block_on(ws.user_controller.send(msg))?;
+            ws.update_websocket(Some(json!(vec!["cert_changed", &domain])));
+            command.respond("ok")
+        }
+    }
+}
+
+fn cert_add_confirm(ws: &mut ZeruWebsocket, cmd: &Command) -> Option<Result<Message, Error>> {
+    let params = cmd.params.clone();
+    let user = String::from("current");
+    let mut add_msg: UserCertAddRequest = serde_json::from_value(params.clone()).unwrap();
+    add_msg.user_addr = user.clone();
+    add_msg.site_addr = ws.address.address.clone();
+
+    let msg = UserCertDeleteRequest {
+        user_addr: user.clone(),
+        domain: add_msg.domain.clone(),
+    };
+    let _ = block_on(ws.user_controller.send(msg)).unwrap();
+    let res = block_on(ws.user_controller.send(add_msg.clone())).unwrap();
+    assert!(res.is_ok());
+    assert!(res.unwrap());
+    let _ = ws.cmd(
+        "notification",
+        json!([
+            "done",
+            format!(
+                "Certificate changed to: <b>{}/{}@{}</b>",
+                add_msg.auth_type, add_msg.auth_user_name, add_msg.domain
+            )
+        ]),
+        None,
+        None,
+    );
+    ws.update_websocket(Some(json!(vec!["cert_changed", &add_msg.domain])));
+    Some(cmd.respond("ok"))
 }
 
 pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
