@@ -48,6 +48,7 @@ pub fn register_site_plugins<T: AppEntryImpl>(app: App<T>) -> App<T> {
     let websocket_controller = WebsocketController { listeners: vec![] }.start();
     app.app_data(Data::new(websocket_controller))
         .service(scope("/ZeroNet-Internal").route("/Websocket", get().to(serve_websocket)))
+        .route("/Websocket", get().to(serve_websocket))
 }
 
 pub async fn serve_websocket(
