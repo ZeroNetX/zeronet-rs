@@ -530,8 +530,8 @@ pub fn handle_site_set_settings_value(ws: &ZeruWebsocket, cmd: &Command) -> Resu
     cmd.respond("ok")
 }
 
-pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
-    let params = match &cmd.params {
+fn extract_permission_params(params: &Value) -> Result<&str, Error> {
+    let params = match params {
         Value::Array(params) => params[0].as_str().unwrap(),
         Value::Object(map) => {
             if let Some(Value::String(params)) = map.get("permission") {
@@ -549,6 +549,11 @@ pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Messag
             });
         }
     };
+    Ok(params)
+}
+
+pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
+    let params = extract_permission_params(&cmd.params)?;
     let res = block_on(ws.site_controller.send(SitePermissionAddRequest {
         address: ws.address.address.clone(),
         permission: params.to_string(),
@@ -562,7 +567,7 @@ pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Messag
 }
 
 pub fn handle_permission_remove(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
-    let params = cmd.params.as_str().unwrap();
+    let params = extract_permission_params(&cmd.params)?;
     let res = block_on(ws.site_controller.send(SitePermissionRemoveRequest {
         address: ws.address.address.clone(),
         permission: params.to_string(),
@@ -576,7 +581,7 @@ pub fn handle_permission_remove(ws: &ZeruWebsocket, cmd: &Command) -> Result<Mes
 }
 
 pub fn handle_permission_details(cmd: &Command) -> Result<Message, Error> {
-    let key = cmd.params.as_str().unwrap();
+    let key = extract_permission_params(&cmd.params)?;
     let details = SITE_PERMISSIONS_DETAILS
         .get(key)
         .cloned()
