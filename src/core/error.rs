@@ -1,7 +1,7 @@
 // use actix_http::error::ResponseError;
-// use derive_more::Display;
+use derive_more::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum Error {
     AddressError(String),
     SiteNotFound,

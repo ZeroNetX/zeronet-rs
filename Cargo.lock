@@ -2901,6 +2901,7 @@ dependencies = [
  "bitcoin 0.29.2",
  "clap",
  "decentnet_protocol",
+ "derive_more",
  "diff",
  "futures",
  "futures-util",

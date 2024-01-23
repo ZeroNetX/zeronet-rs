@@ -1,5 +1,5 @@
 use log::*;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sha1::Sha1;
 use sha2::{Digest, Sha256};
 use std::{fmt::Display, str::FromStr};
@@ -49,6 +49,16 @@ impl Serialize for Address {
         S: Serializer,
     {
         serializer.serialize_str(&self.address)
+    }
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Address, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Address::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -132,16 +142,16 @@ mod tests {
         assert_eq!(&address_hash, "1HELLo...2Ri9d");
     }
 
-    // #[test]
-    // fn test_deserialization() {
-    //     let result = serde_json::from_str("\"1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d\"");
-    //     assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
-    //     let address: Address = result.unwrap();
-    //     assert_eq!(
-    //         address,
-    //         Address {
-    //             address: String::from(ADDR)
-    //         }
-    //     );
-    // }
+    #[test]
+    fn test_deserialization() {
+        let result = serde_json::from_str("\"1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d\"");
+        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        let address: Address = result.unwrap();
+        assert_eq!(
+            address,
+            Address {
+                address: String::from(ADDR)
+            }
+        );
+    }
 }
