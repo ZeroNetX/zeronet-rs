@@ -531,7 +531,24 @@ pub fn handle_site_set_settings_value(ws: &ZeruWebsocket, cmd: &Command) -> Resu
 }
 
 pub fn handle_permission_add(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Error> {
-    let params = cmd.params.as_str().unwrap();
+    let params = match &cmd.params {
+        Value::Array(params) => params[0].as_str().unwrap(),
+        Value::Object(map) => {
+            if let Some(Value::String(params)) = map.get("permission") {
+                params.as_str()
+            } else {
+                return Err(Error {
+                    error: format!("Invalid params"),
+                });
+            }
+        },
+        Value::String(params) => params.as_str(),
+        _ => {
+            return Err(Error {
+                error: format!("Invalid params"),
+            });
+        }
+    };
     let res = block_on(ws.site_controller.send(SitePermissionAddRequest {
         address: ws.address.address.clone(),
         permission: params.to_string(),
