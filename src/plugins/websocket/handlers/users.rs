@@ -123,7 +123,24 @@ pub fn _handle_user_show_master_seed(
 pub fn handle_cert_set(ws: &mut ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling CertSet with command: {:?}", command);
     let site = ws.address.address.clone();
-    let provider = command.params.as_str().unwrap().to_string();
+    let provider = match &command.params {
+        Value::String(provider) => Ok(provider.clone()),
+        Value::Array(params) => match params.first() {
+            Some(Value::String(provider)) => Ok(provider.clone()),
+            _ => Err(()),
+        },
+        Value::Object(params) => match params.get("domain") {
+            Some(Value::String(provider)) => Ok(provider.clone()),
+            _ => Err(())
+        },
+        _ => Err(())
+    };
+    if provider.is_err() {
+        return Err(Error {
+            error: "Invalid params".into(),
+        });
+    }
+    let provider = provider.unwrap();
     let _ = block_on(ws.user_controller.send(UserSetSiteCertRequest {
         user_addr: String::from("current"),
         site_addr: site,
