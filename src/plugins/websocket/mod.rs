@@ -164,8 +164,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                     }
                 };
                 if let Err(err) = self.handle_command(ctx, &command) {
-                    debug!("Error handling command: {:?}", err);
-                    let _ = handle_error(ctx, command, format!("{:?}", err));
+                    trace!("Error handling command: {:?}", err);
+                    let _ = handle_error(self, ctx, command, err);
                 }
             }
             ws::Message::Binary(_) => {
@@ -178,6 +178,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
 
 #[derive(Serialize, Deserialize)]
 pub struct WrapperCommand {
+    id: usize,
     cmd: WrapperCommandType,
     to: isize,
     result: WrapperResponse,
@@ -280,15 +281,14 @@ fn server_info(ws: &mut ZeruWebsocket) -> Result<ServerInfo, Error> {
 }
 
 fn handle_error(
+    ws: &mut ZeruWebsocket,
     ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
     command: Command,
-    text: String,
+    error: Error,
 ) -> Result<(), actix_web::Error> {
-    let error = WrapperCommand {
-        cmd: WrapperCommandType::Error,
-        to: command.id,
-        result: WrapperResponse::Text(text),
-    };
+    let mut error = command.error(error).unwrap();
+    error.id = ws.next_message_id;
+    ws.next_message_id += 1;
     let j = serde_json::to_string(&error)?;
     ctx.text(j);
     Ok(())
@@ -437,8 +437,10 @@ impl ZeruWebsocket {
             }
         } else if let CommandType::Admin(cmd) = &command.cmd {
             if !self.is_admin_site()? {
+                let mut cmd_str = serde_json::to_string(&command.cmd)?;
+                cmd_str = cmd_str.replace('"', "");            
                 return Err(Error {
-                    error: format!("You don't have permission to run {:?}", cmd),
+                    error: format!("You don't have permission to run {}", cmd_str),
                 });
             }
             match cmd {

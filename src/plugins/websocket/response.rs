@@ -37,6 +37,16 @@ impl Message {
         }
     }
 
+    pub fn error(id: isize, body: serde_json::Value) -> Message {
+        Message {
+            cmd: MessageType::Response,
+            to: id,
+            result: body,
+            id: 0,
+            params: json!(null),
+        }
+    }
+
     pub fn inject_script() -> Message {
         Message {
             cmd: MessageType::InjectScript,

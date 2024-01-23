@@ -134,6 +134,11 @@ impl Command {
         Ok(resp)
     }
 
+    pub fn error<T: Serialize>(&self, body: T) -> Result<Message, Error> {
+        let resp = Message::error(self.id, serde_json::to_value(body)?);
+        Ok(resp)
+    }
+
     pub fn inject_script(&self) -> Result<Message, Error> {
         let resp = Message::inject_script();
         Ok(resp)
