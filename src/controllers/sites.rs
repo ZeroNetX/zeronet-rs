@@ -174,12 +174,12 @@ impl SitesController {
         query: &str,
         params: Option<Value>,
     ) -> Result<Vec<Map<String, Value>>, Error> {
-        let has_params = params.is_some();
         let (query, params) = if let Some(params) = params {
             Self::parse_query(query, params)
         } else {
-            (query.to_string(), json!([]))
+            (query.to_string(), None)
         };
+        let has_params = params.is_some();
         let mut stmt = conn.prepare(&query).unwrap();
         let count = stmt.column_count();
         let names = {
@@ -213,9 +213,18 @@ impl SitesController {
         Ok(res)
     }
 
-    pub fn parse_query(query: &str, params: Value) -> (String, Value) {
+    pub fn parse_query(query: &str, params: Value) -> (String, Option<Value>) {
         if !params.is_object() {
-            return (query.to_string(), params);
+            return (query.to_string(), Some(params));
+        } else if !query.contains('?')
+            && !query.contains(':')
+            && params.as_object().unwrap().is_empty()
+        {
+            let query_types = ["SELECT", "INSERT", "UPDATE", "DELETE"];
+            let query_type = query.split_whitespace().next().unwrap().to_uppercase();
+            if query_types.contains(&query_type.as_str()) {
+                return (query.to_string(), None);
+            }
         }
         let params = params.as_object().unwrap();
         let query_type = query.split_whitespace().next().unwrap().to_uppercase();
@@ -292,7 +301,12 @@ impl SitesController {
                 new_query = re.replace_all(&new_query, &keysvalues).to_string();
                 new_params = params.values().map(|v| v.to_string()).collect();
             }
-            (new_query, json!(new_params))
+            let new_params = if new_params.is_empty() {
+                None
+            } else {
+                Some(json!(new_params))
+            };
+            (new_query, new_params)
         } else if query.contains(':') {
             let mut new_params_map = Map::new();
             for (key, value) in params {
@@ -311,8 +325,13 @@ impl SitesController {
                     new_params_map.insert(key.to_string(), value.clone());
                 }
             }
+            let new_params_map = if new_params_map.is_empty() {
+                None
+            } else {
+                Some(json!(new_params_map))
+            };
 
-            (new_query, json!(new_params_map))
+            (new_query, new_params_map)
         } else {
             unreachable!("Unknown query format");
         }
@@ -362,7 +381,7 @@ mod tests {
         let params = json!(42);
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, query);
-        assert_eq!(new_params, json!(42));
+        assert_eq!(new_params, Some(json!(42)));
     }
 
     #[test]
@@ -371,7 +390,7 @@ mod tests {
         let params = json!({});
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "SELECT * FROM table WHERE  1");
-        assert_eq!(new_params, json!([]));
+        assert_eq!(new_params, None);
     }
 
     #[test]
@@ -382,7 +401,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "SELECT * FROM table WHERE  id IN (?, ?, ?)");
-        assert_eq!(new_params, json!(["1", "2", "3"]));
+        assert_eq!(new_params, Some(json!(["1", "2", "3"])));
     }
 
     #[test]
@@ -393,7 +412,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "UPDATE table SET  name = ? WHERE id = 1");
-        assert_eq!(new_params, json!(["\"New Name\""]));
+        assert_eq!(new_params, Some(json!(["\"New Name\""])));
     }
 
     #[test]
@@ -404,7 +423,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "DELETE FROM table WHERE  id IN (?, ?, ?)");
-        assert_eq!(new_params, json!(["1", "2", "3"]));
+        assert_eq!(new_params, Some(json!(["1", "2", "3"])));
     }
 
     #[test]
@@ -424,7 +443,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "UPDATE table WHERE  id = ? AND name = ?");
-        assert_eq!(new_params, json!(["1", "\"New Name\"",]));
+        assert_eq!(new_params, Some(json!(["1", "\"New Name\"",])));
     }
 
     #[test]
@@ -435,7 +454,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "SELECT * FROM table WHERE id = :id");
-        assert_eq!(new_params, json!({"id": 1}));
+        assert_eq!(new_params, Some(json!({"id": 1})));
     }
 
     #[test]
@@ -447,7 +466,7 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "UPDATE table SET name = :name WHERE id = :id");
-        assert_eq!(new_params, json!({"id": 1, "name": "New Name"}));
+        assert_eq!(new_params, Some(json!({"id": 1, "name": "New Name"})));
     }
 
     #[test]
@@ -456,7 +475,7 @@ mod tests {
         let params = json!({});
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "SELECT * FROM table WHERE id = :id");
-        assert_eq!(new_params, json!({}));
+        assert_eq!(new_params, None);
     }
 
     #[test]
@@ -468,6 +487,6 @@ mod tests {
         });
         let (new_query, new_params) = SitesController::parse_query(query, params);
         assert_eq!(new_query, "INSERT INTO table bio (age, name) VALUES (?, ?)");
-        assert_eq!(new_params, json!(["[32,30]", "[\"John\",\"Doe\"]"]));
+        assert_eq!(new_params, Some(json!(["[32,30]", "[\"John\",\"Doe\"]"])));
     }
 }

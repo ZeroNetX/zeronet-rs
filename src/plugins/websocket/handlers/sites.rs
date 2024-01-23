@@ -312,7 +312,7 @@ pub fn append_user_site_data<'a>(
 
 pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling DBQuery {:?}", command.cmd);
-    match &command.params {
+    let result = match &command.params {
         Value::Array(inner_path) => {
             if let Some(query) = inner_path[0].as_str() {
                 let stmt_type = query.split_whitespace().next().unwrap();
@@ -322,27 +322,50 @@ pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message,
                     });
                 }
                 let params = inner_path.get(1).cloned();
-                let res = block_on(ws.site_controller.send(DBQueryRequest {
-                    address: ws.address.address.clone(),
-                    query: query.to_string(),
-                    params,
-                }))
-                .unwrap()
-                .unwrap();
-                return command.respond(res);
+                Ok((query.to_string(), params))
+            } else {
+                Err(Error {
+                    error: String::from("Invalid params"),
+                })
             }
-            error!("{:?}", command);
-            Err(Error {
-                error: String::from("expecting query, failed to parse"),
-            })
         }
-        _ => {
-            error!("{:?}", command);
-            Err(Error {
-                error: String::from("Invalid params"),
-            })
+        Value::Object(map) => {
+            if let Some(Value::String(query)) = map.get("query") {
+                let stmt_type = query.split_whitespace().next().unwrap();
+                if stmt_type.to_uppercase() != "SELECT" {
+                    return Err(Error {
+                        error: String::from("Only SELECT queries are allowed"),
+                    });
+                }
+                let params = map.get("params").cloned();
+                Ok((query.to_string(), params))
+            } else {
+                Err(Error {
+                    error: String::from("Invalid params"),
+                })
+            }
         }
+        _ => Err(Error {
+            error: String::from("Invalid params"),
+        }),
+    };
+    if let Ok((query, params)) = result {
+        let stmt_type = query.split_whitespace().next().unwrap();
+        if stmt_type.to_uppercase() != "SELECT" {
+            return Err(Error {
+                error: String::from("Only SELECT queries are allowed"),
+            });
+        }
+        let res = block_on(ws.site_controller.send(DBQueryRequest {
+            address: ws.address.address.clone(),
+            query: query.to_string(),
+            params,
+        }))
+        .unwrap()
+        .unwrap();
+        return command.respond(res);
     }
+    Err(result.err().unwrap())
 }
 
 pub fn handle_channel_join(
