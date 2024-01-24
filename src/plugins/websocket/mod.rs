@@ -445,7 +445,7 @@ impl ZeruWebsocket {
             }
             match cmd {
                 AnnouncerStats => handle_announcer_stats(self, ctx, command),
-                ChannelJoinAllsite => handle_channel_join_all_site(self, command),
+                ChannelJoinAllsite => handle_channel_join_all_site(ctx, command),
                 SiteList => handle_site_list(self, command),
                 UserSetGlobalSettings => handle_user_set_global_settings(self, command),
                 SiteSetSettingsValue => handle_site_set_settings_value(self, command),

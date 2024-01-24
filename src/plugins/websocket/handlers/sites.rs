@@ -413,11 +413,12 @@ pub fn handle_site_list(ws: &ZeruWebsocket, command: &Command) -> Result<Message
 }
 
 pub fn handle_channel_join_all_site(
-    _: &ZeruWebsocket,
+    ctx: &mut WebsocketContext<ZeruWebsocket>,
     command: &Command,
 ) -> Result<Message, Error> {
-    debug!("Handling ChannelJoinAllsite request using dummy response");
-    command.respond(String::from("ok"))
+    trace!("Handling ChannelJoinAllsite : {:?}", command.params);
+    //TODO!: implement listening other site events for this request
+    handle_channel_join(ctx, command)
 }
 
 pub fn handle_site_sign(
@@ -541,7 +542,7 @@ fn extract_permission_params(params: &Value) -> Result<&str, Error> {
                     error: format!("Invalid params"),
                 });
             }
-        },
+        }
         Value::String(params) => params.as_str(),
         _ => {
             return Err(Error {
