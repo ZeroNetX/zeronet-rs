@@ -23,7 +23,7 @@ pub trait UserIO {
 #[async_trait::async_trait]
 pub trait ContentMod {
     type ContentType;
-    async fn load_content_from_path(&self, inner_path: String) -> Result<Self::ContentType, Error>;
+    async fn load_content_from_path(&self, inner_path: &str) -> Result<Self::ContentType, Error>;
     async fn add_file_to_content(&mut self, path: PathBuf) -> Result<(), Error>;
     async fn sign_content(
         &mut self,

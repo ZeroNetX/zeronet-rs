@@ -18,7 +18,7 @@ use super::utils::current_unix_epoch;
 #[async_trait::async_trait]
 impl ContentMod for Site {
     type ContentType = Content;
-    async fn load_content_from_path(&self, inner_path: String) -> Result<Self::ContentType, Error> {
+    async fn load_content_from_path(&self, inner_path: &str) -> Result<Self::ContentType, Error> {
         let path = &self.site_path().join(&inner_path);
         if path.is_file() {
             let mut file = File::open(path).await?;

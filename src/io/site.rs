@@ -236,7 +236,7 @@ impl Site {
 
         let user_data = user_data_files
             .iter()
-            .map(|path| self.load_content_from_path(path.clone()))
+            .map(|path| self.load_content_from_path(path))
             .collect::<Vec<_>>();
         let mut content_res = join_all(user_data).await;
         let errs = content_res
