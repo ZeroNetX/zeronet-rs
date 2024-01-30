@@ -131,9 +131,9 @@ pub fn handle_cert_set(ws: &mut ZeruWebsocket, command: &Command) -> Result<Mess
         },
         Value::Object(params) => match params.get("domain") {
             Some(Value::String(provider)) => Ok(provider.clone()),
-            _ => Err(())
+            _ => Err(()),
         },
-        _ => Err(())
+        _ => Err(()),
     };
     if provider.is_err() {
         return Err(Error {

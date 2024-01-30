@@ -134,8 +134,7 @@ impl Site {
     }
 
     pub fn content(&self, inner_path: Option<&str>) -> Option<&Content> {
-        self.content
-            .get(inner_path.unwrap_or("content.json"))
+        self.content.get(inner_path.unwrap_or("content.json"))
     }
 
     pub fn content_mut(&mut self, inner_path: Option<&str>) -> Option<&mut Content> {

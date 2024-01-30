@@ -438,7 +438,7 @@ impl ZeruWebsocket {
         } else if let CommandType::Admin(cmd) = &command.cmd {
             if !self.is_admin_site()? {
                 let mut cmd_str = serde_json::to_string(&command.cmd)?;
-                cmd_str = cmd_str.replace('"', "");            
+                cmd_str = cmd_str.replace('"', "");
                 return Err(Error {
                     error: format!("You don't have permission to run {}", cmd_str),
                 });
