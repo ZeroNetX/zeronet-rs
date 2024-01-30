@@ -38,8 +38,8 @@ impl<'a> RequestImpl for Protocol<'a> {
     ///#getFile
     async fn get_file(
         &mut self,
-        site: String,
-        inner_path: String,
+        site: &str,
+        inner_path: &str,
         file_size: usize,
         location: usize,
         read_bytes: Option<usize>,
@@ -56,8 +56,8 @@ impl<'a> RequestImpl for Protocol<'a> {
     ///#streamFile
     async fn stream_file(
         &mut self,
-        site: String,
-        inner_path: String,
+        site: &str,
+        inner_path: &str,
     ) -> Result<Either<StreamFileResponse, ErrorResponse>, Error> {
         //TODO!: Remove default values from builder, size
         let builder = stream_file(site, inner_path, 0, 0, 0);
@@ -72,7 +72,7 @@ impl<'a> RequestImpl for Protocol<'a> {
     ///#listModified
     async fn list_modified(
         &mut self,
-        site: String,
+        site: &str,
         since: usize,
     ) -> Result<ListModifiedResponse, Self::Error> {
         let builder = list_modified(site, since);
@@ -85,7 +85,7 @@ impl<'a> RequestImpl for Protocol<'a> {
     }
 
     ///#pex
-    async fn pex(&mut self, site: String) -> Result<PexResponse, Error> {
+    async fn pex(&mut self, site: &str) -> Result<PexResponse, Error> {
         let builder = pex(site, 10);
         let res = self
             .0
@@ -97,8 +97,8 @@ impl<'a> RequestImpl for Protocol<'a> {
 
     async fn update(
         &mut self,
-        site: String,
-        inner_path: String,
+        site: &str,
+        inner_path: &str,
         body: ByteBuf,
         diffs: HashMap<String, Vec<Value>>,
         modified: usize,

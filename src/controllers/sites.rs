@@ -29,8 +29,8 @@ pub async fn run() -> Result<Addr<SitesController>, Error> {
         .extend_sites_from_sitedata(site_storage.clone())
         .await;
     for site in site_storage.keys().clone() {
-        if let Some(site) = site_controller.get_site(site) {
-            site_controller.get(site.addr())?;
+        if let Some(addr) = site_controller.get_site_addr(site).cloned() {
+            site_controller.get(&addr)?;
         }
     }
     let site_controller_addr = site_controller.start();
@@ -58,7 +58,7 @@ impl SitesController {
         }
     }
 
-    pub fn get(&mut self, address: Address) -> Result<(Address, Addr<Site>), Error> {
+    pub fn get(&mut self, address: &Address) -> Result<(Address, Addr<Site>), Error> {
         let address_str = address.address.clone();
         let mut site;
         let site = if let Some(site) = self.sites.get_mut(&address_str) {
@@ -69,7 +69,7 @@ impl SitesController {
         };
         if let Some(addr) = self.sites_addr.get(&address) {
             if site.content_path().is_file() {
-                return Ok((address, addr.clone()));
+                return Ok((address.clone(), addr.clone()));
             }
         }
         trace!(
@@ -99,7 +99,7 @@ impl SitesController {
         // TODO: Decide whether to spawn actors in syncArbiter
         let addr = site.clone().start();
         self.sites_addr.insert(address.clone(), addr.clone());
-        Ok((address, addr))
+        Ok((address.clone(), addr))
     }
 
     pub fn get_by_key(&mut self, key: String) -> Result<(Address, Addr<Site>), Error> {
@@ -113,12 +113,16 @@ impl SitesController {
     }
 
     pub fn add_site(&mut self, site: Site) {
-        self.sites.insert(site.address(), site);
+        self.sites.insert(site.address().into(), site);
         self.update_sites_changed();
     }
 
     pub fn get_site(&self, site_addr: &str) -> Option<&Site> {
         self.sites.get(site_addr)
+    }
+
+    pub fn get_site_addr(&self, site_addr: &str) -> Option<&Address> {
+        self.sites.get(site_addr).map(|site| site.addr())
     }
 
     pub fn get_site_mut(&mut self, site_addr: &str) -> Option<&mut Site> {
@@ -140,9 +144,9 @@ impl SitesController {
                 if res.is_ok() {
                     self.sites.insert(address, site.clone());
                     self.nonce
-                        .insert(site_storage.keys.wrapper_key, site.addr());
+                        .insert(site_storage.keys.wrapper_key, site.addr().clone());
                     self.ajax_keys
-                        .insert(site_storage.keys.ajax_key, site.addr());
+                        .insert(site_storage.keys.ajax_key, site.addr().clone());
                 } else {
                     //TODO! Start Downloading Site Content
                     error!(

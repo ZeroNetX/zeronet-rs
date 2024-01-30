@@ -355,7 +355,7 @@ impl ConnectionController {
                             true
                         } else {
                             let site_content_modified =
-                                site.content(Some(inner_path)).unwrap().modified;
+                                site.content(Some(inner_path)).unwrap().modified.clone();
                             content_modified > site_content_modified.into()
                         }
                     }

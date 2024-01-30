@@ -77,7 +77,7 @@ pub async fn site_sign(site: &mut Site, private_key: String) -> Result<(), Error
         info!("No changes to sign");
     } else {
         let content = {
-            let mut content = site.content(None).unwrap();
+            let mut content = site.content(None).unwrap().clone();
             let mut files = content.files;
             for (inner_path, file) in changes {
                 if files.insert(inner_path, file).is_none() {
@@ -145,7 +145,7 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
     } else {
         site.load_content().await?;
         let content = site.content(None).unwrap();
-        let files = content.files;
+        let files = &content.files;
         let files_res = files.keys().any(|path| path == &inner_path);
         let includes_res = content.includes.keys().any(|path| path == &inner_path);
         let users_res = content
@@ -199,7 +199,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
 
 pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
-    let modified = site.content(None).unwrap().modified;
+    let modified = &site.content(None).unwrap().modified;
     info!("{:?}", modified);
     let changes = site.fetch_changes(1421043090).await?;
     info!("{:#?}", changes);

@@ -84,7 +84,7 @@ impl Handler<SiteAnnounce> for SitesController {
     type Result = ();
 
     fn handle(&mut self, msg: SiteAnnounce, _ctx: &mut Self::Context) -> Self::Result {
-        let (_, site) = self.get(msg.address.clone()).unwrap();
+        let (_, site) = self.get(&msg.address).unwrap();
         site.do_send(msg)
     }
 }

@@ -28,7 +28,7 @@ use crate::{
 impl Site {
     pub async fn create(&mut self, addr_idx: u32, private_key: &str) -> Result<(), Error> {
         let mut content = Content::create(self.address(), addr_idx);
-        content.zeronet_version = ENV.version.clone();
+        content.meta.zeronet_version = Some(ENV.version.clone());
         content.signs_required = 1;
         content.signers_sign =
             zeronet_cryptography::sign(format!("1:{}", self.address()), private_key)?;
@@ -71,7 +71,7 @@ impl Site {
                 let message = Protocol::new(peer.connection_mut().unwrap())
                     .get_file(
                         self.address(),
-                        inner_path.clone(),
+                        &inner_path,
                         file_size,
                         downloaded,
                         Some(def_read_bytes),
@@ -101,7 +101,7 @@ impl Site {
             Ok(bytes)
         } else {
             let message = Protocol::new(peer.connection_mut().unwrap())
-                .get_file(self.address(), inner_path.clone(), file_size, 0, None)
+                .get_file(self.address(), &inner_path, file_size, 0, None)
                 .await;
             if let Err(e) = &message {
                 let err = format!(
@@ -202,7 +202,8 @@ impl Site {
     }
 
     async fn download_site_files(&self) -> Result<(), Error> {
-        let files = self.content(None).unwrap().files;
+        let content = self.content(None).unwrap();
+        let files = content.files.clone();
         let mut tasks = Vec::new();
         let mut inner_paths = Vec::new();
         for (inner_path, file) in files {
@@ -210,10 +211,10 @@ impl Site {
             let task = self.download_file(inner_path, Some(file), None);
             tasks.push(task);
         }
-        let includes = self.content(None).unwrap().includes;
+        let includes = &content.includes;
         for (inner_path, _file) in includes {
             inner_paths.push(inner_path.clone());
-            let task = self.download_file(inner_path, None, None);
+            let task = self.download_file(inner_path.clone(), None, None);
             tasks.push(task);
         }
         //TODO!: Other client may not have an up-to-date site files
@@ -248,7 +249,7 @@ impl Site {
         let mut files = vec![];
         content_res.iter_mut().for_each(|content| {
             let content = content.as_ref().unwrap();
-            let path = Path::new(&content.inner_path);
+            let path = Path::new(&content.meta.inner_path);
             if let Some(parent) = path.parent() {
                 let files_inner = content.files.clone();
                 for (path, file) in files_inner {
@@ -297,7 +298,7 @@ impl Site {
             }
             let content = self.content(None).unwrap();
             //TODO! Verify inner content also
-            let verified = content.verify(self.address());
+            let verified = content.verify(&self.address());
             if !verified {
                 Err(Error::Err(format!(
                     "Content verification failed for {}",
@@ -311,13 +312,13 @@ impl Site {
 
     pub async fn check_site_integrity(&self) -> Result<Vec<(String, zerucontent::File)>, Error> {
         let content = self.content(None).unwrap();
-        let files = content.files;
+        let files = &content.files;
         let mut tasks = Vec::new();
         for (inner_path, file) in files {
-            let hash = file.sha512.clone();
+            let hash = &file.sha512;
             let (site_path, inner_path) = if !PATH_PROVIDER_PLUGINS.read().unwrap().is_empty() {
                 let path = get_storage_path().into();
-                (path, hash.clone())
+                (path, hash)
             } else {
                 (self.site_path(), inner_path)
             };
@@ -342,7 +343,7 @@ impl Site {
                     if *v {
                         None
                     } else {
-                        Some((i.clone(), h.clone()))
+                        Some((i.to_string(), h.clone()))
                     }
                 } else {
                     unreachable!()
@@ -381,10 +382,10 @@ impl Site {
     }
 
     pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
-        let addr = self.address().clone();
+        let addr = self.address();
         let mut peer = self.peers.values().next().unwrap().clone();
         let res = Protocol::new((peer.connection_mut()).unwrap())
-            .pex(addr.clone())
+            .pex(addr)
             .await?
             .peers
             .iter()
@@ -397,15 +398,15 @@ impl Site {
     }
 
     pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
-        let addr = self.address();
+        let addr = self.address().to_string();
         let path = self.site_path().join(inner_path);
-        let modified = self.content(None).unwrap().modified;
+        let modified = (&self.content(None).unwrap().modified).clone();
         let peer = self.peers.values_mut().next().unwrap();
         let content = fs::read(path).await.unwrap();
         let res = Protocol::new(peer.connection_mut().unwrap())
             .update(
-                addr,
-                inner_path.to_owned(),
+                &addr,
+                inner_path,
                 ByteBuf::from(content),
                 diff.unwrap_or_default(),
                 modified.into(),
@@ -498,7 +499,7 @@ impl SiteIO for Site {
         remove_file(file_path).await?;
         let file_path = ENV.data_path.join("sites.json");
         let mut file = File::create(&file_path).await?;
-        let mut sites: HashMap<String, serde_json::Value> = serde_json::from_str(&content)?;
+        let mut sites: HashMap<&str, serde_json::Value> = serde_json::from_str(&content)?;
         sites.insert(self.address(), serde_json::to_value(storage)?);
         let bytes = serde_json::to_vec_pretty(&sites)?;
         let len = file.write(&bytes).await?;

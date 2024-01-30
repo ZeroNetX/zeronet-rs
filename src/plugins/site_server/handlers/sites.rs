@@ -36,7 +36,7 @@ impl Handler<Lookup> for SitesController {
 
     fn handle(&mut self, msg: Lookup, _ctx: &mut Context<Self>) -> Self::Result {
         match msg {
-            Lookup::Address(address) => self.get(address),
+            Lookup::Address(address) => self.get(&address),
             Lookup::Key(s) => self.get_by_key(s),
         }
     }
@@ -65,7 +65,7 @@ impl Handler<AddWrapperKey> for SitesController {
         // let site = self.get_site(&msg.address.address).unwrap();
         self.nonce
             .insert(msg.wrapper_key.clone(), msg.address.clone());
-        let (_, addr) = self.get(msg.address.clone()).unwrap();
+        let (_, addr) = self.get(&msg.address).unwrap();
         self.sites_addr.insert(msg.address.clone(), addr);
         // let res = block_on(site.send(AddWrapperKey {
         //     address: msg.address,
@@ -173,9 +173,9 @@ impl Handler<SiteContent> for Site {
 
     fn handle(&mut self, msg: SiteContent, _ctx: &mut Context<Self>) -> Self::Result {
         match msg.0 {
-            Some(inner_path) => Ok(self.content(Some(&inner_path)).unwrap()),
+            Some(inner_path) => Ok(self.content(Some(&inner_path)).unwrap().clone()),
             None => match self.content(None) {
-                Some(content) => Ok(content),
+                Some(content) => Ok(content.clone()),
                 None => Err(Error::MissingError),
             },
         }
@@ -194,7 +194,7 @@ impl Handler<SiteInfoRequest> for Site {
         if !self.content_exists() {
             let _ = self.load_content();
         }
-        let mut content = self.content(None).unwrap_or_default().raw();
+        let mut content = self.content(None).unwrap().raw();
         if let Value::Object(map) = &mut content {
             for key in &["sign", "signs", "signers_sign"] {
                 if map.contains_key(*key) {
@@ -223,7 +223,7 @@ impl Handler<SiteInfoRequest> for Site {
 
         Ok(SiteInfo {
             address_hash: self.addr().get_address_hash().to_hex(),
-            address: self.address(),
+            address: self.address().into(),
             address_short: self.addr().get_address_short(),
             settings: storage.clone(),
             content_updated: 0f64, //TODO: replace content last updated time

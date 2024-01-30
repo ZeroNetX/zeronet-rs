@@ -117,12 +117,12 @@ impl Site {
         })
     }
 
-    pub fn addr(&self) -> Addr {
-        self.address.clone()
+    pub fn addr(&self) -> &Addr {
+        &self.address
     }
 
-    pub fn address(&self) -> String {
-        self.address.address.clone()
+    pub fn address(&self) -> &str {
+        &self.address.address
     }
 
     pub fn content_exists(&self) -> bool {
@@ -133,10 +133,9 @@ impl Site {
         self.content.contains_key(inner_path)
     }
 
-    pub fn content(&self, inner_path: Option<&str>) -> Option<Content> {
+    pub fn content(&self, inner_path: Option<&str>) -> Option<&Content> {
         self.content
             .get(inner_path.unwrap_or("content.json"))
-            .cloned()
     }
 
     pub fn content_mut(&mut self, inner_path: Option<&str>) -> Option<&mut Content> {

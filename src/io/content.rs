@@ -49,7 +49,7 @@ impl ContentMod for Site {
     ) -> Result<(), Error> {
         let content = self.content_mut(inner_path).unwrap();
         content.modified = current_unix_epoch().into();
-        let sign = content.sign(private_key.to_string());
+        let sign = content.sign(private_key);
         let address = zeronet_cryptography::privkey_to_pubkey(private_key)?;
         content.signs.insert(address, sign);
         Ok(())
@@ -62,7 +62,7 @@ impl ContentMod for Site {
             .keys()
             .into_iter()
             .find_map(|key| {
-                if content.verify(key.to_string()) {
+                if content.verify(key) {
                     Some(true)
                 } else {
                     None
@@ -196,7 +196,7 @@ impl Site {
                     }
                     if content.user_contents.is_some() {
                         if let Value::Object(mut user_contents) =
-                            json!(content.user_contents.unwrap())
+                            json!(content.user_contents.as_ref().unwrap())
                         {
                             map.append(&mut user_contents);
                         } else {

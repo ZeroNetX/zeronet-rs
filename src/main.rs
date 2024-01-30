@@ -56,7 +56,7 @@ async fn main() -> Result<(), Error> {
                             let mut protocol = net::Protocol::new(conn);
                             use decentnet_protocol::{interface::RequestImpl, Either};
                             let res = protocol
-                                .get_file(site_addr.into(), "content.json".into(), 0, 0, Some(1))
+                                .get_file(site_addr, "content.json", 0, 0, Some(1))
                                 .await;
                             if let Ok(res) = res {
                                 match res {
@@ -90,7 +90,7 @@ async fn main() -> Result<(), Error> {
                 "siteSign" => {
                     let private_key = if let Some(private_key) = site_args.next() {
                         private_key.to_owned()
-                    } else if let Some(key) = user.sites.get(&site.address()) {
+                    } else if let Some(key) = user.sites.get(site.address()) {
                         if let Some(key) = key.get_privkey() {
                             key
                         } else {
