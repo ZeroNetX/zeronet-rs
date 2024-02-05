@@ -1,5 +1,9 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
+use itertools::Itertools;
 use log::*;
 use serde_json::{json, Map, Value};
 use tokio::{
@@ -98,55 +102,65 @@ impl ContentMod for Site {
 }
 
 impl Site {
+    pub fn get_valid_signers(&self, inner_path: &str) -> impl IntoIterator<Item = String> {
+        let mut valid_signers = HashSet::new();
+        if inner_path == "content.json" {
+            if let Some(content) = self.content(Some(inner_path)) {
+                valid_signers.extend(content.signers.clone());
+            }
+        } else {
+            if let Some(rules) = self.get_file_rules(inner_path) {
+                if let Some(signers) = rules.get("signers") {
+                    if let Value::String(signers) = signers {
+                        valid_signers.insert(signers.clone());
+                    }
+                }
+            }
+        }
+        valid_signers.insert(self.address().to_string());
+        valid_signers
+    }
+
     /// Get File Rules for Given inner_path
     /// If inner_path doesn't end with "content.json"
     pub fn get_file_rules(&self, inner_path: &str) -> Option<Value> {
         let mut path = String::new();
         if !inner_path.ends_with("content.json") {
-            let file_info = self.get_file_info(inner_path, false);
-            if let Some(file_info) = file_info {
-                let inner_path = &file_info["inner_path"].as_str();
-                if let Some(inner_path) = inner_path {
-                    path = inner_path.to_string();
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            };
+            let file_info = self.get_file_info(inner_path, false)?;
+            let inner_path = &file_info["content_inner_path"].as_str()?;
+            path = inner_path.to_string();
         };
         let inner_path = if path.is_empty() { inner_path } else { &path };
-        if inner_path.ends_with("content.json") {
-            if let Some(content) = self.content(Some(inner_path)) {
-                if inner_path == "content.json" {
-                    let mut rules = HashMap::<_, Value>::new();
-                    let value = json!(content.signs.keys().cloned().collect::<String>());
-                    rules.insert("signers".to_string(), value);
-                    return Some(json!(rules));
-                } else {
-                    let mut dirs = inner_path.split('/').collect::<Vec<_>>();
-                    let mut inner_path_parts = vec![];
-                    inner_path_parts.insert(0, dirs.pop().unwrap());
-                    inner_path_parts.insert(0, dirs.pop().unwrap());
-                    loop {
-                        let content_inner_path = dirs.join("/");
-                        if let Some(parent_content) = self.content(Some(&content_inner_path)) {
-                            if !parent_content.includes.is_empty() {
-                                let includes = parent_content
-                                    .includes
-                                    .get(&inner_path_parts.join("/"))
-                                    .unwrap();
-                                return Some(json!(includes));
-                            } else if parent_content.user_contents.is_some() {
-                                error!("Handle User Content Rules for {}", content_inner_path);
-                                return None;
-                            }
-                        } else if dirs.is_empty() {
-                            break;
-                        } else {
-                            inner_path_parts.insert(0, dirs.pop().unwrap());
-                        }
+        if inner_path == "content.json" {
+            let mut rules = HashMap::<_, Value>::new();
+            let value = json!(self
+                .get_valid_signers(inner_path)
+                .into_iter()
+                .collect::<Vec<String>>());
+            rules.insert("signers".to_string(), value);
+            return Some(json!(rules));
+        } else {
+            let mut dirs = inner_path.split('/').collect::<Vec<_>>();
+            let mut inner_path_parts = vec![];
+            inner_path_parts.insert(0, dirs.pop().unwrap());
+            inner_path_parts.insert(0, dirs.pop().unwrap());
+            loop {
+                let content_inner_path = dirs.join("/");
+                if let Some(parent_content) = self.content(Some(&content_inner_path)) {
+                    if !parent_content.includes.is_empty() {
+                        let includes = parent_content
+                            .includes
+                            .get(&inner_path_parts.join("/"))
+                            .unwrap();
+                        return Some(json!(includes));
+                    } else if parent_content.user_contents.is_some() {
+                        error!("Handle User Content Rules for {}", content_inner_path);
+                        return None;
                     }
+                } else if dirs.is_empty() {
+                    break;
+                } else {
+                    inner_path_parts.insert(0, dirs.pop().unwrap());
                 }
             }
         }
