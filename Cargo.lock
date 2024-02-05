@@ -2989,7 +2989,7 @@ dependencies = [
 [[package]]
 name = "zerucontent"
 version = "0.1.0"
-source = "git+https://github.com/decentnetwork/zerucontent.git?branch=decentnet#a061b02c63e1dcbefba61e9637daf2bf5e49bcfc"
+source = "git+https://github.com/decentnetwork/zerucontent.git?branch=decentnet#125637c087039817846957b913c6a8dd18777d53"
 dependencies = [
  "json_filter_sorted",
  "serde",

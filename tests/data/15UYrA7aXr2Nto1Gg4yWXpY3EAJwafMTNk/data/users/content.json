@@ -1,0 +1,39 @@
+{
+ "address": "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk",
+ "files": {},
+ "ignore": ".*",
+ "inner_path": "data/users/content.json",
+ "modified": 1700868291,
+ "signs": {"15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk": "HJ4UK+3+M8k/32edMXu5Kae/97QGjil1bjePOK4GCoTcfjcXA5hiqauTyXzHW13Qg6sDC6vVkiAEDBI1f+sYeXY="},
+ "user_contents": {
+  "archived": {
+   "11iWzeKwNtJTqNSv1HUXKJV9afrDVoFsk": 1686631468
+  },
+  "cert_signers": {
+   "cryptoid.bit": ["18143WPue3rQykNaopx5KJKzYmaYhCjqhv"],
+   "kxoid.bit": ["12F5SvxoPR128aiudte78h8pY7mobroG6V","18Mt3CWBpiqJBLsPSu5JxB4B9MeaSwhyJ"],
+   "zeroid.bit": ["1iD5ZQJMNXu43w1qLB8sfdHVKppVMduGz"]
+  },
+  "content_inner_path": "data/users/content.json",
+  "optional": null,
+  "permission_rules": {
+   ".*@cryptoid.bit": {
+    "files_allowed": "data.json",
+    "max_size": 10000
+   },
+   ".*@zeroid.bit": {
+    "files_allowed": "data.json",
+    "max_size": 100000
+   }
+  },
+  "permissions": {
+   "bad@zeroid.bit": false,
+   "leftside@zeroid.bit": {"max_size": 1000000},
+   "pramukesh@zeroid.bit": {"max_size": 1000000},
+   "reload@zeroid.bit": {"max_size": 500000},
+   "ssdifnskdjfnsdjk@zeroid.bit": {"max_size": 500000},
+   "styromaniac@zeroid.bit": {"max_size": 1000000}
+  },
+  "relative_path": "content.json"
+ }
+}

@@ -1,0 +1,215 @@
+{
+ "address": "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk",
+ "address_index": 6993755,
+ "background-color": "#F5F5F5",
+ "background-color-dark": "#2e2b32",
+ "clone_root": "",
+ "cloneable": true,
+ "description": "Decentralized Forum from ZeroNetX Team.",
+ "domain": "ThreadIt.bit",
+ "files": {
+  "LICENSE": {
+   "sha512": "d281feecb7d1218e1aea8269f288fcd63385da1a130681fadae77262637cb65f",
+   "size": 18027
+  },
+  "README.md": {
+   "sha512": "d289c568c0bc2c2e68d96808ecadba659e5e55924adec37ec9b299efc5a41550",
+   "size": 171
+  },
+  "css/all.css": {
+   "sha512": "2e1402568cfae4de75c76978d2273d79ba6ad7d84deee08a978bff4f199007b2",
+   "size": 47615
+  },
+  "data-default/users/content-default.json": {
+   "sha512": "88554e1ae105faac25bc94e90657e9152148851870bf6b11c75a40fae61a33c6",
+   "size": 771
+  },
+  "dbschema.json": {
+   "sha512": "0f20c54acc050de751ce1bc7f9bf40f52be8a853fd0f0fcd0c8c125d9a1ba9de",
+   "size": 3172
+  },
+  "filters/sites-miners.json": {
+   "sha512": "0dabf88841ee680a9f6353e2c3ec47529932bf6ce641c77bdcf933e542270be9",
+   "size": 2350
+  },
+  "filters/sites-porn.json": {
+   "sha512": "0785807e526e6770c5f2f88ac52f2cc99237497ab1c2516dd1ed7130edb23b2e",
+   "size": 16618
+  },
+  "filters/users-porn.json": {
+   "sha512": "d516d4c934fdb05937518c56643e4d7b1e595d8d4bf450152a34670fdb9c8d76",
+   "size": 4172
+  },
+  "filters/users-spamlist.json": {
+   "sha512": "5c95da72f816712fe1fa34599576a19bc4486cac6f5335aee6a68dc36e64a6c5",
+   "size": 79050
+  },
+  "fonts/roboto/LICENSE.txt": {
+   "sha512": "4cc5a12bfe984c0a50bf7943e2d70a948d520ef423677c77629707aace3a95aa",
+   "size": 11560
+  },
+  "fonts/roboto/Roboto-Bold.ttf": {
+   "sha512": "cd3638f857f16bb0745ce18077388be6a5f1762e7a310227e45971bb73cb4faf",
+   "size": 170348
+  },
+  "fonts/roboto/Roboto-BoldItalic.ttf": {
+   "sha512": "80d77fb94f5e73497d36ba10387e5b8e1b204de4199a659b3a655cd61038fdcc",
+   "size": 174520
+  },
+  "fonts/roboto/Roboto-Italic.ttf": {
+   "sha512": "fcb01ae1e7d911106c79c588a230ace4bfc6b01c3cdf6784d9e26f5dd96ef4d1",
+   "size": 173516
+  },
+  "fonts/roboto/Roboto-Medium.ttf": {
+   "sha512": "024519d895d9b0296513523250a6044779567f44e9e384926472417c4a1e2d4a",
+   "size": 171656
+  },
+  "fonts/roboto/Roboto-MediumItalic.ttf": {
+   "sha512": "0d4055123e220ee7e0e5215d6cf00eda586b36a37d7b056ab661ca4c83223c97",
+   "size": 176428
+  },
+  "fonts/roboto/Roboto-Regular.ttf": {
+   "sha512": "e4b50f7eb7e96fe01ac44160f2ab88044fdcfc3e295f1c730f0a82de7149dcf9",
+   "size": 171272
+  },
+  "img/blockstorage.png": {
+   "sha512": "f586d7de71c5335338e778a287145c01bc32fa4c64b714c1dfda6444590ec009",
+   "size": 66170
+  },
+  "img/edit.png": {
+   "sha512": "60ba4297e205b038bf7852ead2b88f9373cd8848408bb258dbcebb086d43f056",
+   "size": 237
+  },
+  "img/loading.gif": {
+   "sha512": "8a42b98962faea74618113166886be488c09dad10ca47fe97005edc5fb40cc00",
+   "size": 723
+  },
+  "img/shield.png": {
+   "sha512": "1398a2230d26cb85f5809a4b7d120da35d439f224d4fb2610c54f20f4977a7c9",
+   "size": 1927
+  },
+  "img/topic-chat.png": {
+   "sha512": "f41719987d5f5d797591857648c0d4cf33a11d7f1a42428a2456c28e0957c88e",
+   "size": 238
+  },
+  "img/topic-group.png": {
+   "sha512": "1f9305544e3350d62f0c76caf5202e256848206d18485e0451dc050201f86a7b",
+   "size": 310
+  },
+  "img/zeronet.png": {
+   "sha512": "faae9c00942a24e41311640e58bb97521f9ac5514919af65f0428ae3757ac594",
+   "size": 22365
+  },
+  "index.html": {
+   "sha512": "24219fd17bdbaf5a711de88b6cda166ab58b2d1f01318dfc073d7c34c3ef8656",
+   "size": 12376
+  },
+  "js/all.js": {
+   "sha512": "21e3931257f3dda19fc809f48b0509ea75b4e02a613ebeeea63202201ad5f2c4",
+   "size": 306928
+  },
+  "languages/da.json": {
+   "sha512": "822c90a229d428db7ad2a9e421bfb80f57bae8b58cb6fd45df407b1aee0fbd5f",
+   "size": 1178
+  },
+  "languages/fa.json": {
+   "sha512": "c4453e612fa0462b5093d42649e7641ad7be9490340ef84d65d661aafeb9f51f",
+   "size": 1612
+  },
+  "languages/fr.json": {
+   "sha512": "43be0c5d823e5e3863e710ddc386ee6be596118472c47ad6150372e9d9e61391",
+   "size": 1193
+  },
+  "languages/hu.json": {
+   "sha512": "844c4036c6f8874d7ea82dd68e6337051099cd4674bed1ba647a0607ac878981",
+   "size": 1235
+  },
+  "languages/it.json": {
+   "sha512": "79df61d1baa95dc9a1095296897cebfe1db0608effd4c0f7ae398b5d5dc702ab",
+   "size": 1224
+  },
+  "languages/pl.json": {
+   "sha512": "eb9d7572cf4c76ed71f1c4c15a766128203b574008ae5bfe6a12caefdbc033a6",
+   "size": 1623
+  },
+  "languages/sk.json": {
+   "sha512": "ae9dee9ca7d65cc3fa74bec8d020b8c9b0f381f1357fbcaabb6323437a545d17",
+   "size": 1330
+  },
+  "languages/uk.json": {
+   "sha512": "0fb443d489b5dfc808cc565b4e0247dad1f4ed1ad72652bac82f4794ff4ec816",
+   "size": 1564
+  },
+  "languages/zh-tw.json": {
+   "sha512": "e0d65cdd6c244d85af64e37d8c3cfd3afceb6fef5217d0dc65bd5dedc9d8461b",
+   "size": 1811
+  },
+  "languages/zh.json": {
+   "sha512": "6af6e63c4c15c860276024413fc4baf9fb74ca3d4f209dfc8860cdf7c8a07158",
+   "size": 1813
+  },
+  "native.decent": {
+   "sha512": "e9185ddfa200ff25c29c25e4e0785185439d02f01dda29fc755a4c53afa38565",
+   "size": 376
+  },
+  "translations/language-codes.json": {
+   "sha512": "4a5adf9cbfc575cc2895d7f0c5679e88e42c709c3f1173fbfb6be9a06b3f8ff6",
+   "size": 155
+  },
+  "translations/strings-cs.json": {
+   "sha512": "e30a34dc8bb9e284c7abfa57efc35f19de8e1ed0e481f9336ca1688f413b0d6c",
+   "size": 10951
+  },
+  "translations/strings-emoji.json": {
+   "sha512": "ab18b859e031a8538461c7f5f82aad9734cd7f988eb6cad8cc0d943b155fb521",
+   "size": 9314
+  },
+  "translations/strings-en.json": {
+   "sha512": "d5d674cba126deffac5034b35f5970b795aa23669172e7d7e6d1d78597c685e7",
+   "size": 10720
+  },
+  "translations/strings-es.json": {
+   "sha512": "e8ac67f1e17ca6e2425d1c431ffc0c4c51016c09b8bc0963dd4311ab6b71391d",
+   "size": 13083
+  },
+  "translations/strings-fa.json": {
+   "sha512": "f15ef6beb5d8ef52d7413392e0b3944935a47c18d01459c24976184be363223c",
+   "size": 17775
+  },
+  "translations/strings-it.json": {
+   "sha512": "f7a8c43795f4ff99a56abd7f49a1ef481de69ee2fa6720d3711b06b72a6d9ce5",
+   "size": 12337
+  },
+  "translations/strings-zh.json": {
+   "sha512": "ac040743d6d4b6ad3d2c472c9cbb0fc96d1f8578dc9a28ba5ffe343463a161d4",
+   "size": 10963
+  }
+ },
+ "ignore": "((js|css)/(?!all.(js|css))|data/users/.*db|data/users/.*/.*|data/archived|.*.py)",
+ "includes": {
+  "data/users/content.json": {
+   "signers": [],
+   "signers_required": 1
+  }
+ },
+ "inner_path": "content.json",
+ "modified": 1700868296,
+ "postmessage_nonce_security": true,
+ "settings": {
+  "admin": "pramukesh",
+  "admin_href": "http://127.0.0.1:43110/Mail.ZeroNetX.bit/?to=pramukesh",
+  "administrators": ["12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe","1AmeB7f5wBfJm6iR7MRZfFh65xkJzaVCX7"],
+  "allow_images": true,
+  "force_signing_all_content_with_master_key": false,
+  "new_topic_notice": "Only Post Content in Relevent Forums, Use <a href=\"/15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk/?Topics:1627556797_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe\">Bug Report</a>/<a href=\"/15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk/?Topics:1627666223_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe\">Feature Request</a> Threads to Report a Bug/Make Feature Requests. Don't Post Spam Here.",
+  "topic_sticky_uris": ["1578582286_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe","1627666223_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe","1627556797_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe","1627666280_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe","1627557065_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe"],
+  "topmenu_links": "<a href=\"https://github.com/ZeroNetX/ZeroNet/\">ZeroNetX(Github)</a> | <a href=\"/15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk/?Topics:1627556797_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe\">Report Bugs Here</a> | <a href=\"/15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk/?Topics:1627666223_12sCaEUFqE6g3JrDqmEA8pn9yrgxwkZQMe\">Request a Feature</a> | <b>Donate to Keep this Project Alive : </b> <a href=\"bitcoin:1ZeroNetyV5mKY9JF1gsm82TuBXHpfdLX\">Bitcoin</a> : <a href=\"https://paypal.me/PramUkesh\">PayPal</a> : <a href=\"https://liberapay.com/PramUkesh\">LiberaPay</a> <br> <b>Forums : </b> <a href=\"/19Q64E6Gt67e96skgYSJejYjFRrJYyqP2t\">\u010ce\u0161tina</a> : <a href=\"/1J7duUJ7NBvPazCbA7EDK4xfKaXNV2EQdK\">Dansk</a> : <a href=\"/165eqHdoQfyf7CVGqtVCGNDvMBZhwVSJBL\">Espa\u00f1ol</a> : <a href=\"/1Vp5LH4wegCaqeB72yMw2jgNdVm4aR7ET\">Fran\u00e7ais</a> : <a href=\"/1RuZntipLvXcLKFEjT6Fr7ZA3GuywYfr5\">Ru-ZeroTalk</a> : <a href=\"/1E4XLtKC59YV8V9JQ4AkeqSvqECSvrUtnv\">Deutsch</a> : <a href=\"/1NPAmKPbZU33tAStGqygs8FD2bRq7zYoHb\">Magyar</a> : <a href=\"/1MxvDmGn5fipn7cyjXAMyMZPH3SyhwfZkw\">Italiano</a> : <a href=\"/1F7TpbhQiKbERqvuYm92yg7uapy5Qb7qrD\">ZeroTalkItalia++</a> : <a href=\"/1GRYnz73jSXoMMZNU3nSmbCFA3twuitcoo\">Polski</a> : <a href=\"/1LULE6frq3kw2vbhe4i6ArUTo4YT99Czbj\">Portugu\u00eas</a> : <a href=\"/1DKi1k1V3WAkKwxKqySDmknVNTccBmJ7Ku\">Qu\u00e9bec</a> : <a href=\"/1RuZntipLvXcLKFEjT6Fr7ZA3GuywYfr5\">\u0420\u0443\u0441\u0441\u043a\u0438\u0439</a> : <a href=\"/193psz3yGj7EH39nyKb4A2KKBXEHT49Csf\">\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430</a> : <a href=\"/16J4mEgR5aqerfzGy2WctNV3onPQUgF2E5\">\ud55c\uad6d\uc5b4</a> : <a href=\"/1Am2bDQhptVMxaLtKxbHCorvL1rjXtqdFH\">\u65e5\u672c\u8a9e</a> : <a href=\"/NewGFWTalk.bit\">\u4e2d\u6587\u8bba\u575b</a> : <a href=\"/1PyJqA1V8wFemvEJ2FeJ8CmVnEtR2nngNp\">\u0641\u0627\u0631\u0633\u06cc</a>"
+ },
+ "signers_sign": "HKk429QFYuVx8BgthzTZQhxAiKcstoefKgVwZaKT5Z9aVRrYJRshojl78vWCPNUUIyYIXMMJzrL76Hbs6u7txXg=",
+ "signs": {"15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk": "G5PJbaA7V1C00yzjQdmdT5AVyYQQat2s0EZP6wAB0kIoGHlJvCrkLYlvMyh2++Te4PdYLkS+W4vW6FYRqQ4kKgM="},
+ "signs_required": 1,
+ "title": "Threadit",
+ "translate": ["index.html","js/all.js"],
+ "viewport": "width=device-width, initial-scale=0.8",
+ "zeronet_version": "0.8.5"
+}
