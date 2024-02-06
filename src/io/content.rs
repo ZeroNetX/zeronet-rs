@@ -5,12 +5,13 @@ use std::{
 
 use itertools::Itertools;
 use log::*;
+use regex::Regex;
 use serde_json::{json, Map, Value};
 use tokio::{
     fs::{self, File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
 };
-use zerucontent::Content;
+use zerucontent::{user_contents::PermissionRulesType, Content};
 
 use crate::{
     core::{error::*, io::*, site::*},
@@ -154,8 +155,10 @@ impl Site {
                             .unwrap();
                         return Some(json!(includes));
                     } else if parent_content.user_contents.is_some() {
-                        error!("Handle User Content Rules for {}", content_inner_path);
-                        return None;
+                        let content = self.content(Some(inner_path))?;
+                        let user_content_rules =
+                            self.get_user_content_rules(&parent_content, &inner_path, &content);
+                        return Some(json!(user_content_rules));
                     }
                 } else if dirs.is_empty() {
                     break;
@@ -165,6 +168,120 @@ impl Site {
             }
         }
         None
+    }
+
+    pub fn get_user_content_rules(
+        &self,
+        parent_content: &Content,
+        inner_path: &str,
+        content: &Content,
+    ) -> Map<String, Value> {
+        let user_contents = parent_content.user_contents.as_ref().unwrap();
+        let user_address = if !parent_content.meta.inner_path.is_empty() {
+            let parent_content_dir = parent_content
+                .meta
+                .inner_path
+                .clone()
+                .replace("content.json", "");
+            let re = Regex::new(r"([A-Za-z0-9]*?)/").unwrap();
+            re.captures(&inner_path[parent_content_dir.len()..])
+                .unwrap()[1]
+                .to_string()
+        } else {
+            let re = Regex::new(r".*/([A-Za-z0-9]*?)/.*?$").unwrap();
+            re.captures(inner_path).unwrap()[1].to_string()
+        };
+
+        let (user_urn, cert_user_id) = match &content.cert {
+            Some(cert) => {
+                let user_urn = format!("{}/{}", cert.auth_type, cert.user_id); // web/nofish@zeroid.bit
+                let cert_user_id = cert.user_id.to_string();
+                (user_urn, cert_user_id)
+            }
+            None => ("n-a/n-a".to_string(), "n-a".to_string()),
+        };
+
+        let mut rules = Map::new();
+        let r = if user_contents.permissions.contains_key(&user_address) {
+            user_contents
+                .permissions
+                .get(&user_address)
+                .unwrap()
+                .clone() // Default rules based on address
+        } else {
+            user_contents
+                .permissions
+                .get(&cert_user_id)
+                .unwrap()
+                .clone() // Default rules based on username
+        };
+        let mut banned = false;
+        if let PermissionRulesType::None(false) = r {
+            banned = true;
+        } else if let PermissionRulesType::Rules(r) = r {
+            banned = false;
+            rules.extend(json!(r).as_object().unwrap().clone());
+        }
+
+        for (permission_pattern, permission_rules) in &user_contents.permission_rules {
+            if !Regex::new(&permission_pattern).unwrap().is_match(&user_urn) {
+                continue;
+            }
+            let permission_rules = json!(permission_rules);
+            let permission_rules = permission_rules.as_object().unwrap();
+            for (key, val) in permission_rules.iter() {
+                match rules.get(key) {
+                    Some(value) => match (val, value) {
+                        (Value::Number(val), Value::Number(value)) => {
+                            if val.as_u64().unwrap() > value.as_u64().unwrap() {
+                                rules.insert(key.to_string(), json!(val.clone()));
+                            }
+                        }
+                        (Value::String(val), Value::String(value)) => {
+                            if val.len() > value.len() {
+                                rules.insert(key.to_string(), json!(val.clone()));
+                            }
+                        }
+                        (Value::Array(val), Value::Array(value)) => {
+                            let mut new_val = value.clone();
+                            new_val.extend(val.clone());
+                            rules.insert(key.to_string(), json!(new_val));
+                        }
+                        _ => {}
+                    },
+                    None => {
+                        rules.insert(key.to_string(), val.clone());
+                    }
+                }
+            }
+        }
+
+        // Accepted cert signers
+        rules.insert(
+            "cert_signers".to_string(),
+            json!(user_contents.cert_signers),
+        );
+        rules.insert(
+            "cert_signers_pattern".to_string(),
+            json!(user_contents.cert_signers_pattern),
+        );
+
+        if !rules.contains_key("signers") {
+            rules.insert("signers".to_string(), json!(Vec::<String>::new()));
+        }
+
+        if !banned {
+            if let Some(signers) = rules.get_mut("signers") {
+                signers
+                    .as_array_mut()
+                    .unwrap()
+                    .push(json!(user_address.clone())); // Add user as valid signer
+            }
+        }
+        rules.insert("user_address".to_string(), json!(user_address));
+        rules.insert("includes_allowed".to_string(), json!(false));
+
+        rules
     }
 
     /// Get File Info for given inner_path
