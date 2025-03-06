@@ -48,6 +48,51 @@ You may need to give exec permission on Linux/Mac OS
 
 and rerun the cmd
 
+## Building ZeroNetX
+
+### Repository
+
+Clone the [ZNX repository](https://github.com/ZeroNetX/zeronet-rs).
+
+### Dependencies
+
+- Install [rustup](https://www.rust-lang.org/tools/install)
+
+-  > cd zeronet-rs
+
+- Windows : Install nightly rust toolchain using
+  > rustup override set nightly-2024-01-24-x86_64-pc-windows-msvc
+
+- `rustc --version` info for other platforms
+
+  > rustc 1.77.0-nightly (5d3d3479d 2024-01-23)
+
+Once you have the dependencies installed, you can build ZNX using [Cargo](https://doc.rust-lang.org/cargo/).
+
+For a debug build:
+
+```sh
+cargo run
+```
+
+For a release build:
+
+```sh
+cargo run --release
+```
+
+And to run the tests:
+
+```sh
+cargo test
+```
+
+### Troubleshooting
+
+
+#### Cargo errors claiming that a dependency is using unstable features
+
+Try `cargo clean` and `cargo build`.
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcanewsin%2Fzeronet-rs?ref=badge_large)
