@@ -72,8 +72,8 @@ git = "https://github.com/decentnetwork/decentnet_protocol.git"
 features = ["full"]
 
 [dependencies.wit-bindgen-wasmer]
-git = "https://github.com/wasmerio/wit-bindgen.git"
-branch="wasmer"
+git = "https://github.com/wasmerio/wai.git"
+rev = "c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 
 [features]
 default = ["userio", "blockstorage"]

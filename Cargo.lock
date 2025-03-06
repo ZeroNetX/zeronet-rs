@@ -2825,7 +2825,7 @@ checksum = "c811ca4a8c853ef420abd8592ba53ddbbac90410fab6903b3e79972a631f7680"
 [[package]]
 name = "wit-bindgen-gen-core"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "anyhow",
  "wit-parser",
@@ -2834,7 +2834,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-gen-rust"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "heck",
  "wit-bindgen-gen-core",
@@ -2843,7 +2843,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-gen-wasmer"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "heck",
  "wit-bindgen-gen-core",
@@ -2853,7 +2853,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-wasmer"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -2866,7 +2866,7 @@ dependencies = [
 [[package]]
 name = "wit-bindgen-wasmer-impl"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "proc-macro2",
  "syn",
@@ -2877,7 +2877,7 @@ dependencies = [
 [[package]]
 name = "wit-parser"
 version = "0.1.0"
-source = "git+https://github.com/wasmerio/wit-bindgen.git?branch=wasmer#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
+source = "git+https://github.com/wasmerio/wai.git?rev=c04723063c7a5a7389660ca97f85ffd9bc9ef0b8#c04723063c7a5a7389660ca97f85ffd9bc9ef0b8"
 dependencies = [
  "anyhow",
  "id-arena",
