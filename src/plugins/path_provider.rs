@@ -38,7 +38,7 @@ pub fn get_file_path(block_id: &str) -> String {
         block_id,
     );
     if path.is_err() {
-        error!("Failed to get storage path");
+        error!("Failed to get file path");
     }
     path.unwrap()
 }
