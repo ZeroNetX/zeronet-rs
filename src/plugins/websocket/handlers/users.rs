@@ -97,7 +97,7 @@ fn extract_user_settings(settings: Value) -> Result<HashMap<String, Value>, Stri
     if let Value::Array(value) = settings {
         let content_map = value.first();
         if let Some(Value::Object(settings)) = content_map {
-            // #[allow(clippy::unnecessary_to_owned)]
+            #[allow(clippy::unnecessary_to_owned)]
             let settings = settings
                 .to_owned()
                 .into_iter()

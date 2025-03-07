@@ -50,7 +50,7 @@ pub fn handle_cert_add(ws: &mut ZeruWebsocket, command: &Command) -> Result<Mess
             let _ = ws.cmd(
                 "confirm",
                 json!([body, txt,]),
-                Some(Box::new(move |ws, cmd| cert_add_confirm(ws, cmd))),
+                Some(Box::new(cert_add_confirm)),
                 Some(command.params.clone()),
             );
             command.command()
@@ -154,14 +154,14 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
         let accepted_pattern_match = if let Some(accepted_pattern) = &accepted_pattern {
             let regex = regex::Regex::new(accepted_pattern);
             if let Ok(regex) = regex {
-                regex.is_match(&provider)
+                regex.is_match(provider)
             } else {
                 false
             }
         } else {
             false
         };
-        if accepted_providers.contains(&provider) || accept_any || accepted_pattern_match {
+        if accepted_providers.contains(provider) || accept_any || accepted_pattern_match {
             providers.push(vec![provider.clone(), title, "".to_string()]);
         } else {
             providers.push(vec![provider.clone(), title, "disabled".to_string()]);
@@ -515,7 +515,7 @@ pub fn handle_site_set_settings_value(ws: &ZeruWebsocket, cmd: &Command) -> Resu
     let key = params[0].as_str().unwrap();
     if key != "modified_files_notification" {
         return Err(Error {
-            error: format!("Can't change this key"),
+            error: "Can't change this key".to_string(),
         });
     }
     let res = block_on(ws.site_controller.send(SiteSetSettingsValueRequest {
@@ -539,14 +539,14 @@ fn extract_permission_params(params: &Value) -> Result<&str, Error> {
                 params.as_str()
             } else {
                 return Err(Error {
-                    error: format!("Invalid params"),
+                    error: "Invalid params".to_string(),
                 });
             }
         }
         Value::String(params) => params.as_str(),
         _ => {
             return Err(Error {
-                error: format!("Invalid params"),
+                error: "Invalid params".to_string(),
             });
         }
     };

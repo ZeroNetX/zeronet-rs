@@ -87,7 +87,7 @@ pub fn is_same_origin(req: &HttpRequest) -> bool {
 
 pub fn get_nonce(need_base_64: bool, length: usize) -> String {
     let mut bytes: [u8; 256] = [0; 256];
-    let mut rand = OsRng::default();
+    let mut rand = OsRng;
     rand.fill(&mut bytes);
     if need_base_64 {
         let rand_str = general_purpose::STANDARD

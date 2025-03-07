@@ -153,24 +153,22 @@ impl Handler<UserSettings> for UserController {
                 } else {
                     Some(user.settings.clone())
                 }
+            } else if msg.set {
+                let site = user.sites.get_mut(&msg.site_addr)?;
+                let setting = msg.settings.unwrap().values().next().unwrap().clone();
+                site.set_settings(json!(setting));
+                let _ = block_on(user.save());
+                None
             } else {
-                if msg.set {
-                    let site = user.sites.get_mut(&msg.site_addr)?;
-                    let setting = msg.settings.unwrap().values().next().unwrap().clone();
-                    site.set_settings(json!(setting));
-                    let _ = block_on(user.save());
-                    None
-                } else {
-                    let site = user.sites.get(&msg.site_addr).unwrap();
-                    if let Some(settings) = site.get_settings() {
-                        let mut map = HashMap::<String, Value>::new();
-                        for (k, v) in settings.as_object().unwrap_or(&Map::new()) {
-                            map.insert(k.to_owned(), v.clone());
-                        }
-                        Some(map)
-                    } else {
-                        Some(HashMap::new())
+                let site = user.sites.get(&msg.site_addr).unwrap();
+                if let Some(settings) = site.get_settings() {
+                    let mut map = HashMap::<String, Value>::new();
+                    for (k, v) in settings.as_object().unwrap_or(&Map::new()) {
+                        map.insert(k.to_owned(), v.clone());
                     }
+                    Some(map)
+                } else {
+                    Some(HashMap::new())
                 }
             }
         } else {
@@ -201,7 +199,6 @@ impl Handler<UserSiteData> for UserController {
                         .sites
                         .clone()
                         .into_iter()
-                        .map(|(addr, site_data)| (addr, site_data))
                         .collect::<HashMap<String, SiteData>>();
                     Some(map)
                 }

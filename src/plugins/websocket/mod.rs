@@ -327,15 +327,15 @@ impl ZeruWebsocket {
         match cmd {
             "confirm" => {
                 self.confirm(id, params);
-                return Ok(());
+                Ok(())
             }
             "notification" => {
                 self.send_notification(id, params);
-                return Ok(());
+                Ok(())
             }
             "injectScript" => {
                 self.inject_script(id, params);
-                return Ok(());
+                Ok(())
             }
             _ => unimplemented!("Command not implemented: {}", cmd),
         }
@@ -393,7 +393,7 @@ impl ZeruWebsocket {
         } else {
             error!("No callback found for response: {:?}", response);
         }
-        return Ok(());
+        Ok(())
     }
 
     fn handle_command(
@@ -499,12 +499,12 @@ impl ZeruWebsocket {
                 let mut site_info = block_on(self.site_addr.send(SiteInfoRequest()))
                     .unwrap()
                     .unwrap();
-                let site_info = append_user_site_data(&self, &mut site_info).unwrap();
+                let site_info = append_user_site_data(self, &mut site_info).unwrap();
                 site_info.event = Some(add_params.clone());
                 self.send_event(EventType::SiteInfo(site_info.clone()))?;
             } else if listener == "serverChanged" {
                 let server_info = server_info(self)?;
-                if params.len() > 0 {
+                if !params.is_empty() {
                     //TODO!: Implement handling of serverChanged params
                 }
                 self.send_event(EventType::ServerInfo(server_info))?;
@@ -514,7 +514,7 @@ impl ZeruWebsocket {
                     address,
                     stats: HashMap::new(),
                 };
-                if params.len() > 0 {
+                if !params.is_empty() {
                     //TODO!: Implement handling of announcerChanged params
                 }
                 self.send_event(announcer_info)?;
@@ -529,7 +529,7 @@ impl ZeruWebsocket {
             EventType::ServerInfo(_) => "setServerInfo",
             EventType::SiteInfo(_) => "setSiteInfo",
         };
-        let _ = self.ws_controller.do_send(ServerEvent::Event {
+        self.ws_controller.do_send(ServerEvent::Event {
             id: self.next_message_id,
             cmd: event_name.to_string(),
             params: event,
@@ -539,7 +539,7 @@ impl ZeruWebsocket {
     }
 
     fn send_notification(&mut self, id: usize, params: serde_json::Value) {
-        let _ = self.ws_controller.do_send(ServerEvent::Notification {
+        self.ws_controller.do_send(ServerEvent::Notification {
             cmd: "notification".to_string(),
             id,
             params,

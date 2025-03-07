@@ -36,14 +36,14 @@ pub async fn site_create(user: &mut User, use_master_seed: bool) -> Result<(), E
 }
 
 pub async fn rebuild_db(site: &mut Site, db_manager: &mut DbManager) -> Result<(), Error> {
-    let has_schema = db_manager.has_schema(&site.address());
+    let has_schema = db_manager.has_schema(site.address());
     let address = site.address();
     if has_schema.0 {
-        let schema = db_manager.load_schema(&address).unwrap();
-        db_manager.insert_schema(&address, schema);
-        db_manager.connect_db(&address)?;
-        db_manager.create_tables(&address);
-        db_manager.load_data(&address).await;
+        let schema = db_manager.load_schema(address).unwrap();
+        db_manager.insert_schema(address, schema);
+        db_manager.connect_db(address)?;
+        db_manager.create_tables(address);
+        db_manager.load_data(address).await;
     }
     Ok(())
 }
@@ -53,10 +53,10 @@ pub async fn db_query(
     db_manager: &mut DbManager,
     query: &str,
 ) -> Result<(), Error> {
-    let schema = db_manager.load_schema(&site.address()).unwrap();
-    db_manager.insert_schema(&site.address(), schema);
-    db_manager.connect_db(&site.address())?;
-    let conn = db_manager.get_db(&site.address()).unwrap();
+    let schema = db_manager.load_schema(site.address()).unwrap();
+    db_manager.insert_schema(site.address(), schema);
+    db_manager.connect_db(site.address())?;
+    let conn = db_manager.get_db(site.address()).unwrap();
     let res = SitesController::db_query(conn, query, None).await?;
     for row in res {
         info!("{:#?}", row);

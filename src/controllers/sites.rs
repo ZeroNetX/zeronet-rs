@@ -67,7 +67,7 @@ impl SitesController {
             site = Site::new(&address_str, ENV.data_path.join(address_str.clone())).unwrap();
             &mut site
         };
-        if let Some(addr) = self.sites_addr.get(&address) {
+        if let Some(addr) = self.sites_addr.get(address) {
             if site.content_path().is_file() {
                 return Ok((address.clone(), addr.clone()));
             }
@@ -89,9 +89,9 @@ impl SitesController {
                     self.nonce.insert(wrapper_key, address.clone());
                 }
             }
-            if let Some(schema) = self.db_manager.load_schema(&site.address()) {
-                self.db_manager.insert_schema(&site.address(), schema);
-                self.db_manager.connect_db(&site.address())?;
+            if let Some(schema) = self.db_manager.load_schema(site.address()) {
+                self.db_manager.insert_schema(site.address(), schema);
+                self.db_manager.connect_db(site.address())?;
             }
             self.sites_changed = current_unix_epoch();
         }
@@ -291,7 +291,7 @@ impl SitesController {
                 let re = Regex::new(r"(.*)[?]").unwrap();
                 let wheres = format!("$1 {}", wheres);
 
-                new_query = re.replace(&query, &wheres).into();
+                new_query = re.replace(query, &wheres).into();
             } else {
                 let keys = params
                     .keys()
@@ -321,10 +321,10 @@ impl SitesController {
                     let new_names = (0..value.len())
                         .map(|idx| format!(":{}__{}", key, idx))
                         .collect::<Vec<String>>();
-                    let key = regex::escape(&key);
+                    let key = regex::escape(key);
                     let re = Regex::new(&format!(r":{}([)\s]|$)", key)).unwrap();
                     let replacement = format!("({})$1", new_names.join(", "));
-                    new_query = re.replace_all(&query, replacement.as_str()).into();
+                    new_query = re.replace_all(query, replacement.as_str()).into();
                 } else {
                     new_params_map.insert(key.to_string(), value.clone());
                 }

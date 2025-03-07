@@ -24,7 +24,7 @@ use super::utils::current_unix_epoch;
 impl ContentMod for Site {
     type ContentType = Content;
     async fn load_content_from_path(&self, inner_path: &str) -> Result<Self::ContentType, Error> {
-        let path = &self.site_path().join(&inner_path);
+        let path = &self.site_path().join(inner_path);
         if path.is_file() {
             let mut file = File::open(path).await?;
             let mut buf = Vec::new();
@@ -65,7 +65,6 @@ impl ContentMod for Site {
         let verified = content
             .signs
             .keys()
-            .into_iter()
             .find_map(|key| {
                 if content.verify(key) {
                     Some(true)
@@ -109,13 +108,9 @@ impl Site {
             if let Some(content) = self.content(Some(inner_path)) {
                 valid_signers.extend(content.signers.clone());
             }
-        } else {
-            if let Some(rules) = self.get_file_rules(inner_path) {
-                if let Some(signers) = rules.get("signers") {
-                    if let Value::String(signers) = signers {
-                        valid_signers.insert(signers.clone());
-                    }
-                }
+        } else if let Some(rules) = self.get_file_rules(inner_path) {
+            if let Some(Value::String(signers)) = rules.get("signers") {
+                 valid_signers.insert(signers.clone());
             }
         }
         valid_signers.insert(self.address().to_string());
@@ -157,7 +152,7 @@ impl Site {
                     } else if parent_content.user_contents.is_some() {
                         let content = self.content(Some(inner_path))?;
                         let user_content_rules =
-                            self.get_user_content_rules(&parent_content, &inner_path, &content);
+                            self.get_user_content_rules(parent_content, inner_path, content);
                         return Some(json!(user_content_rules));
                     }
                 } else if dirs.is_empty() {
@@ -224,7 +219,7 @@ impl Site {
         }
 
         for (permission_pattern, permission_rules) in &user_contents.permission_rules {
-            if !Regex::new(&permission_pattern).unwrap().is_match(&user_urn) {
+            if !Regex::new(permission_pattern).unwrap().is_match(&user_urn) {
                 continue;
             }
             let permission_rules = json!(permission_rules);

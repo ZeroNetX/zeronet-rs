@@ -55,7 +55,7 @@ pub async fn check_file_integrity<'a>(
     inner_path: &'a str,
     hash_str: &str,
 ) -> Result<(bool, &'a str, ZFile), Error> {
-    let hash = get_zfile_info(site_path.join(&inner_path)).await?;
+    let hash = get_zfile_info(site_path.join(inner_path)).await?;
     if hash_str != hash.sha512 {
         return Ok((false, inner_path, hash));
     }

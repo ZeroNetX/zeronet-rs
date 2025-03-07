@@ -22,8 +22,8 @@ pub async fn serve_sitemedia(
     trace!("Serving Site inner_path: {}", path);
     let header_no_script = header_no_script.unwrap_or(false);
     let res = parse_media_path(path);
-    if res.is_err() {
-        match res.unwrap_err() {
+    if let Err(res) = res {
+        match res {
             Error::MissingError => {
                 return error403(&req, Some("Invalid path"));
             }

@@ -85,7 +85,7 @@ impl<'a> ResponseImpl for Protocol<'a> {
     }
 
     async fn update(&mut self, id: usize, msg: &str) -> Result<bool, Error> {
-        let builder = update_site(msg.into());
+        let builder = update_site(msg);
         self.0
             .respond(id, ResponseType::UpdateSite(builder))
             .await?;

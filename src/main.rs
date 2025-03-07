@@ -118,7 +118,6 @@ async fn main() -> Result<(), Error> {
                     let mut connectable_peers = site
                         .peers
                         .values()
-                        .into_iter()
                         .map(|peer| peer.address().to_string());
                     save_peers(&mut connectable_peers).await;
                 }

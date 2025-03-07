@@ -456,11 +456,11 @@ impl User {
     fn get_cert_user_id(&mut self, address: &str) -> Option<String> {
         let site_data = self.get_site_data(address, false);
         let cert = &self.get_cert(address)?;
-        return Some(format!(
+        Some(format!(
             "{}@{}",
             cert.auth_user_name,
             site_data.get_cert_provider().unwrap()
-        ));
+        ))
     }
 }
 

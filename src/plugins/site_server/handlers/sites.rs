@@ -355,7 +355,7 @@ impl Handler<SiteDeleteRequest> for SitesController {
     type Result = Result<(), Error>;
 
     fn handle(&mut self, msg: SiteDeleteRequest, _ctx: &mut Context<Self>) -> Self::Result {
-        if let Some(_) = self.sites.remove(&msg.address) {
+        if self.sites.remove(&msg.address).is_some() {
             Ok(())
         } else {
             Err(Error::SiteNotFound)

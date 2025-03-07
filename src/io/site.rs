@@ -212,7 +212,7 @@ impl Site {
             tasks.push(task);
         }
         let includes = &content.includes;
-        for (inner_path, _file) in includes {
+        for inner_path in includes.keys() {
             inner_paths.push(inner_path.clone());
             let task = self.download_file(inner_path.clone(), None, None);
             tasks.push(task);
@@ -298,7 +298,7 @@ impl Site {
             }
             let content = self.content(None).unwrap();
             //TODO! Verify inner content also
-            let verified = content.verify(&self.address());
+            let verified = content.verify(self.address());
             if !verified {
                 Err(Error::Err(format!(
                     "Content verification failed for {}",
@@ -400,7 +400,7 @@ impl Site {
     pub async fn update(&mut self, inner_path: &str, diff: Option<HashMap<String, Vec<Value>>>) {
         let addr = self.address().to_string();
         let path = self.site_path().join(inner_path);
-        let modified = (&self.content(None).unwrap().modified).clone();
+        let modified = self.content(None).unwrap().modified.clone();
         let peer = self.peers.values_mut().next().unwrap();
         let content = fs::read(path).await.unwrap();
         let res = Protocol::new(peer.connection_mut().unwrap())
