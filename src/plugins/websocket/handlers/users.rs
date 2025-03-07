@@ -42,37 +42,30 @@ pub fn handle_user_get_settings(ws: &ZeruWebsocket, command: &Command) -> Result
 }
 
 pub fn handle_user_set_settings(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
-    warn!("Handling UserGetSettings with dummy response");
-    // TODO: actually return user settings
-    let user = get_current_user(ws)?;
-    let mut map = HashMap::new();
-    for (key, value) in user.settings {
-        map.insert(key.to_string(), value);
+    info!("Handling UserSetSettings");
+    let extracted = extract_user_settings(command.params.clone());
+    match extracted {
+        Ok(settings) => {
+            let mut content_map = HashMap::new();
+            content_map.insert(ws.address.clone(), settings);
+            let _ = block_on(ws.user_controller.send(UserSettings {
+                set: true,
+                user_addr: String::from("current"),
+                site_addr: ws.address.address.clone(),
+                settings: Some(content_map),
+                ..Default::default()
+            }))?;
+            command.respond("ok")
+        }
+        Err(error) => command.respond(Error { error }),
     }
-
-    let mut content_map = HashMap::new();
-    content_map.insert(ws.address.clone(), map);
-
-    let result = block_on(ws.user_controller.send(UserSettings {
-        set: true,
-        user_addr: String::from("current"),
-        site_addr: ws.address.clone().address,
-        settings: Some(content_map),
-        ..Default::default()
-    }))?;
-    if result.is_none() {
-        return Err(Error {
-            error: String::from("User settings not found"),
-        });
-    }
-
-    command.respond("ok")
 }
 
 pub fn handle_user_get_global_settings(
     ws: &ZeruWebsocket,
     command: &Command,
 ) -> Result<Message, Error> {
+    info!("Handling UserGetGlobalSettings");
     let user = get_current_user(ws)?;
     command.respond(user.settings)
 }
@@ -82,14 +75,9 @@ pub fn handle_user_set_global_settings(
     command: &Command,
 ) -> Result<Message, Error> {
     info!("Handling UserSetGlobalSettings");
-    if let Value::Array(value) = command.params.clone() {
-        let content_map = value.first();
-        if let Some(Value::Object(settings)) = content_map {
-            #[allow(clippy::unnecessary_to_owned)]
-            let settings = settings
-                .to_owned()
-                .into_iter()
-                .collect::<HashMap<String, Value>>();
+    let extracted = extract_user_settings(command.params.clone());
+    match extracted {
+        Ok(settings) => {
             let mut content_map = HashMap::new();
             content_map.insert(ws.address.clone(), settings);
             let _ = block_on(ws.user_controller.send(UserSettings {
@@ -100,15 +88,27 @@ pub fn handle_user_set_global_settings(
                 ..Default::default()
             }))?;
             command.respond("ok")
+        }
+        Err(error) => command.respond(Error { error }),
+    }
+}
+
+fn extract_user_settings(settings: Value) -> Result<HashMap<String, Value>, String> {
+    if let Value::Array(value) = settings {
+        let content_map = value.first();
+        if let Some(Value::Object(settings)) = content_map {
+            // #[allow(clippy::unnecessary_to_owned)]
+            let settings = settings
+                .to_owned()
+                .into_iter()
+                .collect::<HashMap<String, Value>>();
+
+            Ok(settings)
         } else {
-            command.respond(Error {
-                error: String::from("Invalid settings"),
-            })
+            Err(String::from("Invalid settings"))
         }
     } else {
-        Err(Error {
-            error: String::from("Invalid User Settings"),
-        })
+        Err(String::from("Invalid User Settings"))
     }
 }
 

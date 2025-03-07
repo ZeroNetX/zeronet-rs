@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use actix::{Actor, Context, Handler, Message};
 use futures::executor::block_on;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{json, Map, Value};
 
 use crate::{
     controllers::users::UserController,
@@ -145,16 +145,33 @@ impl Handler<UserSettings> for UserController {
         };
         if let Some(user) = user {
             if msg.global {
-                let setting = msg.settings.unwrap();
-                user.settings = setting.values().next().unwrap().clone();
-                let _ = block_on(user.save());
-                None
-            } else if msg.set {
-                let site_addr = msg.settings.clone().unwrap().keys().next().unwrap().clone();
-                user.settings = msg.settings.unwrap().get(&site_addr).unwrap().clone();
-                None
+                if msg.set {
+                    let setting = msg.settings.unwrap();
+                    user.settings = setting.values().next().unwrap_or(&HashMap::new()).clone();
+                    let _ = block_on(user.save());
+                    None
+                } else {
+                    Some(user.settings.clone())
+                }
             } else {
-                Some(user.settings.clone())
+                if msg.set {
+                    let site = user.sites.get_mut(&msg.site_addr)?;
+                    let setting = msg.settings.unwrap().values().next().unwrap().clone();
+                    site.set_settings(json!(setting));
+                    let _ = block_on(user.save());
+                    None
+                } else {
+                    let site = user.sites.get(&msg.site_addr).unwrap();
+                    if let Some(settings) = site.get_settings() {
+                        let mut map = HashMap::<String, Value>::new();
+                        for (k, v) in settings.as_object().unwrap_or(&Map::new()) {
+                            map.insert(k.to_owned(), v.clone());
+                        }
+                        Some(map)
+                    } else {
+                        Some(HashMap::new())
+                    }
+                }
             }
         } else {
             None
