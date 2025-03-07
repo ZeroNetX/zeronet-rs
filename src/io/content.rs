@@ -110,7 +110,7 @@ impl Site {
             }
         } else if let Some(rules) = self.get_file_rules(inner_path) {
             if let Some(Value::String(signers)) = rules.get("signers") {
-                 valid_signers.insert(signers.clone());
+                valid_signers.insert(signers.clone());
             }
         }
         valid_signers.insert(self.address().to_string());

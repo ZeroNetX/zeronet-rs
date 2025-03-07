@@ -115,10 +115,8 @@ async fn main() -> Result<(), Error> {
                     db_query(&mut site, &mut db_manager, site_args.next().unwrap()).await?
                 }
                 "siteFindPeers" => {
-                    let mut connectable_peers = site
-                        .peers
-                        .values()
-                        .map(|peer| peer.address().to_string());
+                    let mut connectable_peers =
+                        site.peers.values().map(|peer| peer.address().to_string());
                     save_peers(&mut connectable_peers).await;
                 }
                 "sitePeerExchange" => peer_exchange(&mut site).await?,
