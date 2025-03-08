@@ -151,6 +151,7 @@ pub fn load_users_file() -> HashMap<String, User> {
                                                 "settings" => {
                                                     site_data.set_settings(value.clone());
                                                 }
+                                                //TODO!: Need more testing with populated data
                                                 _ => site_data
                                                     .add_plugin_data(key.into(), value.clone()),
                                             }
