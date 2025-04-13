@@ -328,7 +328,10 @@ pub fn load_trackers() -> Vec<String> {
         return vec![];
     }
     let mut trackers = vec![];
-    for peer in buf.unwrap().split(|b| (Some(b) == b"\n".first()) || (Some(b) == b"\r".first())) {
+    for peer in buf
+        .unwrap()
+        .split(|b| (Some(b) == b"\n".first()) || (Some(b) == b"\r".first()))
+    {
         trackers.push(String::from_utf8(peer.to_vec()).unwrap());
     }
     trackers.extract_if(|peer| !peer.is_empty()).collect()
