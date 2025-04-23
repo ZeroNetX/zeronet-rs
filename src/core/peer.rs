@@ -106,6 +106,22 @@ impl Peer {
                     self.address.to_string()
                 );
             }
+            debug!("Connected to Peer : {:?}", self.address());
+            self.connection = Some(conn?);
+        }
+        Ok(())
+    }
+
+    pub async fn connect_async(&mut self) -> Result<(), Error> {
+        if self.connection.is_none() {
+            let conn = ZeroConnection::from_address_async(self.address.clone()).await;
+            if conn.is_err() {
+                trace!(
+                    "Failed to establish connection to {}.",
+                    self.address.to_string()
+                );
+            }
+            debug!("Connected to Peer : {:?}", self.address());
             self.connection = Some(conn?);
         }
         Ok(())
