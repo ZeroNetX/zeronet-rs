@@ -180,17 +180,24 @@ pub async fn peer_ping(addr: &str) -> Result<(), Error> {
 
 pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
-    let mut peers_cons = vec![];
     let peers = site.fetch_peers().await?;
+    let mut peers = peers
+        .into_iter()
+        .map(|peer| Peer::new(PeerAddr::parse(peer).unwrap()))
+        .collect::<Vec<Peer>>();
     info!("Found Peers : {:?}", peers);
-    for peer in peers {
-        let mut peer = Peer::new(PeerAddr::parse(peer).unwrap());
-        let res = peer.connect();
-        if res.is_ok() {
-            peers_cons.push(peer);
-        }
+    let mut tasks = vec![];
+    for peer in &mut peers {
+        let res = peer.connect_async();
+        tasks.push(res);
     }
-    for mut con in peers_cons {
+    futures::future::join_all(tasks).await;
+    let peers_cons = peers
+        .iter_mut()
+        .filter(|peer| peer.connection().is_some())
+        .collect::<Vec<&mut Peer>>();
+
+    for con in peers_cons {
         let res = Protocol::new(con.connection_mut().unwrap()).ping().await?;
         info!("Ping Result : {:?} from Peer : {:?}", res, con.address());
     }
