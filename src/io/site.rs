@@ -382,13 +382,30 @@ impl Site {
     }
 
     pub async fn fetch_peers(&mut self) -> Result<Vec<String>, Error> {
-        let addr = self.address();
-        let mut peer = self.peers.values().next().unwrap().clone();
-        let res = Protocol::new((peer.connection_mut()).unwrap())
-            .pex(addr)
-            .await?
+        let site_addr = self.address().to_owned();
+        let mut connections = self
             .peers
+            .values_mut()
+            .map(|peer| {
+                let connection = peer.connection_mut().unwrap();
+                Protocol::new(connection)
+            })
+            .collect::<Vec<Protocol>>();
+        let tasks = connections
+            .iter_mut()
+            .map(|protocol| protocol.pex(&site_addr));
+
+        let res = join_all(tasks)
+            .await
             .iter()
+            .filter_map(|r| {
+                if let Ok(r) = r {
+                    Some(r.peers.clone())
+                } else {
+                    None
+                }
+            })
+            .flatten()
             .map(|bytes| {
                 let pair = IpPort::from_bytes(bytes.as_ref());
                 pair.first().unwrap().to_string()
