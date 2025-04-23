@@ -386,6 +386,7 @@ impl Site {
         let mut connections = self
             .peers
             .values_mut()
+            .take(5)//TODO!: Dynamic limit based on 
             .map(|peer| {
                 let connection = peer.connection_mut().unwrap();
                 Protocol::new(connection)
