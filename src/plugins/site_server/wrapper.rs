@@ -205,6 +205,8 @@ pub async fn serve_wrapper(
     } else {
         query_string = format!("\\?{}&wrapper_nonce\\={}", query_string, nonce.clone(),);
     }
+    //TODO!: Handle homepage for proxy request
+    let homepage = format!("/{}", ENV.homepage);
     let string = match render(
         &path,
         WrapperData {
@@ -224,7 +226,7 @@ pub async fn serve_wrapper(
             sandbox_permissions,
             rev: format!("{}", ENV.rev),
             lang: ENV.lang.to_string(),
-            homepage: String::from(&*ENV.homepage),
+            homepage,
             themeclass,
             script_nonce: script_nonce.clone(),
         },
