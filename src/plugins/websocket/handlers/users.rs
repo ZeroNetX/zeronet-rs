@@ -121,7 +121,7 @@ pub fn _handle_user_show_master_seed(
 }
 
 pub fn handle_cert_set(ws: &mut ZeruWebsocket, command: &Command) -> Result<Message, Error> {
-    trace!("Handling CertSet with command: {:?}", command);
+    trace!("Handling CertSet with command: {command:?}");
     let site = ws.address.address.clone();
     let provider = match &command.params {
         Value::String(provider) => Ok(provider.clone()),

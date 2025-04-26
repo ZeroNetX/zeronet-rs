@@ -15,11 +15,7 @@ pub fn redirect(path: &str) -> HttpResponse {
 pub fn get_header_value(req: &HttpRequest, key: impl AsHeaderName) -> Option<&str> {
     let res = req.headers().get(key);
     if let Some(header) = res {
-        if let Ok(value) = header.to_str() {
-            Some(value)
-        } else {
-            None
-        }
+        header.to_str().ok()
     } else {
         None
     }

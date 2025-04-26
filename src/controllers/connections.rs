@@ -36,7 +36,7 @@ pub struct ConnectionController {
 impl ConnectionController {
     pub async fn new(sites_controller: SitesController) -> Result<Self, Error> {
         let ser_addr = format!("{}:{}", ENV.fileserver_ip, ENV.fileserver_port);
-        info!("Listening on {}", ser_addr);
+        info!("Listening on {ser_addr}");
         let listener = TcpListener::bind(ser_addr).await?;
         Ok(Self {
             listener,
@@ -133,10 +133,10 @@ impl ConnectionController {
                             site: String,
                         }
 
-                        if let Err(_) = request.body::<SiteRequest>() {
+                        if request.body::<SiteRequest>().is_err() {
                             let res = Self::unknown_site_response();
                             let site: &str = &request.body::<SiteRequest>().unwrap_or(SiteRequest { site: "".to_string() }).site;
-                            debug!("Unknown site: {}", site);
+                            debug!("Unknown site: {site}");
                             let _ = protocol.0.respond(request.req_id, res).await;
                             let took = time.elapsed();
                             debug!("{} Req {} took : {:?}", &request.cmd, &request.req_id, took);
@@ -154,7 +154,7 @@ impl ConnectionController {
                             if result.is_err() {
                                 error!(
                                     "Error Sending Response: \nTo : {} : {:#?}",
-                                    peer_addr.to_string(),
+                                    peer_addr,
                                     result.unwrap_err()
                                 );
                             } else {
@@ -262,7 +262,7 @@ impl ConnectionController {
                 Self::unknown_site_response()
             }
         } else {
-            error!("Invalid Pex Request {:?}", req);
+            error!("Invalid Pex Request {req:?}");
             ResponseType::InvalidRequest
         }
     }
@@ -276,7 +276,7 @@ impl ConnectionController {
                 Self::unknown_site_response()
             }
         } else {
-            error!("Invalid GetHashfield Request {:?}", req);
+            error!("Invalid GetHashfield Request {req:?}");
             ResponseType::InvalidRequest
         }
     }
@@ -293,6 +293,7 @@ impl ConnectionController {
                         let read_bytes = res.read_bytes.unwrap_or(512 * 1024);
                         let file_size = res.file_size;
                         let file = File::open(path).unwrap();
+                        #[allow(clippy::unbuffered_bytes)]
                         let bytes = file.bytes();
                         let file_size_actual = bytes.size_hint().1.unwrap();
                         if location > file_size_actual {
@@ -332,14 +333,14 @@ impl ConnectionController {
                         }
                     }
                     Err(err) => ResponseType::Err(ErrorResponse {
-                        error: format!("{:?}", err),
+                        error: format!("{err:?}"),
                     }),
                 }
             } else {
                 Self::unknown_site_response()
             }
         } else {
-            error!("Invalid GetFile Request {:?}", req);
+            error!("Invalid GetFile Request {req:?}");
             ResponseType::InvalidRequest
         }
     }
@@ -401,8 +402,7 @@ impl ConnectionController {
             }
         } else {
             error!(
-                "Error Parsing Request Body: Invalid Update Request {:?}",
-                req
+                "Error Parsing Request Body: Invalid Update Request {req:?}"
             );
             ResponseType::InvalidRequest
         }

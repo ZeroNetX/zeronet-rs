@@ -46,7 +46,7 @@ pub async fn get_zfile_info(path: impl AsRef<Path>) -> Result<ZFile, Error> {
     file.unwrap().read_to_end(&mut buf).await?;
     let size = buf.len();
     let digest = Sha512::digest(buf);
-    let sha512 = format!("{:x}", digest)[..64].to_string();
+    let sha512 = format!("{digest:x}")[..64].to_string();
     Ok(ZFile { size, sha512 })
 }
 
@@ -79,7 +79,7 @@ pub fn load_users_file() -> HashMap<String, User> {
         let users_file_str = std::fs::read_to_string(&users_file).unwrap();
         if let Ok(users_store) = serde_json::from_str::<HashMap<String, Value>>(&users_file_str) {
             for (username, user_obj) in users_store {
-                info!("Loading user: {}", username);
+                info!("Loading user: {username}");
                 if let Value::Object(user_map) = &user_obj {
                     let mut user = if let Value::String(master_seed) = &user_map["master_seed"] {
                         User::from_seed(master_seed.clone())
@@ -318,7 +318,7 @@ pub fn load_sites_file() -> HashMap<String, SiteStorage> {
 }
 
 pub async fn load_peers() -> Vec<String> {
-    load_strings_from_path(&*DEF_PEERS_FILE_PATH).await
+    load_strings_from_path(&DEF_PEERS_FILE_PATH).await
 }
 
 pub fn load_trackers() -> Vec<String> {

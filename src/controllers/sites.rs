@@ -67,11 +67,10 @@ impl SitesController {
             site = Site::new(&address_str, ENV.data_path.join(address_str.clone())).unwrap();
             &mut site
         };
-        if let Some(addr) = self.sites_addr.get(address) {
-            if site.content_path().is_file() {
+        if let Some(addr) = self.sites_addr.get(address)
+            && site.content_path().is_file() {
                 return Ok((address.clone(), addr.clone()));
             }
-        }
         trace!(
             "Spinning up actor for site zero://{}",
             address.get_address_short()
@@ -103,12 +102,11 @@ impl SitesController {
     }
 
     pub fn get_by_key(&mut self, key: String) -> Result<(Address, Addr<Site>), Error> {
-        if let Some(address) = self.nonce.get(&key) {
-            if let Some(addr) = self.sites_addr.get(address) {
+        if let Some(address) = self.nonce.get(&key)
+            && let Some(addr) = self.sites_addr.get(address) {
                 return Ok((address.clone(), addr.clone()));
             }
-        }
-        error!("No site found for key {}", key);
+        error!("No site found for key {key}");
         Err(Error::MissingError)
     }
 
@@ -156,7 +154,7 @@ impl SitesController {
                     );
                 }
             } else {
-                warn!("Site Dir with Address: {} not found", address);
+                warn!("Site Dir with Address: {address} not found");
             }
         }
         self.update_sites_changed();
@@ -263,7 +261,7 @@ impl SitesController {
                             values.extend(value.iter().cloned());
                             placeholders
                         };
-                        query_wheres.push(format!("{} {} ({})", field, operator, query_values));
+                        query_wheres.push(format!("{field} {operator} ({query_values})"));
                     } else {
                         let (key, operator) = if key.starts_with("not__") {
                             (key.replace("not__", ""), "!=")
@@ -289,7 +287,7 @@ impl SitesController {
                 };
 
                 let re = Regex::new(r"(.*)[?]").unwrap();
-                let wheres = format!("$1 {}", wheres);
+                let wheres = format!("$1 {wheres}");
 
                 new_query = re.replace(query, &wheres).into();
             } else {
@@ -299,7 +297,7 @@ impl SitesController {
                     .collect::<Vec<String>>()
                     .join(", ");
                 let values = vec!["?"; params.len()].join(", ");
-                let keysvalues = format!("({}) VALUES ({})", keys, values);
+                let keysvalues = format!("({keys}) VALUES ({values})");
 
                 let re = Regex::new(r"\?").unwrap();
                 new_query = re.replace_all(&new_query, &keysvalues).to_string();
@@ -316,13 +314,13 @@ impl SitesController {
             for (key, value) in params {
                 if let Value::Array(value) = value {
                     for (idx, val) in value.iter().enumerate() {
-                        new_params_map.insert(format!("{}__{}", key, idx), val.clone());
+                        new_params_map.insert(format!("{key}__{idx}"), val.clone());
                     }
                     let new_names = (0..value.len())
-                        .map(|idx| format!(":{}__{}", key, idx))
+                        .map(|idx| format!(":{key}__{idx}"))
                         .collect::<Vec<String>>();
                     let key = regex::escape(key);
-                    let re = Regex::new(&format!(r":{}([)\s]|$)", key)).unwrap();
+                    let re = Regex::new(&format!(r":{key}([)\s]|$)")).unwrap();
                     let replacement = format!("({})$1", new_names.join(", "));
                     new_query = re.replace_all(query, replacement.as_str()).into();
                 } else {
@@ -343,7 +341,7 @@ impl SitesController {
 
     fn sqlquote(value: Value) -> String {
         if let Value::Number(value) = value {
-            format!("{}", value)
+            format!("{value}")
         } else if let Value::String(value) = value {
             return format!("'{}'", value.replace('\'', "''"));
         } else {

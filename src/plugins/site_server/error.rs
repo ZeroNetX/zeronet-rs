@@ -40,9 +40,8 @@ pub fn build_error(title: &str, message: &str) -> HttpResponse {
         * {{ font-family: Consolas, Monospace; color: #333; }}
         code {{ font-family: Consolas, Monospace; background-color: #EEE }}
         </style>
-        <h1>{}</h1>
-        <h2>{}</h3>",
-        title, message
+        <h1>{title}</h1>
+        <h2>{message}</h3>"
     );
 
     HttpResponse::Ok().body(body)

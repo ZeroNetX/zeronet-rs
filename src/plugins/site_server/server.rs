@@ -96,7 +96,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     // });
     let header_allow_ajax = !req.match_info().query("ajax_key").is_empty();
     //TODO! Check if ajax_key matches with saved one
-    let path = format!("{}/{}", address, inner_path);
+    let path = format!("{address}/{inner_path}");
     let is_wrapper_necessary = is_wrapper_necessary(&path);
     if !is_wrapper_necessary {
         return serve_sitemedia(req, &format!("/media/{path}"), header_allow_ajax, None).await;
@@ -118,7 +118,7 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
             wrapper_nonces.remove(wrapper_nonce.unwrap());
             wrapper = false;
         } else if wrapper_nonce.is_some() {
-            warn!("Nonce {:?} invalid!", wrapper_nonce);
+            warn!("Nonce {wrapper_nonce:?} invalid!");
         }
     }
 
@@ -127,28 +127,24 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
     } else if is_web_socket_request(&req) {
         return error403(&req, Some("WebSocket request not allowed to load wrapper"));
     }
-    if let Some(value) = get_header_value(&req, header_name!("http_accept")) {
-        if !value.contains("text/html") {
+    if let Some(value) = get_header_value(&req, header_name!("http_accept"))
+        && !value.contains("text/html") {
             let v = format!("Invalid Accept header to load wrapper: {value}");
             return error403(&req, Some(&v));
         }
-    }
 
-    if let Some(value) = get_header_value(&req, header_name!("http_x_moz")) {
-        if value.contains("prefetch") {
+    if let Some(value) = get_header_value(&req, header_name!("http_x_moz"))
+        && value.contains("prefetch") {
             return error403(&req, Some("Prefetch not allowed to load wrapper"));
         }
-    }
 
-    if let Some(value) = get_header_value(&req, header_name!("http_purpose")) {
-        if value.contains("prefetch") {
+    if let Some(value) = get_header_value(&req, header_name!("http_purpose"))
+        && value.contains("prefetch") {
             return error403(&req, Some("Prefetch not allowed to load wrapper"));
         }
-    }
 
     trace!(
-        "No valid nonce provided, serving wrapper for zero:://{}",
-        address
+        "No valid nonce provided, serving wrapper for zero:://{address}"
     );
     serve_wrapper(req, data, !wrapper).await
 }

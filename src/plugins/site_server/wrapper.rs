@@ -58,7 +58,7 @@ pub async fn serve_wrapper(
         Ok(a) => a,
         Err(_) => {
             return HttpResponse::Ok()
-                .body(format!("{} is a malformed ZeroNet address", address_string));
+                .body(format!("{address_string} is a malformed ZeroNet address"));
         }
     };
     let inner_path = req.match_info().query("inner_path");
@@ -88,7 +88,7 @@ pub async fn serve_wrapper(
     let query = match site_controller.send(Lookup::Address(address.clone())).await {
         Ok(v) => v,
         Err(err) => {
-            error!("{:?}", err);
+            error!("{err:?}");
             return HttpResponse::BadRequest().finish();
         }
     };
@@ -112,7 +112,7 @@ pub async fn serve_wrapper(
     } else {
         "light"
     };
-    let themeclass = format!("theme-{}", theme);
+    let themeclass = format!("theme-{theme}");
     let title;
     let show_loadingscreen;
     let content = if let Ok(Ok(content)) = content {
@@ -160,7 +160,7 @@ pub async fn serve_wrapper(
                 return response;
             }
             Err(err) => {
-                error!("Serve Site:: Bad request {:?}", err);
+                error!("Serve Site:: Bad request {err:?}");
                 return HttpResponse::BadRequest().finish();
             }
         }
@@ -170,15 +170,14 @@ pub async fn serve_wrapper(
         let mut meta = String::new();
         html_escape::encode_text_to_string(content.viewport, &mut meta);
         meta_tags.push_str(&format!(
-            "<meta name=\"viewport\" id=\"viewport\" content=\"{}\">",
-            meta
+            "<meta name=\"viewport\" id=\"viewport\" content=\"{meta}\">"
         ));
     }
     if !content.favicon.is_empty() {
         let mut meta = String::new();
-        meta.push_str(&format!("/{}/", address_string));
+        meta.push_str(&format!("/{address_string}/"));
         html_escape::encode_text_to_string(content.favicon, &mut meta);
-        meta_tags.push_str(&format!("<link rel=\"icon\" href=\"{}\">", meta));
+        meta_tags.push_str(&format!("<link rel=\"icon\" href=\"{meta}\">"));
     }
 
     let mut body_style = String::new();
@@ -189,7 +188,7 @@ pub async fn serve_wrapper(
             _ => content.background_color,
         };
         html_escape::encode_text_to_string(theme_str, &mut meta);
-        body_style.push_str(&format!("background-color: {};", meta));
+        body_style.push_str(&format!("background-color: {meta};"));
     }
 
     let postmessage_nonce_security = format!("{}", content.postmessage_nonce_security);
@@ -207,10 +206,10 @@ pub async fn serve_wrapper(
     }
     //TODO!: Handle homepage for proxy request
     let homepage = format!("/{}", ENV.homepage);
-    let string = match render(
+    let string = render(
         &path,
         WrapperData {
-            file_url: format!("\\/{}\\/{}", address, inner_path),
+            file_url: format!("\\/{address}\\/{inner_path}"),
             file_inner_path: String::from(inner_path),
             address: address.to_string(),
             title,
@@ -230,10 +229,7 @@ pub async fn serve_wrapper(
             themeclass,
             script_nonce: script_nonce.clone(),
         },
-    ) {
-        Ok(s) => s,
-        Err(_) => String::new(),
-    };
+    ).unwrap_or_default();
     let mut res = HttpResponse::Ok();
     for (key, value) in build_header!(200, None, &script_nonce).iter() {
         res.append_header((key.as_str(), value.to_str().unwrap()));
@@ -245,7 +241,7 @@ fn render(file_path: &Path, data: WrapperData) -> Result<String, ()> {
     let mut file = match File::open(file_path) {
         Ok(f) => f,
         Err(error) => {
-            error!("Failed to Get Wrapper Template file: {:?}", error);
+            error!("Failed to Get Wrapper Template file: {error:?}");
             return Result::Err(());
         }
     };

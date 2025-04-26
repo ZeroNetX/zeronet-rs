@@ -27,7 +27,7 @@ impl SitesController {
             .unwrap();
         for peer in peers {
             let (ip, port) = peer.unwrap();
-            let peer = format!("{}:{}", ip, port);
+            let peer = format!("{ip}:{port}");
             let peer = Peer::new(PeerAddr::parse(peer).unwrap());
             self.sites.get_mut(addr).unwrap().add_peer(peer)
         }

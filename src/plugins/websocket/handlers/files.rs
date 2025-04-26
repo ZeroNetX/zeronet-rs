@@ -16,7 +16,7 @@ pub fn handle_file_need(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Er
     let msg: FileNeedRequest = match serde_json::from_value(cmd.params.clone()) {
         Ok(m) => m,
         Err(e) => {
-            error!("{:?}", e);
+            error!("{e:?}");
             FileNeedRequest::default()
         }
     };
@@ -25,11 +25,11 @@ pub fn handle_file_need(ws: &ZeruWebsocket, cmd: &Command) -> Result<Message, Er
 }
 
 pub fn handle_file_get(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
-    trace!("Handling FileGet request {:?}", command);
+    trace!("Handling FileGet request {command:?}");
     let msg: FileGetRequest = match serde_json::from_value(command.params.clone()) {
         Ok(m) => m,
         Err(e) => {
-            error!("{:?}", e);
+            error!("{e:?}");
             // TODO: error
             FileGetRequest::default()
         }
@@ -64,7 +64,7 @@ pub fn handle_file_rules(
         others => match serde_json::from_value(others.clone()) {
             Ok(m) => m,
             Err(_e) => {
-                error!("{:?}", command);
+                error!("{command:?}");
                 // TODO: error
                 FileRulesRequest::default()
             }

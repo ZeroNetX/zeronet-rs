@@ -36,6 +36,7 @@ impl Handler<RegisterWSClient> for WebsocketController {
 #[rtype(result = "()")]
 #[serde(untagged)]
 #[serde(rename_all = "camelCase")]
+#[allow(clippy::large_enum_variant)]
 pub enum ServerEvent {
     Event {
         cmd: String,
@@ -136,6 +137,6 @@ mod tests {
     fn test_announcer_info() {
         let info = def_ann_info();
         let json = serde_json::to_string_pretty(&info).unwrap();
-        println!("{:#}", json);
+        println!("{json:#}");
     }
 }

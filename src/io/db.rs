@@ -104,7 +104,7 @@ impl DbManager {
                 //Note: Required because other tables depend on json table, it needs to be dropped last.
                 return;
             }
-            Self::db_exec(conn, &format!("DROP TABLE {}", table_name));
+            Self::db_exec(conn, &format!("DROP TABLE {table_name}"));
         });
         Self::db_exec(conn, "DROP TABLE json");
         let mut sorted_tables = Vec::<(String, Table)>::new();
@@ -297,8 +297,8 @@ impl DbManager {
         let (mut json_statement, mut values, select_statement) = match version {
             1 => (
                 "path".to_string(),
-                format!("'{}'", path_str),
-                format!("path = '{}'", path_str),
+                format!("'{path_str}'"),
+                format!("path = '{path_str}'"),
             ),
             2 => {
                 let mut v = path_str.split('/').collect::<Vec<&str>>();
@@ -312,10 +312,9 @@ impl DbManager {
                 };
                 (
                     "directory, file_name".to_string(),
-                    format!("'{}', '{}'", directory, file_name),
+                    format!("'{directory}', '{file_name}'"),
                     format!(
-                        "directory = '{}' AND file_name = '{}'",
-                        directory, file_name
+                        "directory = '{directory}' AND file_name = '{file_name}'"
                     ),
                 )
             }
@@ -331,10 +330,9 @@ impl DbManager {
                 };
                 (
                     "site, directory, file_name".to_string(),
-                    format!("'{}', '{}', '{}'", site, directory, file_name),
+                    format!("'{site}', '{directory}', '{file_name}'"),
                     format!(
-                        "site = '{}' AND directory = '{}' AND file_name = '{}'",
-                        site, directory, file_name
+                        "site = '{site}' AND directory = '{directory}' AND file_name = '{file_name}'"
                     ),
                 )
             }
@@ -342,19 +340,19 @@ impl DbManager {
         };
         if has_custom_table {
             for table in to_json_table {
-                let key = format!(", {}", table);
+                let key = format!(", {table}");
                 json_statement.push_str(&key);
                 let value = json_content.get(table).unwrap();
                 if let Value::String(value) = value {
                     let value = value.replace('\'', "''");
-                    values.push_str(&format!(", '{}'", value));
+                    values.push_str(&format!(", '{value}'"));
                 } else if let Value::Number(value) = value {
-                    values.push_str(&format!(", {}", value));
+                    values.push_str(&format!(", {value}"));
                 }
             }
         }
-        let json_statement = format!("INSERT INTO json ({}) VALUES ({})", json_statement, values);
-        let select_statement = format!("SELECT json_id FROM json WHERE ({})", select_statement);
+        let json_statement = format!("INSERT INTO json ({json_statement}) VALUES ({values})");
+        let select_statement = format!("SELECT json_id FROM json WHERE ({select_statement})");
         Self::db_exec(conn, &json_statement);
         let mut stmt = (*conn).prepare(&select_statement).unwrap();
         let mut rows = stmt.query([]).unwrap();
@@ -394,11 +392,10 @@ impl DbManager {
                 if v.is_empty() {
                     continue;
                 }
-            } else if let Value::Object(v) = value {
-                if v.is_empty() {
+            } else if let Value::Object(v) = value
+                && v.is_empty() {
                     continue;
                 }
-            }
 
             let mut import_cols = vec![];
             let use_import_cols = import_col.is_some();
@@ -556,7 +553,7 @@ impl DbManager {
             let rep_vec = replacements.get(replacement_idx).unwrap();
             value_str = value_str.replace(&rep_vec.0, &rep_vec.1);
         }
-        values.push(format!("'{}'", value_str));
+        values.push(format!("'{value_str}'"));
     }
 
     fn object_handler(
@@ -577,9 +574,9 @@ impl DbManager {
                 let rep_vec = replacements.get(replacement_idx).unwrap();
                 value = value.replace(&rep_vec.0, &rep_vec.1);
             }
-            values.push(format!("'{}'", value));
+            values.push(format!("'{value}'"));
         } else if let Value::Number(value) = value {
-            values.push(format!("{}", value));
+            values.push(format!("{value}"));
         }
     }
 
@@ -591,7 +588,7 @@ impl DbManager {
         conn: &Connection,
     ) {
         column_keys.push("json_id".to_owned());
-        values.push(format!("{}", json_id));
+        values.push(format!("{json_id}"));
         let stmt = format!(
             "INSERT INTO {} ({}) VALUES ({})",
             table,
@@ -611,19 +608,17 @@ impl DbManager {
             if let Some(value) = content.get(key) {
                 if let Some(value) = value.as_u64() {
                     let query = format!(
-                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', {}, {})",
-                        key, value, json_id
+                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{key}', {value}, {json_id})"
                     );
                     Self::db_exec(conn, &query);
                 } else if let Some(value) = value.as_str() {
                     let query = format!(
-                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{}', '{}', {})",
-                        key, value, json_id
+                        "INSERT INTO keyvalue (key, value, json_id) VALUES ('{key}', '{value}', {json_id})"
                     );
                     Self::db_exec(conn, &query);
                 }
             } else {
-                warn!("Data missing for {} in json {}", key, json_id);
+                warn!("Data missing for {key} in json {json_id}");
             }
         }
     }
@@ -639,8 +634,7 @@ impl DbManager {
         if let Err(code) = res {
             //TODO!: We may receive non existing columns in the table as input, so we need to handle such cases
             error!(
-                "Db command execution failed, query: {}, code: {}",
-                query, code
+                "Db command execution failed, query: {query}, code: {code}"
             );
         }
     }

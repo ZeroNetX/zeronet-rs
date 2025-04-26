@@ -78,8 +78,7 @@ impl FromStr for Address {
                 string.len(),
             );
             return Err(Error::AddressError(format!(
-                "Address length {} is invalid",
-                string
+                "Address length {string} is invalid"
             )));
         }
         Ok(Address {
@@ -110,7 +109,7 @@ mod tests {
     #[test]
     fn test_serialization() {
         let result = Address::from_str(ADDR);
-        assert!(result.is_ok(), "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {result:?}");
         let address = result.unwrap();
         let result = serde_json::to_string(&address);
         assert!(result.is_ok());
@@ -120,7 +119,7 @@ mod tests {
     #[test]
     fn test_get_address_hash() {
         let result = Address::from_str(ADDR);
-        assert!(result.is_ok(), "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {result:?}");
         let address_hash = result.unwrap().get_address_hash();
         let b = Vec::from(ADDR_BYTES_SHA256);
         assert_eq!(address_hash, b);
@@ -128,7 +127,7 @@ mod tests {
     #[test]
     fn test_get_address_sha1() {
         let result = Address::from_str(ADDR);
-        assert!(result.is_ok(), "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {result:?}");
         let address_hash = result.unwrap().get_address_sha1();
         let b = Vec::from(ADDR_BYTES_SHA1);
         assert_eq!(address_hash, b);
@@ -136,7 +135,7 @@ mod tests {
     #[test]
     fn test_get_address_short() {
         let result = Address::from_str(ADDR);
-        assert!(result.is_ok(), "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {result:?}");
         let address_hash = result.unwrap().get_address_short();
         assert_eq!(&address_hash, "1HELLo...2Ri9d");
     }
@@ -144,7 +143,7 @@ mod tests {
     #[test]
     fn test_deserialization() {
         let result = serde_json::from_str("\"1HELLoE3sFD9569CLCbHEAVqvqV7U2Ri9d\"");
-        assert_eq!(result.is_ok(), true, "Encountered error: {:?}", result);
+        assert!(result.is_ok(), "Encountered error: {result:?}");
         let address: Address = result.unwrap();
         assert_eq!(
             address,

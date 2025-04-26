@@ -192,7 +192,7 @@ impl Handler<SiteInfoRequest> for Site {
     fn handle(&mut self, _: SiteInfoRequest, _ctx: &mut Context<Self>) -> Self::Result {
         // TODO: replace default values
         if !self.content_exists() {
-            let _ = self.load_content();
+            let _ = block_on(self.load_content());
         }
         let mut content = self.content(None).unwrap().raw();
         if let Value::Object(map) = &mut content {
