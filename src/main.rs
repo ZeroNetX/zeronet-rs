@@ -35,7 +35,7 @@ async fn main() -> Result<(), Error> {
     let mut user = user_storage.values().next().unwrap().clone();
     let sub_cmd = (*MATCHES).subcommand();
     if let Some((cmd, args)) = sub_cmd {
-        if cmd.starts_with("site")
+        if (cmd.starts_with("site") || cmd.starts_with("db"))
             && let Some(mut site_args) = args.get_many::<String>("site")
         {
             let site_addr = site_args.next().unwrap();
@@ -230,10 +230,10 @@ async fn main() -> Result<(), Error> {
         let _ = con.run().await;
     } else {
         info!("Loaded : {} Plugins.", plugins.len());
-        let user_controller_addr = users::run().unwrap();
-        let sites_controller_addr = sites::run().await.unwrap();
-        let _ =
-            plugins::site_server::server::run(sites_controller_addr, user_controller_addr).await;
+        let user_controller = users::run().unwrap();
+        let sites_controller = sites::run().await.unwrap();
+        use plugins::site_server::server;
+        let _ = server::run(sites_controller, user_controller).await;
     }
     Ok(())
 }
