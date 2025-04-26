@@ -126,8 +126,22 @@ impl ConnectionController {
                             serde_json::to_value(request.req_id).unwrap()
                         );
                         let time = Instant::now();
-                        //TODO! Optimisation
-                        //? For Unknown Sites, send direct Error Response instead for channel roundtrip
+
+                        //Optimisation For Unknown Sites, send direct Error Response instead for channel roundtrip
+                        #[derive(serde::Serialize, serde::Deserialize)]
+                        struct SiteRequest {
+                            site: String,
+                        }
+
+                        if let Err(_) = request.body::<SiteRequest>() {
+                            let res = Self::unknown_site_response();
+                            let site: &str = &request.body::<SiteRequest>().unwrap_or(SiteRequest { site: "".to_string() }).site;
+                            debug!("Unknown site: {}", site);
+                            let _ = protocol.0.respond(request.req_id, res).await;
+                            let took = time.elapsed();
+                            debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
+                            continue;
+                        }
                         let res = req_tx.send(request.clone()).await;
                         if res.is_err() {
                             error!("Channel closed");
@@ -186,6 +200,7 @@ impl ConnectionController {
             let site = &res.site;
             let need = res.need;
             if self.sites_controller.sites.contains_key(site) {
+                let site = self.sites_controller.sites.get_mut(site).unwrap();
                 let mut peers = res.peers;
                 if let Some(peers_onion) = res.peers_onion {
                     peers.extend(peers_onion);
@@ -201,7 +216,6 @@ impl ConnectionController {
                         pex_peers.push(peer);
                     }
                 }
-                let site = self.sites_controller.sites.get_mut(site).unwrap();
                 let keys = pex_peers
                     .iter()
                     .map(|p| p.address().to_string())
