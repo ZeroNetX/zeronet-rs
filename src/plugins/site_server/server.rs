@@ -128,24 +128,25 @@ async fn serve_site(req: HttpRequest, query: Query<HashMap<String, String>>) -> 
         return error403(&req, Some("WebSocket request not allowed to load wrapper"));
     }
     if let Some(value) = get_header_value(&req, header_name!("http_accept"))
-        && !value.contains("text/html") {
-            let v = format!("Invalid Accept header to load wrapper: {value}");
-            return error403(&req, Some(&v));
-        }
+        && !value.contains("text/html")
+    {
+        let v = format!("Invalid Accept header to load wrapper: {value}");
+        return error403(&req, Some(&v));
+    }
 
     if let Some(value) = get_header_value(&req, header_name!("http_x_moz"))
-        && value.contains("prefetch") {
-            return error403(&req, Some("Prefetch not allowed to load wrapper"));
-        }
+        && value.contains("prefetch")
+    {
+        return error403(&req, Some("Prefetch not allowed to load wrapper"));
+    }
 
     if let Some(value) = get_header_value(&req, header_name!("http_purpose"))
-        && value.contains("prefetch") {
-            return error403(&req, Some("Prefetch not allowed to load wrapper"));
-        }
+        && value.contains("prefetch")
+    {
+        return error403(&req, Some("Prefetch not allowed to load wrapper"));
+    }
 
-    trace!(
-        "No valid nonce provided, serving wrapper for zero:://{address}"
-    );
+    trace!("No valid nonce provided, serving wrapper for zero:://{address}");
     serve_wrapper(req, data, !wrapper).await
 }
 
