@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2025-04-27
+- Add details about rust toolchain(compile requirements) in `README.md`
+- concurrent request for `peer_exchange` and more methods like `Site::find_peers`
+- Add `Peer::connect_async` + `ZeroConnection::from_address_async` in `zeronet_protocol` crate
+- adopt new nightly api changes for `extract_if` & unsafe block for `std::env::set_var`
+- Several Internal changes and bug fixes, See [diff](https://github.com/ZeroNetX/zeronet-rs/compare/v0.2.0...v0.3.1) for full commit changes.
+
 ## [0.2.0] - 2024-01-23
 - impl handle_site_bad_files
 - impl handle_cert_(set/list)
