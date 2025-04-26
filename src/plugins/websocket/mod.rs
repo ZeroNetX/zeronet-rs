@@ -91,7 +91,7 @@ pub async fn serve_websocket(
     let (address, addr) = match future.await {
         Ok(Ok(resp)) => resp,
         _ => {
-            let msg = format!("Wrapper key not found: {}", wrapper_key);
+            let msg = format!("Wrapper key not found: {wrapper_key}");
             return Ok(error403(&req, Some(&msg)));
         }
     };
@@ -143,7 +143,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
         match msg.unwrap() {
             ws::Message::Ping(msg) => ctx.pong(&msg),
             ws::Message::Text(text) => {
-                trace!("Incoming Raw message: {:?}", text);
+                trace!("Incoming Raw message: {text:?}");
                 let command: Command = match serde_json::from_str(&text) {
                     Ok(c) => c,
                     Err(_) => {
@@ -151,20 +151,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                             Ok(cmd_res) => cmd_res,
                             Err(e) => {
                                 error!(
-                                    "Could not deserialize incoming message: {:?} ({:?})",
-                                    text, e
+                                    "Could not deserialize incoming message: {text:?} ({e:?})"
                                 );
                                 return;
                             }
                         };
                         if let Err(err) = self.handle_response(ctx, &cmd_res) {
-                            error!("Error handling response: {:?}", err);
+                            error!("Error handling response: {err:?}");
                         }
                         return;
                     }
                 };
                 if let Err(err) = self.handle_command(ctx, &command) {
-                    trace!("Error handling command: {:?}", err);
+                    trace!("Error handling command: {err:?}");
                     let _ = handle_error(self, ctx, command, err);
                 }
             }
@@ -317,11 +316,11 @@ impl ZeruWebsocket {
         let id = self.next_message_id;
         self.next_message_id += 1;
         if let Some(callback) = callback {
-            trace!("Adding callback for id: {}", id);
+            trace!("Adding callback for id: {id}");
             self.waiting_callbacks.insert(id, callback);
         }
         if let Some(callback_data) = callback_data {
-            trace!("Adding callback data for id: {}", id);
+            trace!("Adding callback data for id: {id}");
             self.callback_data.insert(id, callback_data);
         }
         match cmd {
@@ -372,7 +371,7 @@ impl ZeruWebsocket {
         ctx: &mut ws::WebsocketContext<ZeruWebsocket>,
         response: &CommandResponse,
     ) -> Result<(), Error> {
-        trace!("Handling response: {:?}", response);
+        trace!("Handling response: {response:?}");
         let id = response.to as usize;
         let callback = self.waiting_callbacks.remove(&id);
         if let Some(callback) = callback {
@@ -391,7 +390,7 @@ impl ZeruWebsocket {
                 return self.respond(ctx, &mut res);
             }
         } else {
-            error!("No callback found for response: {:?}", response);
+            error!("No callback found for response: {response:?}");
         }
         Ok(())
     }
@@ -440,7 +439,7 @@ impl ZeruWebsocket {
                 let mut cmd_str = serde_json::to_string(&command.cmd)?;
                 cmd_str = cmd_str.replace('"', "");
                 return Err(Error {
-                    error: format!("You don't have permission to run {}", cmd_str),
+                    error: format!("You don't have permission to run {cmd_str}"),
                 });
             }
             match cmd {
@@ -488,7 +487,7 @@ impl ZeruWebsocket {
     }
 
     fn on_event(&mut self, channel: &str, params: &serde_json::Value) -> Result<(), Error> {
-        trace!("Sending event: {} with params: {:?}", channel, params);
+        trace!("Sending event: {channel} with params: {params:?}");
         if !self.channels.contains(&channel.to_string()) {
             return Ok(());
         }

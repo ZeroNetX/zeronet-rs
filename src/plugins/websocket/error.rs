@@ -25,7 +25,7 @@ impl From<MailboxError> for Error {
 impl From<crate::core::error::Error> for Error {
     fn from(err: crate::core::error::Error) -> Error {
         Error {
-            error: format!("{:?}", err),
+            error: format!("{err:?}"),
         }
     }
 }

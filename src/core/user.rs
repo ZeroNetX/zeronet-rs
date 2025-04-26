@@ -241,7 +241,7 @@ impl User {
 
     pub fn get_address_auth_index(address: &str) -> u32 {
         let bytes = address.bytes();
-        let hexs: Vec<String> = bytes.into_iter().map(|x| format!("{:02X}", x)).collect();
+        let hexs: Vec<String> = bytes.into_iter().map(|x| format!("{x:02X}")).collect();
         let hex = &hexs.join("");
 
         let auth_index = BigUint::parse_bytes(hex.as_bytes(), 16).unwrap();
@@ -297,7 +297,7 @@ impl User {
             #[cfg(not(test))]
             block_on(self.save());
 
-            debug!("Deleted site: {}", address);
+            debug!("Deleted site: {address}");
         }
     }
 
@@ -323,7 +323,7 @@ impl User {
                 self.generate_site_keypair()
             };
 
-            if self.sites.get(&keypair.1).is_none() {
+            if !self.sites.contains_key(&keypair.1) {
                 break keypair;
             }
 
@@ -424,11 +424,10 @@ impl User {
     pub fn set_cert(&mut self, address: &str, provider: Option<&str>) {
         let mut site_data = self.sites.get_mut(address).unwrap();
 
-        if let Some(domain) = site_data.get_cert_provider() {
-            if self.certs.get(&domain).is_some() {
+        if let Some(domain) = site_data.get_cert_provider()
+            && self.certs.contains_key(&domain) {
                 warn!("Warning: Cert already exists");
             }
-        }
 
         if let Some(provider) = provider {
             site_data.add_cert_provider(provider);

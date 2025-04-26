@@ -19,7 +19,7 @@ pub async fn serve_sitemedia(
     header_allow_ajax: bool,
     header_no_script: Option<bool>,
 ) -> HttpResponse {
-    trace!("Serving Site inner_path: {}", path);
+    trace!("Serving Site inner_path: {path}");
     let header_no_script = header_no_script.unwrap_or(false);
     let res = parse_media_path(path);
     if let Err(res) = res {
@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_parse_media_path() {
-        let prepare_path = |addr: &str| format!("/media/{}/index.html", addr);
+        let prepare_path = |addr: &str| format!("/media/{addr}/index.html");
 
         let test = parse_media_path("/media/1HelloAddr/");
         assert!(test.is_ok());

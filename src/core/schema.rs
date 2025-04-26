@@ -57,7 +57,7 @@ impl Table {
             table_name,
             self.cols
                 .iter()
-                .format_with(", ", |(col, def), f| f(&format_args!("{} {}", col, def))),
+                .format_with(", ", |(col, def), f| f(&format_args!("{col} {def}"))),
         )
     }
 }

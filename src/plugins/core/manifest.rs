@@ -16,7 +16,7 @@ pub struct PluginManifest {
 
 impl PluginManifest {
     pub async fn load(name: &str) -> Result<Self, serde_json::Error> {
-        let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
+        let manifest_path = PathBuf::from(format!("plugins/{name}/manifest.json"));
         let manifest_str = tokio::fs::read_to_string(&manifest_path).await.unwrap();
         serde_json::from_str(&manifest_str)
     }

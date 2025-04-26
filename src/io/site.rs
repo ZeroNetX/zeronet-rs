@@ -79,8 +79,7 @@ impl Site {
                     .await;
                 if let Err(e) = &message {
                     let err = format!(
-                        "Error Downloading File {} from Peer, Error : {:?}",
-                        inner_path, e
+                        "Error Downloading File {inner_path} from Peer, Error : {e:?}"
                     );
                     return Err(err.as_str().into());
                 } else {
@@ -88,7 +87,7 @@ impl Site {
                         Either::Success(msg) => {
                             let bytes_downloaded = msg.body;
                             downloaded += bytes_downloaded.len();
-                            trace!("Downloaded File from Peer : {}, {}", inner_path, downloaded);
+                            trace!("Downloaded File from Peer : {inner_path}, {downloaded}");
                             bytes.extend_from_slice(&bytes_downloaded);
                         }
                         Either::Error(e) => {
@@ -105,8 +104,7 @@ impl Site {
                 .await;
             if let Err(e) = &message {
                 let err = format!(
-                    "Error Downloading File {} from Peer, Error : {:?}",
-                    inner_path, e
+                    "Error Downloading File {inner_path} from Peer, Error : {e:?}"
                 );
                 Self::handle_error_response(&inner_path, err.as_str()).await
             } else {
@@ -142,8 +140,7 @@ impl Site {
             "File read error" => Err(Error::FileNotFound(inner_path.into())),
             error => {
                 let err = format!(
-                    "Error Downloading File {} from Peer, Error : {:?}",
-                    inner_path, error
+                    "Error Downloading File {inner_path} from Peer, Error : {error:?}"
                 );
                 Err(err.as_str().into())
             }
@@ -232,7 +229,7 @@ impl Site {
         let mut res = join_all(tasks).await;
         let errs = res.extract_if(.., |res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
-            error!("{:?}", err);
+            error!("{err:?}");
         }
 
         let user_data = user_data_files
@@ -264,7 +261,7 @@ impl Site {
         let mut res = join_all(files).await;
         let errs = res.extract_if(.., |res| !res.is_ok()).collect::<Vec<_>>();
         for err in errs {
-            error!("Downloading Site Files Error: {:?}", err);
+            error!("Downloading Site Files Error: {err:?}");
         }
 
         Ok(())
@@ -291,8 +288,7 @@ impl Site {
                 let res = self.check_site_integrity().await?;
                 if !res.is_empty() {
                     return Err(Error::Err(format!(
-                        "Site Integrity Check Failed: {:?}",
-                        res
+                        "Site Integrity Check Failed: {res:?}"
                     )));
                 }
             }
@@ -329,7 +325,7 @@ impl Site {
         let mut res = join_all(tasks).await;
         let errs = res.extract_if(.., |res| res.is_err()).collect::<Vec<_>>();
         for err in &errs {
-            error!("{:?}", err);
+            error!("{err:?}");
         }
         if !errs.is_empty() {
             return Err(Error::Err("Site integrity check failed".into()));
@@ -431,7 +427,7 @@ impl Site {
             )
             .await;
         if let Err(err) = res {
-            error!("{:?}", err);
+            error!("{err:?}");
         }
     }
 }
@@ -448,7 +444,7 @@ impl SiteIO for Site {
 
     fn get_path(&self, inner_path: &str) -> Result<PathBuf, Error> {
         if inner_path.starts_with("../") {
-            return Err(Error::Err(format!("Path Not Allowed: {}", inner_path)));
+            return Err(Error::Err(format!("Path Not Allowed: {inner_path}")));
         }
         let path = self.site_path().join(inner_path);
         if path.exists() {
@@ -463,7 +459,7 @@ impl SiteIO for Site {
 
     fn get_inner_path(&self, path: &str) -> Result<PathBuf, Error> {
         if !path.starts_with(self.data_path.to_str().unwrap()) {
-            Err(Error::Err(format!("Path Not Allowed: {}", path)))
+            Err(Error::Err(format!("Path Not Allowed: {path}")))
         } else {
             let path = PathBuf::from(path);
             if path.exists() {

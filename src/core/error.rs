@@ -83,13 +83,13 @@ impl From<&str> for Error {
 
 impl From<std::num::ParseIntError> for Error {
     fn from(err: std::num::ParseIntError) -> Error {
-        Error::Err(format!("{:?}", err))
+        Error::Err(format!("{err:?}"))
     }
 }
 
 impl From<zerucontent::ErrorKind> for Error {
     fn from(err: zerucontent::ErrorKind) -> Error {
-        Error::Err(format!("{:?}", err))
+        Error::Err(format!("{err:?}"))
     }
 }
 

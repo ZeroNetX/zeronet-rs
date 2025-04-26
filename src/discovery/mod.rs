@@ -37,7 +37,7 @@ impl Discovery for Site {
         let results = join_all(futures).await;
         for res in results {
             if let Err(e) = &res {
-                error!("Error : {:?}", e);
+                error!("Error : {e:?}");
             } else {
                 let mut _res: Vec<Peer> = res
                     .unwrap()
@@ -70,12 +70,12 @@ impl Site {
             .filter_map(|peer| {
                 let res = peer.connect();
                 if let Err(e) = &res {
-                    error!("Error : {:?}", e);
+                    error!("Error : {e:?}");
                     let peer = peer.clone().address().to_string();
-                    error!("{}", peer);
+                    error!("{peer}");
                     None
                 } else {
-                    info!("Connection Successful to {:?}", peer);
+                    info!("Connection Successful to {peer:?}");
                     Some(peer)
                 }
             })
@@ -88,7 +88,7 @@ impl Site {
                     .await;
                 if let Err(e) = res {
                     let peer = &peer.address().to_string();
-                    error!("Error on Handshake: {:?} with Peer {:?}", e, peer);
+                    error!("Error on Handshake: {e:?} with Peer {peer:?}");
                     None
                 } else {
                     Some((*peer).clone())

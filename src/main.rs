@@ -72,7 +72,7 @@ async fn main() -> Result<(), Error> {
                                     }
                                 }
                             } else {
-                                error!("Communication Error {:#?}", res);
+                                error!("Communication Error {res:#?}");
                             }
                         }
                     }
@@ -121,7 +121,7 @@ async fn main() -> Result<(), Error> {
                 "sitePeerExchange" => peer_exchange(&mut site).await?,
                 "siteFetchChanges" => fetch_changes(&mut site).await?,
                 _ => {
-                    warn!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {cmd}");
                 }
             }
             user.get_site_data(site_addr, true);
@@ -133,11 +133,11 @@ async fn main() -> Result<(), Error> {
             && let Some(mut peer_args) = args.get_many::<String>("peer")
         {
             let peer = peer_args.next().unwrap();
-            info!("{:?}", peer);
+            info!("{peer:?}");
             match cmd {
                 "peerPing" => peer_ping(peer).await?,
                 _ => {
-                    warn!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {cmd}");
                 }
             }
         } else if cmd.starts_with("crypt") {
@@ -148,15 +148,15 @@ async fn main() -> Result<(), Error> {
                         "Your Private key : {}",
                         zeronet_cryptography::privkey_to_wif(priv_key)
                     );
-                    info!("Your Public key : {}", pub_key);
+                    info!("Your Public key : {pub_key}");
                 }
                 "cryptSign" => {
                     let mut args = args.get_many::<String>("data").unwrap();
                     let data = args.next().unwrap();
                     if let Some(priv_key) = args.next() {
                         match zeronet_cryptography::sign(data.as_str(), priv_key) {
-                            Ok(signature) => info!("{}", signature),
-                            Err(err) => error!("{}", err),
+                            Ok(signature) => info!("{signature}"),
+                            Err(err) => error!("{err}"),
                         }
                     } else {
                         error!("cryptSign cmd requires private key to sign");
@@ -169,7 +169,7 @@ async fn main() -> Result<(), Error> {
                         if let Some(signature) = args.next() {
                             match zeronet_cryptography::verify(data.as_str(), pub_key, signature) {
                                 Ok(_) => info!("Signature Successfully verified"),
-                                Err(err) => error!("{}", err),
+                                Err(err) => error!("{err}"),
                             }
                         } else {
                             error!("cryptVerify cmd requires signature as arg to verify");
@@ -179,7 +179,7 @@ async fn main() -> Result<(), Error> {
                     };
                 }
                 _ => {
-                    warn!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {cmd}");
                 }
             }
         } else if cmd.starts_with("plugin") {
@@ -188,7 +188,7 @@ async fn main() -> Result<(), Error> {
                     let mut args = args.get_many::<String>("name").unwrap();
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await;
-                    let manifest_path = PathBuf::from(format!("plugins/{}/manifest.json", name));
+                    let manifest_path = PathBuf::from(format!("plugins/{name}/manifest.json"));
                     if manifest.is_ok()
                         && let Some(private_key) = args.next()
                     {
@@ -204,17 +204,17 @@ async fn main() -> Result<(), Error> {
                     let name = args.next().unwrap();
                     let manifest = PluginManifest::load(name).await.unwrap();
                     let verified = manifest.verify_plugin().await.unwrap_or(false);
-                    println!("Plugin Verified : {}", verified);
+                    println!("Plugin Verified : {verified}");
                 }
                 _ => {
-                    warn!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {cmd}");
                 }
             }
         } else {
             match cmd {
                 "getConfig" => info!("{}", serde_json::to_string_pretty(&client_info())?),
                 _ => {
-                    warn!("Unknown command: {}", cmd);
+                    warn!("Unknown command: {cmd}");
                 }
             }
         }

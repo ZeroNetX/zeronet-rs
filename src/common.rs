@@ -59,7 +59,7 @@ pub async fn db_query(
     let conn = db_manager.get_db(site.address()).unwrap();
     let res = SitesController::db_query(conn, query, None).await?;
     for row in res {
-        info!("{:#?}", row);
+        info!("{row:#?}");
     }
     Ok(())
 }
@@ -159,9 +159,9 @@ pub async fn site_need_file(site: &mut Site, inner_path: String) -> Result<(), E
     } else {
         let result = site.need_file(inner_path.clone(), None, None).await;
         if let Err(e) = &result {
-            error!("Error : {:?}", e);
+            error!("Error : {e:?}");
         } else {
-            info!("File Downloaded : {:?}", inner_path);
+            info!("File Downloaded : {inner_path:?}");
         }
     }
     Ok(())
@@ -172,7 +172,7 @@ pub async fn peer_ping(addr: &str) -> Result<(), Error> {
     let res = peer.connect();
     if res.is_ok() {
         let res = Protocol::new(peer.connection_mut().unwrap()).ping().await?;
-        info!("Ping Result : {:?} from Peer : {:?}", res, addr);
+        info!("Ping Result : {res:?} from Peer : {addr:?}");
         return Ok(());
     }
     Err(Error::Err("Peer Not Found".into()))
@@ -185,7 +185,7 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
         .into_iter()
         .map(|peer| Peer::new(PeerAddr::parse(peer).unwrap()))
         .collect::<Vec<Peer>>();
-    info!("Found Peers : {:?}", peers);
+    info!("Found Peers : {peers:?}");
     let mut tasks = vec![];
     for peer in &mut peers {
         let res = peer.connect_async();
@@ -207,9 +207,9 @@ pub async fn peer_exchange(site: &mut Site) -> Result<(), Error> {
 pub async fn fetch_changes(site: &mut Site) -> Result<(), Error> {
     site.load_content().await?;
     let modified = &site.content(None).unwrap().modified;
-    info!("{:?}", modified);
+    info!("{modified:?}");
     let changes = site.fetch_changes(1421043090).await?;
-    info!("{:#?}", changes);
+    info!("{changes:#?}");
     Ok(())
 }
 

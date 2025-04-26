@@ -31,7 +31,7 @@ pub async fn serve_auth_wrapper_key(
         Ok(a) => a,
         Err(_) => {
             return HttpResponse::Ok()
-                .body(format!("{} is a malformed ZeroNet address", address_string));
+                .body(format!("{address_string} is a malformed ZeroNet address"));
         }
     };
     let access_key = query.get("access_key").unwrap_or(&def);
@@ -45,7 +45,7 @@ pub async fn serve_auth_wrapper_key(
             }
         }
     }
-    trace!("Serving wrapper key for {}", address);
+    trace!("Serving wrapper key for {address}");
     let result = data
         .site_controller
         .send(AddWrapperKey::new(address, nonce.clone()));
@@ -53,15 +53,15 @@ pub async fn serve_auth_wrapper_key(
 
     match result {
         Ok(_) => match result {
-            Ok(_) => HttpResponse::Ok().body(format!("wrapper_key={}", nonce)),
+            Ok(_) => HttpResponse::Ok().body(format!("wrapper_key={nonce}")),
             Err(err) => {
-                error!("Bad request {}", err);
+                error!("Bad request {err}");
                 HttpResponse::BadRequest().finish()
             }
         },
         Err(err) => {
             error!("Error sending wrapper key to site manager");
-            error!("Bad request {}", err);
+            error!("Bad request {err}");
             HttpResponse::BadRequest().finish()
         }
     }

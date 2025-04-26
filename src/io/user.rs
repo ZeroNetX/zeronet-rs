@@ -49,7 +49,7 @@ impl UserIO for User {
         let file_path = ENV.data_path.join("users.json");
 
         if let Err(err_msg) = self.save_user(file_path).await {
-            error!("Couldn't save user: {:?}", err_msg);
+            error!("Couldn't save user: {err_msg:?}");
             Err(err_msg)
         } else {
             trace!(
@@ -101,7 +101,7 @@ impl User {
         options.write(true).truncate(true);
         let mut file = options.open(dest).await?;
         if let Err(e) = file.write_all(new_content).await {
-            error!("Error writing file: {:?}", e);
+            error!("Error writing file: {e:?}");
             //Possible data corruption in old file, overwrite with old content
             if retry {
                 return Self::write_to_disk(dest, new_content, content, false).await;

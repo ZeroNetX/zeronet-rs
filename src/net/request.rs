@@ -111,7 +111,7 @@ impl<'a> RequestImpl for Protocol<'a> {
 
         match res.body() {
             Ok(body) => Ok(body),
-            Err(e) => Err(Error::Err(format!("{:?}", e))),
+            Err(e) => Err(Error::Err(format!("{e:?}"))),
         }
     }
 }
@@ -126,13 +126,13 @@ mod tests {
     async fn test_protocol() {
         let mut peer = Peer::new(PeerAddr::parse("72.189.0.3:21619".to_string()).unwrap());
         if let Err(err) = peer.connect() {
-            println!("Error Connecting : {:?}", err);
+            println!("Error Connecting : {err:?}");
         } else {
             println!("Connected");
             let mut protocol = Protocol::new(peer.connection_mut().unwrap());
             let res = protocol.handshake().await;
             if let Err(err) = res {
-                println!("Error : {:?}", err);
+                println!("Error : {err:?}");
                 unimplemented!("Handle Error cases");
             } else {
                 println!("Handshake : {:?}", res.unwrap());

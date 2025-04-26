@@ -23,7 +23,7 @@ impl Serialize for Permission {
         S: Serializer,
     {
         let string = match self {
-            Permission::PathProvider(version) => format!("path_provider@{}", version),
+            Permission::PathProvider(version) => format!("path_provider@{version}"),
             Permission::None => "".into(),
         };
         serializer.serialize_str(&string)

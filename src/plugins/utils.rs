@@ -20,8 +20,8 @@ pub fn load_plugins() -> Vec<Plugin> {
             if path.is_dir() {
                 let name = path.file_name().unwrap().to_str().unwrap();
                 let plugin_dir = path.display().to_string();
-                let manifest = PathBuf::from(format!("{}/manifest.json", plugin_dir));
-                let plugin = PathBuf::from(format!("{}/{}.wasm", plugin_dir, name));
+                let manifest = PathBuf::from(format!("{plugin_dir}/manifest.json"));
+                let plugin = PathBuf::from(format!("{plugin_dir}/{name}.wasm"));
                 let has_manifest = manifest.is_file();
                 let has_plugin = plugin.is_file();
                 if has_manifest && has_plugin {
@@ -66,7 +66,7 @@ pub fn load_plugins() -> Vec<Plugin> {
                     plugins_loaded.push(plugin);
                 } else {
                     let error = funs.err().unwrap();
-                    error!("Failed to load plugin {:?}", error);
+                    error!("Failed to load plugin {error:?}");
                 }
             }
         }

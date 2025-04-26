@@ -94,6 +94,7 @@ impl ContentMod for Site {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(&path)
             .await?;
         file.write_all(content_json.as_bytes()).await?;
@@ -108,10 +109,10 @@ impl Site {
             if let Some(content) = self.content(Some(inner_path)) {
                 valid_signers.extend(content.signers.clone());
             }
-        } else if let Some(rules) = self.get_file_rules(inner_path) {
-            if let Some(Value::String(signers)) = rules.get("signers") {
-                valid_signers.insert(signers.clone());
-            }
+        } else if let Some(rules) = self.get_file_rules(inner_path)
+            && let Some(Value::String(signers)) = rules.get("signers")
+        {
+            valid_signers.insert(signers.clone());
         }
         valid_signers.insert(self.address().to_string());
         valid_signers
@@ -265,13 +266,11 @@ impl Site {
             rules.insert("signers".to_string(), json!(Vec::<String>::new()));
         }
 
-        if !banned {
-            if let Some(signers) = rules.get_mut("signers") {
-                signers
-                    .as_array_mut()
-                    .unwrap()
-                    .push(json!(user_address.clone())); // Add user as valid signer
-            }
+        if !banned && let Some(signers) = rules.get_mut("signers") {
+            signers
+                .as_array_mut()
+                .unwrap()
+                .push(json!(user_address.clone())); // Add user as valid signer
         }
         rules.insert("user_address".to_string(), json!(user_address));
         rules.insert("includes_allowed".to_string(), json!(false));
@@ -286,6 +285,7 @@ impl Site {
         let mut dirs = inner_path.split('/').collect_vec();
         let mut file_name = dirs.pop()?;
         // let site_path = self.site_path();
+        let regex = regex::Regex::new("([A-Za-z0-9]+)/.*").unwrap();
         let info_map = loop {
             let content_inner_path_dir = dirs.join("/");
             let content_inner_path = if content_inner_path_dir.is_empty() {
@@ -333,13 +333,11 @@ impl Site {
                         let relative_content_path = inner_path
                             .strip_prefix(&content_inner_path_dir)
                             .unwrap_or("");
-                        let regex = regex::Regex::new("([A-Za-z0-9]+)/.*").unwrap();
                         if regex.is_match(relative_content_path) {
                             let captures = regex.captures(relative_content_path).unwrap();
                             let user_auth_address = captures.get(1).unwrap().as_str();
                             let path = format!(
-                                "{}/{}/content.json",
-                                content_inner_path_dir, user_auth_address
+                                "{content_inner_path_dir}/{user_auth_address}/content.json"
                             );
                             map.insert("content_inner_path".into(), path.into());
                         }
@@ -402,7 +400,7 @@ mod tests {
     async fn test_root_user_content1() {
         let addr = "15UYrA7aXr2Nto1Gg4yWXpY3EAJwafMTNk";
         let content_path = "data/users/1AmeB7f5wBfJm6iR7MRZfFh65xkJzaVCX7/content.json";
-        let path = PathBuf::from(format!("tests/data/{}", addr));
+        let path = PathBuf::from(format!("tests/data/{addr}"));
         let mut site = Site::new(addr, path).unwrap();
         load_site_content(&mut site, content_path).await;
         load_site_content(&mut site, "data/users/content.json").await;
@@ -428,7 +426,7 @@ mod tests {
         inner_path: &str,
         file_path: &str,
     ) -> Option<Map<String, Value>> {
-        let path = PathBuf::from(format!("tests/data/{}", addr));
+        let path = PathBuf::from(format!("tests/data/{addr}"));
         let mut site = Site::new(addr, path).unwrap();
         load_site_content(&mut site, inner_path).await;
         site.get_file_info(file_path, false)

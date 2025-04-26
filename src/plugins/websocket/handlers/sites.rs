@@ -174,15 +174,14 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
         let account = &c[1];
         let css = &c[2];
         let (css, title) = if provider == &active {
-            let css = format!("{} active", css);
-            let title = format!("<b>{}</b> <small>currently selected</small>", account);
+            let css = format!("{css} active");
+            let title = format!("<b>{account}</b> <small>currently selected</small>");
             (css, title)
         } else {
-            (css.to_string(), format!("<b>{}</b>", account))
+            (css.to_string(), format!("<b>{account}</b>"))
         };
         body += &format!(
-            "<a href='#Select+account' class='select select-close cert {}' title='{}'>{}</a>",
-            css, provider, title
+            "<a href='#Select+account' class='select select-close cert {css}' title='{provider}'>{title}</a>"
         );
     }
 
@@ -190,10 +189,9 @@ pub fn handle_cert_select(ws: &mut ZeruWebsocket, cmd: &Command) -> Result<Messa
         if !user.certs.contains_key(provider.as_str()) {
             body += "<div style='background-color: #F7F7F7; margin-right: -30px'>";
             body += &format!(
-                "<a href='/{}' target='_top' class='select'>
+                "<a href='/{provider}' target='_top' class='select'>
                             <small style='float: right; margin-right: 40px; margin-top: -1px'>
-                            Register &raquo;</small>{}</a>",
-                provider, provider
+                            Register &raquo;</small>{provider}</a>"
             );
             body += "</div>";
         }
@@ -245,10 +243,9 @@ fn notification_script_template(id: usize) -> String {
         "
     $(\".notification .select.cert\").on(\"click\", function() {{
     $(\".notification .select\").removeClass('active')
-    zeroframe.response({}, this.title)
+    zeroframe.response({id}, this.title)
     return false
-    }})",
-        id
+    }})"
     )
 }
 
@@ -262,11 +259,10 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
     }
     let mut site_info = result.unwrap();
     if let Some(site_info) = append_user_site_data(ws, &mut site_info) {
-        if let Value::Object(params) = &command.params {
-            if let Some(Value::String(path)) = params.get("file_status") {
+        if let Value::Object(params) = &command.params
+            && let Some(Value::String(path)) = params.get("file_status") {
                 site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
             }
-        }
         command.respond(site_info)
     } else {
         Err(Error {
@@ -295,11 +291,10 @@ pub fn append_user_site_data<'a>(
         if let Some(auth) = user_site_data.get_auth_pair() {
             site_info.auth_address = auth.auth_address;
         }
-        if let Some(key) = user_site_data.get_privkey() {
-            if !key.is_empty() {
+        if let Some(key) = user_site_data.get_privkey()
+            && !key.is_empty() {
                 site_info.privatekey = true;
             }
-        }
         #[cfg(debug_assertions)]
         {
             site_info.size_limit = 25;
@@ -392,11 +387,10 @@ pub fn handle_channel_join(
 pub fn handle_site_list(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling SiteList : {:?}", command.params);
     let mut connecting = false;
-    if let Value::Object(map) = &command.params {
-        if let Some(Value::Bool(value)) = map.get("connecting_sites") {
+    if let Value::Object(map) = &command.params
+        && let Some(Value::Bool(value)) = map.get("connecting_sites") {
             connecting = *value;
         }
-    }
     let sites = block_on(ws.site_controller.send(SiteInfoListRequest { connecting }))
         .unwrap()
         .unwrap();
@@ -578,7 +572,7 @@ pub fn handle_permission_details(cmd: &Command) -> Result<Message, Error> {
         .get(key)
         .cloned()
         .ok_or_else(|| Error {
-            error: format!("Unknown permission: {}", key),
+            error: format!("Unknown permission: {key}"),
         });
     cmd.respond(details?)
 }
