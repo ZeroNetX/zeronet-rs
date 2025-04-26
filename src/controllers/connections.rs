@@ -135,7 +135,12 @@ impl ConnectionController {
 
                         if request.body::<SiteRequest>().is_err() {
                             let res = Self::unknown_site_response();
-                            let site: &str = &request.body::<SiteRequest>().unwrap_or(SiteRequest { site: "".to_string() }).site;
+                            let site: &str = &request
+                                .body::<SiteRequest>()
+                                .unwrap_or(SiteRequest {
+                                    site: "".to_string(),
+                                })
+                                .site;
                             debug!("Unknown site: {site}");
                             let _ = protocol.0.respond(request.req_id, res).await;
                             let took = time.elapsed();
@@ -401,9 +406,7 @@ impl ConnectionController {
                 Self::unknown_site_response()
             }
         } else {
-            error!(
-                "Error Parsing Request Body: Invalid Update Request {req:?}"
-            );
+            error!("Error Parsing Request Body: Invalid Update Request {req:?}");
             ResponseType::InvalidRequest
         }
     }

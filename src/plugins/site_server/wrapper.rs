@@ -229,7 +229,8 @@ pub async fn serve_wrapper(
             themeclass,
             script_nonce: script_nonce.clone(),
         },
-    ).unwrap_or_default();
+    )
+    .unwrap_or_default();
     let mut res = HttpResponse::Ok();
     for (key, value) in build_header!(200, None, &script_nonce).iter() {
         res.append_header((key.as_str(), value.to_str().unwrap()));

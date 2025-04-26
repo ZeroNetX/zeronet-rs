@@ -318,10 +318,13 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
     let ui_restrict = matches.get_one::<bool>("UI_RESTRICT").is_some();
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
 
-    #[cfg(debug_assertions)] {
+    #[cfg(debug_assertions)]
+    {
         let log_level = matches.get_one::<String>("CONSOLE_LOG_LEVEL").unwrap();
         //TODO! Replace with file based logger with public release.
-        unsafe {std::env::set_var("DECENTNET_LOG", format!("zeronet={log_level}"));}
+        unsafe {
+            std::env::set_var("DECENTNET_LOG", format!("zeronet={log_level}"));
+        }
     }
     pretty_env_logger::init_custom_env("DECENTNET_LOG");
 

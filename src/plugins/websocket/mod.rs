@@ -150,9 +150,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for ZeruWebsocket {
                         let cmd_res: CommandResponse = match serde_json::from_str(&text) {
                             Ok(cmd_res) => cmd_res,
                             Err(e) => {
-                                error!(
-                                    "Could not deserialize incoming message: {text:?} ({e:?})"
-                                );
+                                error!("Could not deserialize incoming message: {text:?} ({e:?})");
                                 return;
                             }
                         };

@@ -425,9 +425,10 @@ impl User {
         let mut site_data = self.sites.get_mut(address).unwrap();
 
         if let Some(domain) = site_data.get_cert_provider()
-            && self.certs.contains_key(&domain) {
-                warn!("Warning: Cert already exists");
-            }
+            && self.certs.contains_key(&domain)
+        {
+            warn!("Warning: Cert already exists");
+        }
 
         if let Some(provider) = provider {
             site_data.add_cert_provider(provider);

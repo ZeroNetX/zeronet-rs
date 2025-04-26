@@ -78,9 +78,8 @@ impl Site {
                     )
                     .await;
                 if let Err(e) = &message {
-                    let err = format!(
-                        "Error Downloading File {inner_path} from Peer, Error : {e:?}"
-                    );
+                    let err =
+                        format!("Error Downloading File {inner_path} from Peer, Error : {e:?}");
                     return Err(err.as_str().into());
                 } else {
                     match message? {
@@ -103,9 +102,7 @@ impl Site {
                 .get_file(self.address(), &inner_path, file_size, 0, None)
                 .await;
             if let Err(e) = &message {
-                let err = format!(
-                    "Error Downloading File {inner_path} from Peer, Error : {e:?}"
-                );
+                let err = format!("Error Downloading File {inner_path} from Peer, Error : {e:?}");
                 Self::handle_error_response(&inner_path, err.as_str()).await
             } else {
                 match message? {
@@ -139,9 +136,8 @@ impl Site {
         match error {
             "File read error" => Err(Error::FileNotFound(inner_path.into())),
             error => {
-                let err = format!(
-                    "Error Downloading File {inner_path} from Peer, Error : {error:?}"
-                );
+                let err =
+                    format!("Error Downloading File {inner_path} from Peer, Error : {error:?}");
                 Err(err.as_str().into())
             }
         }
@@ -287,9 +283,7 @@ impl Site {
             if !content_only {
                 let res = self.check_site_integrity().await?;
                 if !res.is_empty() {
-                    return Err(Error::Err(format!(
-                        "Site Integrity Check Failed: {res:?}"
-                    )));
+                    return Err(Error::Err(format!("Site Integrity Check Failed: {res:?}")));
                 }
             }
             let content = self.content(None).unwrap();

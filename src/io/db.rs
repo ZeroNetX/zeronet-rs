@@ -313,9 +313,7 @@ impl DbManager {
                 (
                     "directory, file_name".to_string(),
                     format!("'{directory}', '{file_name}'"),
-                    format!(
-                        "directory = '{directory}' AND file_name = '{file_name}'"
-                    ),
+                    format!("directory = '{directory}' AND file_name = '{file_name}'"),
                 )
             }
             3 => {
@@ -393,9 +391,10 @@ impl DbManager {
                     continue;
                 }
             } else if let Value::Object(v) = value
-                && v.is_empty() {
-                    continue;
-                }
+                && v.is_empty()
+            {
+                continue;
+            }
 
             let mut import_cols = vec![];
             let use_import_cols = import_col.is_some();
@@ -633,9 +632,7 @@ impl DbManager {
 
         if let Err(code) = res {
             //TODO!: We may receive non existing columns in the table as input, so we need to handle such cases
-            error!(
-                "Db command execution failed, query: {query}, code: {code}"
-            );
+            error!("Db command execution failed, query: {query}, code: {code}");
         }
     }
 

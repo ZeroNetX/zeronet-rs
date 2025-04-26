@@ -68,9 +68,10 @@ impl SitesController {
             &mut site
         };
         if let Some(addr) = self.sites_addr.get(address)
-            && site.content_path().is_file() {
-                return Ok((address.clone(), addr.clone()));
-            }
+            && site.content_path().is_file()
+        {
+            return Ok((address.clone(), addr.clone()));
+        }
         trace!(
             "Spinning up actor for site zero://{}",
             address.get_address_short()
@@ -103,9 +104,10 @@ impl SitesController {
 
     pub fn get_by_key(&mut self, key: String) -> Result<(Address, Addr<Site>), Error> {
         if let Some(address) = self.nonce.get(&key)
-            && let Some(addr) = self.sites_addr.get(address) {
-                return Ok((address.clone(), addr.clone()));
-            }
+            && let Some(addr) = self.sites_addr.get(address)
+        {
+            return Ok((address.clone(), addr.clone()));
+        }
         error!("No site found for key {key}");
         Err(Error::MissingError)
     }

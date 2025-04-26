@@ -260,9 +260,10 @@ pub fn handle_site_info(ws: &ZeruWebsocket, command: &Command) -> Result<Message
     let mut site_info = result.unwrap();
     if let Some(site_info) = append_user_site_data(ws, &mut site_info) {
         if let Value::Object(params) = &command.params
-            && let Some(Value::String(path)) = params.get("file_status") {
-                site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
-            }
+            && let Some(Value::String(path)) = params.get("file_status")
+        {
+            site_info.event = Some(json!(["file_done", path])); //TODO!: get file status
+        }
         command.respond(site_info)
     } else {
         Err(Error {
@@ -292,9 +293,10 @@ pub fn append_user_site_data<'a>(
             site_info.auth_address = auth.auth_address;
         }
         if let Some(key) = user_site_data.get_privkey()
-            && !key.is_empty() {
-                site_info.privatekey = true;
-            }
+            && !key.is_empty()
+        {
+            site_info.privatekey = true;
+        }
         #[cfg(debug_assertions)]
         {
             site_info.size_limit = 25;
@@ -308,9 +310,7 @@ pub fn append_user_site_data<'a>(
 pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling DBQuery {:?}", command.cmd);
     let result = match &command.params {
-        Value::String(query) => {
-            Ok((query.as_str(), None))
-        }
+        Value::String(query) => Ok((query.as_str(), None)),
         Value::Array(inner_path) => {
             if let Some(query) = inner_path[0].as_str() {
                 let params = inner_path.get(1).cloned();
@@ -388,9 +388,10 @@ pub fn handle_site_list(ws: &ZeruWebsocket, command: &Command) -> Result<Message
     trace!("Handling SiteList : {:?}", command.params);
     let mut connecting = false;
     if let Value::Object(map) = &command.params
-        && let Some(Value::Bool(value)) = map.get("connecting_sites") {
-            connecting = *value;
-        }
+        && let Some(Value::Bool(value)) = map.get("connecting_sites")
+    {
+        connecting = *value;
+    }
     let sites = block_on(ws.site_controller.send(SiteInfoListRequest { connecting }))
         .unwrap()
         .unwrap();
