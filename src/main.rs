@@ -1,4 +1,3 @@
-#![feature(extract_if)]
 #![feature(trait_alias)]
 #![feature(let_chains)]
 

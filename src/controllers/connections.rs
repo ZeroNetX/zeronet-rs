@@ -3,7 +3,7 @@ use std::{collections::HashMap, fs::File, io::Read, time::Duration};
 use itertools::Itertools;
 use log::*;
 use serde_bytes::ByteBuf;
-use time::Instant;
+use std::time::Instant;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::mpsc::{channel, Receiver, Sender},
@@ -139,7 +139,7 @@ impl ConnectionController {
                             debug!("Unknown site: {}", site);
                             let _ = protocol.0.respond(request.req_id, res).await;
                             let took = time.elapsed();
-                            debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
+                            debug!("{} Req {} took : {:?}", &request.cmd, &request.req_id, took);
                             continue;
                         }
                         let res = req_tx.send(request.clone()).await;
@@ -148,7 +148,7 @@ impl ConnectionController {
                         }
                         let res = res_rx.recv().await;
                         let took = time.elapsed();
-                        debug!("{} Req {} took : {}", &request.cmd, &request.req_id, took);
+                        debug!("{} Req {} took : {:?}", &request.cmd, &request.req_id, took);
                         if let Some(res) = res {
                             let result = protocol.0.respond(request.req_id, res.clone()).await;
                             if result.is_err() {
@@ -371,7 +371,7 @@ impl ConnectionController {
                         } else {
                             let site_content_modified =
                                 site.content(Some(inner_path)).unwrap().modified.clone();
-                            content_modified > site_content_modified.into()
+                            content_modified > Into::<usize>::into(site_content_modified)
                         }
                     }
                 };
