@@ -88,9 +88,10 @@ impl ConnectionController {
         res_rx: &mut Receiver<ResponseType>,
     ) -> Result<(), Error> {
         let peer_addr = stream.peer_addr()?;
-        let stream = stream.into_std().unwrap();
-        let mut connection =
-            ZeroConnection::new(Box::new(stream.try_clone().unwrap()), Box::new(stream))?;
+        let stream = stream.into_std()?;
+        let reader = Box::new(stream.try_clone()?);
+        let writer = Box::new(stream);
+        let mut connection = ZeroConnection::new(reader, writer)?;
 
         loop {
             let request = connection.recv().await;
