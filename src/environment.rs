@@ -316,11 +316,13 @@ pub fn get_env(matches: &ArgMatches) -> Result<Environment, Error> {
         .to_owned();
     let ui_trans_proxy = matches.get_one::<bool>("UI_TRANS_PROXY").is_some();
     let ui_restrict = matches.get_one::<bool>("UI_RESTRICT").is_some();
-    let log_level = matches.get_one::<String>("CONSOLE_LOG_LEVEL").unwrap();
     // let broadcast_port: usize = matches.value_of("BROADCAST_PORT").unwrap().parse()?;
 
-    //TODO! Replace with file based logger with public release.
-    std::env::set_var("DECENTNET_LOG", format!("zeronet={}", log_level));
+    #[cfg(debug_assertions)] {
+        let log_level = matches.get_one::<String>("CONSOLE_LOG_LEVEL").unwrap();
+        //TODO! Replace with file based logger with public release.
+        unsafe {std::env::set_var("DECENTNET_LOG", format!("zeronet={}", log_level));}
+    }
     pretty_env_logger::init_custom_env("DECENTNET_LOG");
 
     let env = Environment {
@@ -360,11 +362,11 @@ pub fn client_info() -> serde_json::Value {
         "windows"
     } else if cfg!(unix) {
         "unix"
-    } else if cfg!(macos) {
+    } else if cfg!(target_os = "macos") {
         "macos"
-    } else if cfg!(android) {
+    } else if cfg!(target_os = "android") {
         "android"
-    } else if cfg!(ios) {
+    } else if cfg!(target_os = "ios") {
         "ios"
     } else {
         "unrecognised"

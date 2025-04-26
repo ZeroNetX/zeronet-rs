@@ -334,7 +334,7 @@ pub fn load_trackers() -> Vec<String> {
     {
         trackers.push(String::from_utf8(peer.to_vec()).unwrap());
     }
-    trackers.extract_if(|peer| !peer.is_empty()).collect()
+    trackers.extract_if(.., |peer| !peer.is_empty()).collect()
 }
 
 pub async fn load_strings_from_path(path: &PathBuf) -> Vec<String> {
@@ -357,5 +357,5 @@ pub async fn load_strings_from_path(path: &PathBuf) -> Vec<String> {
             strings.push(peer);
         }
     }
-    strings.extract_if(|peer| !peer.is_empty()).collect()
+    strings.extract_if(.., |peer| !peer.is_empty()).collect()
 }

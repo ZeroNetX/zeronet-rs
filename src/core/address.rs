@@ -89,7 +89,6 @@ impl FromStr for Address {
 }
 
 #[cfg(test)]
-#[cfg_attr(tarpaulin, ignore)]
 mod tests {
     use super::*;
 

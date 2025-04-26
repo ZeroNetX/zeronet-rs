@@ -61,11 +61,11 @@ Clone the [ZNX repository](https://github.com/ZeroNetX/zeronet-rs).
 -  > cd zeronet-rs
 
 - Windows : Install nightly rust toolchain using
-  > rustup override set nightly-2024-01-24-x86_64-pc-windows-msvc
+  > rustup override set nightly-2025-04-26-x86_64-pc-windows-msvc
 
 - `rustc --version` info for other platforms
 
-  > rustc 1.77.0-nightly (5d3d3479d 2024-01-23)
+  > rustc 1.88.0-nightly (b4c8b0c3f 2025-04-25)
 
 Once you have the dependencies installed, you can build ZNX using [Cargo](https://doc.rust-lang.org/cargo/).
 
