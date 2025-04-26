@@ -313,16 +313,13 @@ pub fn append_user_site_data<'a>(
 pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message, Error> {
     trace!("Handling DBQuery {:?}", command.cmd);
     let result = match &command.params {
+        Value::String(query) => {
+            Ok((query.as_str(), None))
+        }
         Value::Array(inner_path) => {
             if let Some(query) = inner_path[0].as_str() {
-                let stmt_type = query.split_whitespace().next().unwrap();
-                if stmt_type.to_uppercase() != "SELECT" {
-                    return Err(Error {
-                        error: String::from("Only SELECT queries are allowed"),
-                    });
-                }
                 let params = inner_path.get(1).cloned();
-                Ok((query.to_string(), params))
+                Ok((query, params))
             } else {
                 Err(Error {
                     error: String::from("Invalid params"),
@@ -331,14 +328,8 @@ pub fn handle_db_query(ws: &ZeruWebsocket, command: &Command) -> Result<Message,
         }
         Value::Object(map) => {
             if let Some(Value::String(query)) = map.get("query") {
-                let stmt_type = query.split_whitespace().next().unwrap();
-                if stmt_type.to_uppercase() != "SELECT" {
-                    return Err(Error {
-                        error: String::from("Only SELECT queries are allowed"),
-                    });
-                }
                 let params = map.get("params").cloned();
-                Ok((query.to_string(), params))
+                Ok((query.as_str(), params))
             } else {
                 Err(Error {
                     error: String::from("Invalid params"),
